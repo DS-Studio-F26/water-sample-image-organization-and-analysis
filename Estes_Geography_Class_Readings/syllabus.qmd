@@ -1,0 +1,142 @@
+---
+title: "Syllabus"
+---
+
+The schedule for the course is provided below, including required readings and the assignments.  The primary reading material is provided on this website, but it links extensively to and draws material from a wide array of external sources, particularly from the following:
+
+- [Dive into Deep Learning](https://d2l.ai/index.html) 
+- Khallaghi, Eastman, and Estes (2023), *A review of technical factors to consider when designing neural networks for semantic segmentation of Earth Observation imagery*, [arXiv:2308.09221](https://arxiv.org/abs/2308.09221) 
+    
+    This paper is in revision for [*Transactions in GIS*](https://onlinelibrary.wiley.com/journal/14679671), for which it has been divided into 7 separate papers. We will be reading from the first 3 parts for this class: 
+
+    1. [Part 1](https://www.dropbox.com/scl/fi/vk47bk78gy7e5sfcu6j7l/khallaghi_etal-semsegeo-part1-underreview05012026.pdf?rlkey=xph5hmrlfj875lbcvkwbo79vh&dl=0): Basic components of convolutional neural networks and backbone networks
+    2. [Part 2](https://www.dropbox.com/scl/fi/brgevxrfxx3g40nnl17d1/khallaghi_etal-semsegeo-part2-underreview05012026.pdf?rlkey=3ft1eyjjx0676ylzfnhm18t3v&dl=0): Convolutional Neural Networks for semantic segmentation and attention mechanisms
+    3. [Part 3](https://www.dropbox.com/scl/fi/jd88fpc6p6pqze8y2yyd4/khallaghi_etal-semsegeo-part3-underreview05012026.pdf?rlkey=mx6ben6f4co0fdyaaz2os1ixg&dl=0): Models designed to work with time series and sequences
+
+## Schedule
+
+### Week 1
+- A background on machine and deep learning in Earth Observation
+-  Reading: 
+    - [Foreword](foreword.qmd)
+    - [1. Introduction](introduction.qmd)
+    - Dive into Deep Learning: 
+        - [Chapter 1](https://d2l.ai/chapter_introduction/index.html)
+        - [2.3](https://d2l.ai/chapter_preliminaries/linear-algebra.html)
+        - [2.4](https://d2l.ai/chapter_preliminaries/calculus.html) 
+- Lab: An introduction to key `python` concepts ([lab 1](practicals/pylab1.ipynb))
+
+### Week 2 
+- Feedforward neural networks and key components
+    - Activation functions, objective functions, learning rate
+    - Backpropagation
+    - Multi-layer perceptrons (MLP) and DNNs   
+- Reading:
+    - Dive into Deep Learning, sections:
+        - [3.1](https://d2l.ai/chapter_linear-regression/linear-regression.html#basics) 
+        - [4.1](https://d2l.ai/chapter_linear-classification/softmax-regression.html#classification)
+    - [2. Deep Learning Basics](neural-network-intro.qmd)
+    - [3. MLPs](mlp.qmd), including other readings linked in text
+- Lab: An introduction to key `python` concepts ([lab 2](practicals/pylab2.ipynb))
+- Assignment 1: Data handling
+
+### Week 3 
+- Training neural networks
+    - Optimization and batch training
+    - Regularization techniques
+    - Model evaluation and accuracy metrics
+- Reading:
+    - [CNNs](cnns.qmd)
+    - Dive into Deep Learning [Chapter 7](https://d2l.ai/chapter_convolutional-neural-networks/index.html)
+    - Khallaghi et al, [part 1](https://www.dropbox.com/scl/fi/82meu1r7xntjkfna4mr8b/SKhallaghi_reviewManuscript_Part1.pdf?rlkey=0zjpueuwo61s1bs56u54w37jk&dl=0), sections 2.1-2.5.
+- Lab: More `python` concepts
+
+### Week 4 
+- Convolutional Neural Networks, part I
+    <!-- - The convolution operation and its parameters
+    - Downsampling techniques (e.g. pooling) and the receptive field
+    - Batch normalization
+    - Common CNN networks for image classification (e.g. VGG, ResNet, Inception)     -->
+- Reading: 
+    - Dive into Deep Learning [Chapter 8](https://d2l.ai/chapter_convolutional-modern/index.html)
+    - Khallaghi et al, [part 1](https://www.dropbox.com/scl/fi/82meu1r7xntjkfna4mr8b/SKhallaghi_reviewManuscript_Part1.pdf?rlkey=0zjpueuwo61s1bs56u54w37jk&dl=0), sections 3.
+- Lab 
+- Assignments:
+    - Assignment 1 due
+    - Assignment 2: Developing and training your own semantic segmentation model
+
+### Week 5
+- Convolutional Neural Networks, part II
+    <!-- - Backbone networks
+    - FCN and semantic segmentation -->
+    <!-- - Batch normalization -->
+    <!-- - Common CNN networks for image classification (e.g. VGG, ResNet, Inception)     -->
+- Reading:
+    - [Semantic segmentation](semseg.qmd)
+    - Khallaghi et al, [part 2](https://www.dropbox.com/scl/fi/ofghvtwn8mwc0izf226hk/khallaghi_etal-semsegeo-part2-underreview05012026.pdf?rlkey=1d378kwbecqdx3gnmegbdxd9o&dl=0), sections 1-2.1.
+- Lab
+
+### Week 6
+- Convolutional Neural Networks, part III
+    <!-- - Backbone networks
+    - FCN and semantic segmentation -->
+- Reading: 
+   - [More on semantic segmentation](semseg2.qmd)
+   - Khallaghi et al, [part 2](https://www.dropbox.com/scl/fi/r6cmhc03zkbx5rzt7ctmx/SKhallaghi_reviewManuscript_Part2.pdf?rlkey=id09yqsq3hkgia486hya14oee&dl=0), sections 2.2-2.3
+- Lab: Help session
+
+### Week 7 
+- Convolutional Neural Networks, part IV
+    <!-- - Upsampling (e.g. deconvolution, unpooling)
+    - Encoder-Decoder designs and Unet
+    - An examination of different architectures -->
+- Reading: 
+    - Khallaghi et al, [part 2](https://www.dropbox.com/scl/fi/r6cmhc03zkbx5rzt7ctmx/SKhallaghi_reviewManuscript_Part2.pdf?rlkey=id09yqsq3hkgia486hya14oee&dl=0), sections 2.4-5
+- Lab
+- Assignments: 
+    - Assignment 2 due
+    - Assignment 3: Finetuning and prediction
+
+### Spring break (March 2-6)
+
+### Week 8
+- Convolutional Neural Networks, part IV
+- Attention mechanisms
+- Reading: 
+    - Khallaghi et al, [part 2](https://www.dropbox.com/scl/fi/r6cmhc03zkbx5rzt7ctmx/SKhallaghi_reviewManuscript_Part2.pdf?rlkey=id09yqsq3hkgia486hya14oee&dl=0), sections 6
+    - [Convolution Block Attention Modules](https://blog.paperspace.com/attention-mechanisms-in-computer-vision-cbam/) 
+- Lab 
+
+### Week 9
+- Improving generalization, I
+    - Domain adaptation
+- Reading: 
+    - [Khallaghi et al, 2023](https://arxiv.org/pdf/2308.09221): 7.2.2-7.2.4
+- Lab
+
+### Week 10 
+- Other architectures 
+    - Recurrent neural networks
+        - Simple RNNs
+        - Design Patterns for RNNs
+        - LSTM and GRU
+    - GANs
+    - Transformers
+- Reading: 
+    - [Intro to RNNs](https://www.jeremyjordan.me/introduction-to-recurrent-neural-networks/)
+    - [Understanding LSTMs](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+    - Khallaghi et al, part 3
+- Assignment 3 due
+
+### Week 11 
+- Review (no reading)
+- Lab: [Projects](projects.qmd) kick-off
+- Exam (April 1)
+
+### Week 12
+- Reading: 
+- Lab: Project work
+
+### Week 13-15
+- Project work in both lecture period and lab
+- Projects due during finals week

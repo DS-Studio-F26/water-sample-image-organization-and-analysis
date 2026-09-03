@@ -1,0 +1,14 @@
+---
+title: "Instructors"
+---
+
+The course instructors and developers are Lyndon Estes and Rahebe Abedi (TA). Major initial efforts to develop the course were also provided by Sam Khallaghi and Professor Ken Basye.
+
+Office hours and locations are as follows:
+
+| Instructor    | Office         | Office hours                         |
+|---------------|----------------|--------------------------------------|
+| Lyndon Estes  | Jefferson 201C | Tuesday 1-3                        |
+| Rahebe Abedi  | 102A           | Monday and Wednesday 2-4             |
+
+

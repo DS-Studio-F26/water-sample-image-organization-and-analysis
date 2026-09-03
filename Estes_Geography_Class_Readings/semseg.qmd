@@ -1,0 +1,291 @@
+---
+title: "Semantic Segmentation with CNNs"
+toc: true
+toc-depth: 6
+number-sections: true
+number-depth: 6
+format: html
+bibliography: references.bib
+---
+
+## Overview 
+In the previous chapter and practical, we learned about the basic of CNNs, including how to develop and run your own version of the early generation LeNet [@lecunGradientbasedLearningApplied1998], and to use pre-trained models for making image classifications. In this section, we are going to touch briefly on the details of CNNs used for image prediction, focusing on more complex architectures, which are constructed in blocks that feature varying combinations of 1x1 convolution layers, parallel branchs running different size convolutions, and use skip connections. These CNNs are commonly used as so-called "backbone" networks in architectures designed for semantic segmentation, which are the main focus of this section.  
+
+## Backbone networks
+Dive Into Deep Learning's [Chapter 8](https://d2l.ai/chapter_convolutional-modern/index.html) provides an overview of more contemporary CNNs that were largely developed on top of the ImageNet dataset and the associated classification challenge based on that dataset. These are also covered in section 3 in @khallaghiReviewTechnicalFactors2023a. Both these sections should be read. Key points that are covered include the development of blocks or modules designed to increase the network's ability to learn effective representations while minimizing the number of parameters that have to be learned.  
+
+Among these are: 
+
+- **VGG blocks**, developed as part of the VGGNet family of models [@simonyanVeryDeepConvolutional2015], which combine two or more stacked convolutional layers with small kernels (3X3) at each layer of the network,  enabling deeper networks to be developed, thereby expanding the effective receptive field while reducing the number of parameters required to do so; 
+- **Residual blocks**, developed as part of ResNet [@heIdentityMappingsDeep2016a], which have two branches, one that is used to bypass a given layer, and the other which takes the input through a sequence of convolutional layers, activations, and batch normalizations (based on VGG blocks), which is then summed with the untransformed bypass branch (called the identity branch). This structure enables the model to only learn the difference (residual) of the function formed by the input and the output of the conv-relu-batchnorm block, which improves forward and backwards propagation, enabling deeper networks [@khallaghiReviewTechnicalFactors2023a;@zhangDiveDeepLearning2023].
+- **Inception modules**, which were developed for GoogleNet [@szegedyGoingDeeperConvolutions2015], which have four or more parallel branches that represent convolutions of different filter sizes, enabling the model to learn from different spatial scales. These modules make heavy use of 1x1 convolution layers in all branches to additionally extract channel-wise features, while greatly reducing the overall number of learnable parameters. All branches are concatenated together at the end of the module, and then passed into the next layer.   
+- Modules consisting of both residual connections and a large number of grouped convolutional layers with just a few filters each (e.g. 4) that operate separately, increasing model accuracy for substantially fewer parameters. This is the concept of ResNext [@xieAggregatedResidualTransformations2017], which adds an additional hyperparameter known as *cardinality*, or the number of groups of separated convolutional layers, to the lexicon. 
+
+Beyond these, there are many other architecture, such as Densely connected networks [@huangDenselyConnectedConvolutional2017], HRNet [@wangDeepHighResolutionRepresentation2020], Xception [@cholletXceptionDeepLearning2017a]. Please read about these in Dive Into Deep Learning and @khallaghiReviewTechnicalFactors2023a.
+
+## Classifying pixels
+We'll turn now to taking an initial look into models that perform semantic segmentation tasks. Let's define that first: 
+
+- <font color='red'>**Semantic segmentation**</font> describes the process of partitioning an image into exhaustive homogeneous regions by grouping pixels that belong to specific objects and assigning them a semantic category. Semantic segmentation thus simultaneously performs both classification (the assignment of semantics) and localization (the delineation of object boundaries).
+
+- <font color='red'>**Pixel-wise classification**</font> describes the process of assigning a label to every pixel in the image. However, the prediction decision is done seperately and independently for each pixel.
+
+- Both these methods result in a <font color='red'>**dense prediction output**</font>.
+
+To learn more about how CNNs have been modified to the task of semantic segmentation, we will start by learning about fully convolutional networks (FCNs).
+
+### FCNs
+FCNs are a type of deep learning architecture designed specifically for image segmentation tasks, such as identifying objects or regions within an image. Unlike traditional convolutional neural networks (CNNs), which are designed for classification tasks and output a single class label for an entire input image, FCNs output a dense pixel-wise prediction for each pixel in the input image, indicating the likelihood of that pixel belonging to a certain class or object.
+
+FCNs achieve this by replacing the fully connected layers in traditional CNNs with convolutional layers, which allow the output of the network to be an image-sized tensor rather than a vector. They also incorporate skip connections, which allow the network to make use of both high-level and low-level features when making predictions, resulting in more accurate segmentation.
+
+FCN [@longFullyConvolutionalNetworks2015] uses VGG16 [@simonyanVeryDeepConvolutional2015] as its backbone. The extracted features produced by the modified VGG16 are 32x smaller in spatial dimensions than the original input. To return the encoder output to the input dimensions, FCN introduced three models differentiated by name based on the direct upsampling factor used in the model (32, 16, and 8).
+
+- **FCN-32:** Directly produces the segmentation map from the last block of VGG (conv7 layer that replaces FC7), by using a transposed convolution layer with stride 32 or alternatively a bilinear upsampling.
+
+- **FCN-16:** Sums the 2x upsampled prediction from conv7 (using a transposed convolution with stride 2) with prediction from pool4 and then produces the segmentation map, by using a transposed convolution layer with stride 16 on top of that.
+
+- **FCN-8:** Sums the 2x upsampled conv7 (with a stride 2 transposed convolution) with prediction from pool4, then upsamples the output once more with a stride 2 transposed convolution and sums it with prediction from pool3, and finally a transposed convolution layer with stride 8 gets applied on the resulting feature maps to obtain the final segmentation map.
+
+![A schematic overview of the three FCNs [reproduced from @khallaghiReviewTechnicalFactors2023a]](images/fcns.png){#fig-fcns}
+
+We'll look now at some of the key modifications that enable FCNs to produce dense predictions. 
+
+### Converting FC layers to CONV layers 
+The first thing to examine is how FCNs replace the fully-connected (FC) layers with convolutional layers. We'll look at that within the context of the VGG16 architecture, which is modified as follows:
+
+- Replace the first FC layer that looks at the `[7x7x512]` volume with a convolutional layer that has a filter size `f = 7`, and 4096 output features, giving an output volume of `[1x1x4096]`;
+
+- Replace the second FC layer with a 1x1 conv layer and keep the number of output features the same, giving output volume `[1x1x4096]`;
+
+- Replace the last FC layer (classifier FC) similarly, with a 1x1 conv, giving final output [1x1x1000].
+
+Next, we'll look at the how the pixel resolutions are recovered. To do that, we have to understand methods for upsampling.
+
+### Upsampling (e.g. deconvolution, pixel shuffle)
+The operation that creates a finely resolved image from a coarser one is often referred to as image upsampling, in which the main purpose is to recover sharp edges and textures, while suppressing pixel blocking (known as jaggies) and other visual artifacts. Upsampling is what enables the outputs of the backbone network to be converted to a dense prediction. 
+
+In practice, effective upsampling can be challenging. For instance, if we upsample an image by a factor of 4, on average, one pixel in the input image corresponds to 16 unknown pixels.  The simplest techniques for image resizing are those based on interpolation or linear filtering, including the bilinear, bicubic, and Lanczos algorithms. These methods are fast and easy to implement. However, they inevitably produce blurry results when used upsampling an image by a large factor.
+
+A more effective approach is to use transposed convolutions, which is a transformation that runs in the opposite direction of a normal convolution. Instead of producing an output that has the shape of the convolutional layer (whether padded or not), it increases the size of the output layer. Transposed convolutions are used in various applications, including in the decoding layer of a convolutional autoencoder, and for projecting feature maps to a higher-dimensional space.
+
+The operation can be understood from two different perspective. Let's investigate first why we call this upsampling operation "transposed convolution". To achive this goal, you need to understand: 
+
+#### Convolution as a matrix multiplication operation
+The convolution operation can be performed using highly efficient matrix multiplication, in which the input matrix (a feature map) is vectorized and the kernel is unrolled into a sparse matrix that has as many columns as there are elements in the input vector, and as many rows as there will be elements in the output vector (before it is reshaped back to a matrix). The sparse kernel matrix has zeros inserted as padding to enable the shapes to align and for the multiplication of the kernel weights to correspond to the correct locations on the vectorized feature map. Expressed as a formula (informed by the formulations [here](https://leimao.github.io/blog/Convolution-Transposed-Convolution-As-Matrix-Multiplication/)), the operation can be expressed, for an input feature map $X$ vectorized to $X'$, and a kernel $K$ made into its sparse representation $W$:
+
+$$
+Y' = WX'
+$$
+
+Where $Y'$ is the vectorized output, prior to reshaping back into matrix form. 
+
+Transposed convolution is formulated as followed: 
+
+$$
+Z' = W^TY'
+$$
+
+In which $Y'$ undergoes matrix multiplication with the transposed sparse kernel, producing $Z'$, or the vectorized form of the output, which, when reshaped back to a matrix, has the same dimensions as the original input $X$. 
+
+In general, for an input of size $n\times n$ and a kernel of size $m\times m$, We can unroll our kernel into a sparse matrix of size $(n-m+1)2 \times n^2$ and flatten the input into a vector of size $n^2$. 
+
+Graphically, convolution and transposed convolution can be visualized as shown in @fig-convtransp. 
+
+![Example of convolution and transposed convolutions as matrix operations [from @islamVisionBasedAutonomousCrack2019]](https://www.mdpi.com/sensors/sensors-19-04251/article_deploy/html/images/sensors-19-04251-g005.png){#fig-convtransp}
+
+However, it might be easier to understand both of these with some actual numbers and code, adapting some helpful examples from Lei Mao's helpful [blog post](https://leimao.github.io/blog/Convolution-Transposed-Convolution-As-Matrix-Multiplication/), which builds on a code example from Dive Into Deep Learning. 
+
+First, we'll start by defining an 4X4 input matrix $X$ and a 3x3 convolutional kernel $K$: 
+
+```{python}
+import torch
+from torch import nn
+
+X = torch.arange(16).reshape(4, 4).float()
+K = torch.arange(9).reshape(3, 3).float()
+
+print(X)
+print(K)
+```
+
+And then convert them into the forms needed for matrix multiplication, borrowing a function from the aforementioned blog to make the sparse matrix out of $K$: 
+
+```{python}
+def make_sparse_matrix(K, hx, wx):
+    """
+    Make a sparse kernel matrix with stride = 1
+    Adapted from: 
+    https://leimao.github.io/blog/Convolution-Transposed-Convolution-As-Matrix-Multiplication/
+    """
+
+    hk, wk = K.shape
+    hy, wy = hx - hk + 1, wx - wk + 1
+
+    W = torch.zeros((hy * wy, hx * wx))
+    for i in range(hy):
+        for j in range(wy):
+            for ii in range(hk):
+                for jj in range(wk):
+                    W[i * wy + j, i * wx + j + ii * wx + jj] = K[ii, jj]
+    return W
+```
+
+Which gives us: 
+
+```{python}
+W = make_sparse_matrix(K, 4, 4)
+W
+```
+
+And the vectorized version of `X` is:
+
+```{python}
+Xprime = X.reshape(-1)
+Xprime
+```
+
+And the multiplication gives:
+
+```{python}
+Yprime = torch.matmul(W, Xprime)
+print("Y':\n", Yprime)
+print("Y:\n", Yprime.reshape(2, 2))
+```
+
+In the vector form and reshape to a matrix. We can check the results against a function provided by [Dive Into Deep Learning](https://d2l.ai/chapter_convolutional-neural-networks/conv-layer.html): 
+
+```{python}
+def corr2d(X, K):  
+    """Compute 2D cross-correlation."""
+    h, w = K.shape
+    Y = torch.zeros((X.shape[0] - h + 1, X.shape[1] - w + 1))
+    for i in range(Y.shape[0]):
+        for j in range(Y.shape[1]):
+            Y[i, j] = (X[i:i + h, j:j + w] * K).sum()
+    return Y
+
+Y = corr2d(X, K)
+
+print("Convolution (cross-correlation):\n\n", Y)
+```
+
+Note, as they state in the book, that this is actually cross-correlation, not convolution (which entails flipping the kernel), but this is what is actually done in CNNs. This is also performed by: 
+
+```{python}
+# from https://leimao.github.io/blog/Convolution-Transposed\
+# -Convolution-As-Matrix-Multiplication/
+conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=K.shape, padding=0, 
+                 stride=1, bias=False)
+conv.weight.data = K.unsqueeze(0).unsqueeze(0)
+Y2 = conv(X.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0).detach()
+print("Convolution (nn.Conv2d):\n\n", Y2)
+```
+
+Now let's look at transposed convolution, which will simply transpose $W$: 
+
+```{python}
+W.T
+```
+And then multiply that by $Y'$: 
+
+```{python}
+Zprime = torch.matmul(W.T, Yprime)
+print("Z':\n", Zprime)
+print("Z:\n", Zprime.reshape(X.shape[0], X.shape[1]))
+```
+
+And let's check that against the equivalent from `nn`:
+
+```{python}
+transconv = nn.ConvTranspose2d(in_channels=1, out_channels=1,
+                               kernel_size=K.shape, padding=0, 
+                               stride=1, bias=False)
+transconv.weight.data = K.unsqueeze(0).unsqueeze(0)
+Z2 = transconv(Y.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0).detach()
+
+print("Z2:\n", Z2)
+```
+
+From the above, we can see that, just like the standard convolutional layer, the transposed convolutional layer is also defined by the padding and stride. Padding and stride are the one that hypothetically was carried out on the output to generate the input. i.e. if you take the output, and carry out a standard convolution with stride and padding defined, it will generate the spatial dimension same as that of the input.
+
+The name "fractionally strided convolution" is used to describe the fact that the output tensor is "stretched" or "scaled up" from the input tensor, and the amount of stretching is determined by the stride of the convolutional kernel. The stride determines how much overlap there is between the kernel and the input tensor as the kernel is slid over the input tensor, and thus determines how much the output tensor is scaled up.
+
+In practice, the "fractional" part of "fractionally strided convolution" is just a metaphor that is used to explain the concept. In actual implementation, the stride of the convolutional kernel must be an integer value, and there is no such thing as a fractional stride.
+
+While the name "fractionally strided convolution" is not entirely accurate, it has become a standard term used in the deep learning community to refer to transposed convolutional layers that are used for upsampling or deconvolution. In practice, these layers are implemented using standard convolutional operations, but with appropriate adjustments to the kernel size, stride, and padding to achieve the desired effect.
+
+In PyTorch, the transpose convolutional layer is implemented using `torch.nn.ConvTranspose2d()`. To upsample with a factor of 2, these two settings are the most common for 2D transposed convolutional layers:
+
+```python
+nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2,
+                   stride=2, padding=0, dilation=1)
+nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4
+                   stride=2, padding=1, dilation=1)
+```
+
+Here's an example of those two variants, in this using a kernel of all 1s. The first example results in a non-overlapping upsample of the feature map $Y$: 
+
+```{python}
+transconv2 = nn.ConvTranspose2d(in_channels=1, out_channels=1,
+                                kernel_size=2, padding=0, 
+                                stride=2, dilation=1, bias=False)
+K3 = torch.ones(4).reshape(2, 2)
+transconv2.weight.data = K3.unsqueeze(0).unsqueeze(0)
+Z3 = transconv2(Y.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0).detach()
+Z3
+```
+
+The second results in overlapping kernels:
+
+```{python}
+transconv2 = nn.ConvTranspose2d(in_channels=1, out_channels=1,
+                                kernel_size=4, padding=1, 
+                                stride=2, dilation=1, bias=False)
+K4 = torch.ones(16).reshape(4, 4)
+transconv2.weight.data = K4.unsqueeze(0).unsqueeze(0)
+Z4 = transconv2(Y.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0).detach()
+Z4
+```
+
+Note than in an actual network, the kernel values for the transposed convolution are learned. 
+
+In general, to avoid artifacts that happen because of uneven overlap that places varying importance for central pixels, the best practice is to choose values for "kernel size" and "stride" that are perfectly divisible.
+
+The amount of padding needed to ensure that the output size is the same as the input size you are trying can be calculated using the formula `padding = (kernel_size - stride) // 2` rounded to the nearest integer.
+
+::: {.callout-note}
+The transposed convolutional layer is also ocassionally (and incorrectly) referred to as the <font color='red'>deconvolutional layer</font>. A deconvolutional layer reverses the operation of a standard convolutional layer i.e. if the output generated through a standard convolutional layer is deconvolved, you get back the original input values. The transposed convolutional layer is similar to the deconvolutional layer in the sense that the spatial dimension generated by both are the same. Transposed convolution doesn’t reverse the standard convolution by values, rather by dimensions only.
+
+![Difference between conv, deconv and transposed conv layers ([credit](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*gjDHvfY6XELWPZ50rqFs1A.png))](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*gjDHvfY6XELWPZ50rqFs1A.png){#fig-deconv}
+:::
+
+### Unpooling
+Another approach to upsampling is unpooling, which is computationally less expensive then transposed convolutions [@khallaghiReviewTechnicalFactors2023a], and is used in some encoder-decoder architectures, such as SegNet [@badrinarayananSegNetDeepConvolutional2017]. To conceive of unpooling, let's first revisit max pooling, which reduces the spatial resolution of the feature maps by dividing each feature map into non-overlapping regions and taking the maximum value of each region. Unpooling, on the other hand, increases the spatial resolution of the feature maps by placing the maximum value of each region to its corresponding location in the output feature map.
+
+Let's look at the unpooling operation in SegNet, which is performed by using tracking indices from the pooling operation in the encoder network, which record the index number of the pixel providing the max value retained after pooling. These index values are stored in "switch variables", which are then used during the unpooling operation to place maximum values from the previous layer into the locations indicated the stored indices in the output feature, which is of the same dimensions as the pre-pooled feature map in the encoder network. The rest of the values in the output feature map are set to `0`, and the unpooling layer then goes through a convolutional layer, which is used to refine the upscaled feature maps.
+
+![An overview of max unpooling ([credit](https://tjmachinelearning.com/lectures/1718/fcn/maxunpooling.png))](https://tjmachinelearning.com/lectures/1718/fcn/maxunpooling.png){#fig-unpooling}
+
+### Encoder-decoder architectures
+In the last example, where we discussed unpooling, we introduced the concept of encoder-decoder architectures, specifically referring to SegNet [@badrinarayananSegNetDeepConvolutional2017], so we'll now talk a bit more about these. Encoder-decoder architectures used for semantic segmentation consists of two sub-networks: 1) an encoder network, which compresses the input image into a feature representation (i.e. the backbone), and 2) a decoder network, which produces a segmentation map by upsampling the encoded features.
+
+We have already heard about SegNet and its unpooling operations. It's architecture is illustrated in @fig-segnet. This architecture uses VGG16 as its backbone, and, similar to FCN, drops the fully-connected layers at the bottom in favor convolutional layers, and the upsampling is based on the unpooling combined with convolutional layers (not transposed convolutions). Each level of the encoder is matched by a corresponding level in the encoder, making the architecture symmetrical (unlike FCNs).
+
+![An overview of SegNet's architecture [from @badrinarayananSegNetDeepConvolutional2017]](images/segnet.png){#fig-segnet}
+
+#### U-Net
+We'll next look at another widely used encoder-decoder architecture, U-Net [@ronnebergerUNetConvolutionalNetworks2015], which figures heavily in [Assignment 3](assignments/assignment3.html).  U-Net was originally developed for segmenting medical images, but has been broadly applied for other purposes, including for classifying satellite imagery.  It's architecture is illustrated in @fig-unet. U-Net has the same symmetrical design as SegNet, and often uses a VGG variant as its backbone, typically doubling in width (number of feature maps) with each step in depth. 
+
+![An overview of U-Net's architectures [from @khallaghiReviewTechnicalFactors2023a].](images/unet.png){#fig-unet}
+
+Unlike SegNet, U-Net uses transposed convolutions to upsample by a factor of 2 on each step up the encoder, halving the number of features maps in the process. The model then uses skip connections from the adjacent level of encoder to concatenate the feature maps with the same spatial resolution to the upsampled feature maps from the decoder. These concatenations are then passed through a double-convolutional layer. The last of these layers in the decoder is then passed through a softmax to make the dense prediction. 
+
+U-Nets have been modified in various ways [see @khallaghiReviewTechnicalFactors2023a], particularly by replacing the encoder with alternative backbone networks, such a ResNets. 
+
+### Other architectures
+There are many other encoder-decoder models out there on the market, such as ExFuse [@zhangExFuseEnhancingFeature2018] and Global Convolutional Networks [@pengLargeKernelMatters2017a], which you will learn more about by reading section 4.2 in @khallaghiReviewTechnicalFactors2023a. 
+
+You should also learn about the alternative architectures that are based on pyramiding and dilated convolutions [section 4.3 in @khallaghiReviewTechnicalFactors2023a], which include models such as DeepLab [@chenFullyConvolutionalNeural2019]. 
+
+

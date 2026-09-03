@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep learning basics – Applying Deep Learning to Earth Observation</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./mlp.html" rel="next">
+<link href="./introduction.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-29e2c20b02301cfff04dc8050bf30c7e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-43df0d6f53b733b42d37fa7808e17715.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-052efc87e0a04c6ff086d1ffa918ba5d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-e0913cccd57c58c511580894b06153d5.min.css" rel="prefetch" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Deep learning basics – Applying Deep Learning to Earth Observation">
+<meta property="og:description" content="">
+<meta property="og:image" content="images/2-neural-nets.png">
+<meta property="og:site_name" content="Applying Deep Learning to Earth Observation">
+</head>
+
+<body class="nav-sidebar docked nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="https://avatars.githubusercontent.com/u/30325219?s=400&amp;u=e8a16b3d5962846c34f3f738d8e741c838fc5e6d&amp;v=4" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">ADLEO</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./syllabus.html"> 
+<span class="menu-text">Syllabus</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./instructors.html"> 
+<span class="menu-text">Instructors</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./policies.html"> 
+<span class="menu-text">Course Policies</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./projects.html"> 
+<span class="menu-text">Final Projects</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://github.com/agroimpacts/adleo"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text">Class repo</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./foreword.html">Readings</a></li><li class="breadcrumb-item"><a href="./neural-network-intro.html">2. Deep learning basics</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Readings</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./foreword.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Foreword</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./introduction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1. Introduction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./neural-network-intro.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">2. Deep learning basics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mlp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3. Multi-layer perceptrons</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./cnns.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">4. Convolutional neural networks</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./semseg.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">5. Semantic segmentation with CNNs, 1</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./semseg2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">6. Semantic segmentation with CNNs, 2</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./attention-etc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">7. Attention, etc.</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Practicals</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./practicals/pylab1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Intro lab 1</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./practicals/pylab2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Intro lab 2</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Assignments</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./assignments/assignments-setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Setup</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#neural-networks" id="toc-neural-networks" class="nav-link active" data-scroll-target="#neural-networks"><span class="header-section-number">1</span> Neural networks</a></li>
+  <li><a href="#training-deep-learning-models" id="toc-training-deep-learning-models" class="nav-link" data-scroll-target="#training-deep-learning-models"><span class="header-section-number">2</span> Training deep learning models</a>
+  <ul>
+  <li><a href="#loss-functions" id="toc-loss-functions" class="nav-link" data-scroll-target="#loss-functions"><span class="header-section-number">2.1</span> Loss functions</a></li>
+  <li><a href="#optimization" id="toc-optimization" class="nav-link" data-scroll-target="#optimization"><span class="header-section-number">2.2</span> Optimization</a>
+  <ul>
+  <li><a href="#sec-gd" id="toc-sec-gd" class="nav-link" data-scroll-target="#sec-gd"><span class="header-section-number">2.2.1</span> Gradient descent</a>
+  <ul>
+  <li><a href="#gradients" id="toc-gradients" class="nav-link" data-scroll-target="#gradients"><span class="header-section-number">2.2.1.1</span> Gradients</a></li>
+  <li><a href="#sec-calcgd" id="toc-sec-calcgd" class="nav-link" data-scroll-target="#sec-calcgd"><span class="header-section-number">2.2.1.2</span> Calculating gradient descent</a></li>
+  </ul></li>
+  <li><a href="#two-flavors-of-stochastic-gradient-descent" id="toc-two-flavors-of-stochastic-gradient-descent" class="nav-link" data-scroll-target="#two-flavors-of-stochastic-gradient-descent"><span class="header-section-number">2.2.2</span> Two flavors of stochastic gradient descent</a></li>
+  <li><a href="#optimization-challenges" id="toc-optimization-challenges" class="nav-link" data-scroll-target="#optimization-challenges"><span class="header-section-number">2.2.3</span> Optimization challenges</a></li>
+  </ul></li>
+  <li><a href="#forward-and-backwards-propagation" id="toc-forward-and-backwards-propagation" class="nav-link" data-scroll-target="#forward-and-backwards-propagation"><span class="header-section-number">2.3</span> Forward and backwards propagation</a>
+  <ul>
+  <li><a href="#forward-propagation" id="toc-forward-propagation" class="nav-link" data-scroll-target="#forward-propagation"><span class="header-section-number">2.3.1</span> Forward propagation</a></li>
+  <li><a href="#backpropagation" id="toc-backpropagation" class="nav-link" data-scroll-target="#backpropagation"><span class="header-section-number">2.3.2</span> Backpropagation</a></li>
+  </ul></li>
+  <li><a href="#learning-rate" id="toc-learning-rate" class="nav-link" data-scroll-target="#learning-rate"><span class="header-section-number">2.4</span> Learning rate</a>
+  <ul>
+  <li><a href="#learning-rate-policies" id="toc-learning-rate-policies" class="nav-link" data-scroll-target="#learning-rate-policies"><span class="header-section-number">2.4.1</span> Learning rate policies</a>
+  <ul>
+  <li><a href="#decaying-lr" id="toc-decaying-lr" class="nav-link" data-scroll-target="#decaying-lr"><span class="header-section-number">2.4.1.1</span> Decaying LR</a></li>
+  <li><a href="#cycling" id="toc-cycling" class="nav-link" data-scroll-target="#cycling"><span class="header-section-number">2.4.1.2</span> Cycling</a></li>
+  <li><a href="#warm-restarts" id="toc-warm-restarts" class="nav-link" data-scroll-target="#warm-restarts"><span class="header-section-number">2.4.1.3</span> Warm restarts</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#assessing-model-performance" id="toc-assessing-model-performance" class="nav-link" data-scroll-target="#assessing-model-performance"><span class="header-section-number">2.5</span> Assessing model performance</a></li>
+  <li><a href="#sec-hyper" id="toc-sec-hyper" class="nav-link" data-scroll-target="#sec-hyper"><span class="header-section-number">2.6</span> Hyper-parameters</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./foreword.html">Readings</a></li><li class="breadcrumb-item"><a href="./neural-network-intro.html">2. Deep learning basics</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Deep learning basics</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Credits
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The material in this chapter is adapted from <a href="https://d2l.ai">Dive Into Deep Learning</a> and from slides developed by Sam Khallaghi.</p>
+</div>
+</div>
+<section id="neural-networks" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="neural-networks"><span class="header-section-number">1</span> Neural networks</h2>
+<p>As we discussed in the <a href="introduction.html#what-is-deep-learning">previous chapter</a>, deep learning refers to neural networks with multiple layers, and mentioned that neural networks were designed to mimic the neural functioning in animal brains (hence the name). Let’s dig into this a little bit more by examining simplified artificial neural networks shown in (<a href="#fig-nnets" class="quarto-xref">Figure&nbsp;1</a>), after first setting out some terms:</p>
+<ul>
+<li><span class="math inline">\(I\)</span> = the input layer of a neural network (where the data are fed in), consisting of multiple nodes, each of which represents an individual piece of data (e.g.&nbsp;a pixel in an image)</li>
+<li><span class="math inline">\(O\)</span> = the ouput layer of a neural network, consisting of one or more nodes, containing the model’s predictions for what target values are associated with the input</li>
+<li><span class="math inline">\(H\)</span> = a hidden layer between the input and output of a neural network, consisting of multiple nodes</li>
+<li><span class="math inline">\(W\)</span> = a vector of weights multiplied with either I or H, containing one unique weight <span class="math inline">\(w\)</span> for each individual node <span class="math inline">\(i\)</span> of I (or <span class="math inline">\(h\)</span> of <span class="math inline">\(H\)</span>). These weights are learned by the model, and are what enable the input values to be transformed to output predictions</li>
+<li><span class="math inline">\(b\)</span> = a vector of biases that are added after W is multipled with I or H. There is a unique bias value for each node in the next layer</li>
+<li><span class="math inline">\(f\)</span> = A function used to transform continuous model predictions into the target value range, such as the Softmax function <span class="math inline">\(S\)</span></li>
+<li><span class="math inline">\(\sigma\)</span> = A non-linear activation function</li>
+</ul>
+<p>Having established those terms, we’ll first look at the simplest neural network (known as a perceptron), which has a single input layer <span class="math inline">\(I\)</span> that connects directly to the output layer <span class="math inline">\(O\)</span> (<a href="#fig-nnets" class="quarto-xref">Figure&nbsp;1</a> A). Here <span class="math inline">\(I\)</span> has just two nodes (which are analagous to neurons), which are transformed by a function to make the output prediction <span class="math inline">\(O\)</span>, which has a single value output. That function is essentially a linear model:</p>
+<p><span id="eq-1"><span class="math display">\[O = w_1i_1 + w_2i_2 + b \tag{1}\]</span></span></p>
+<p>With <span class="math inline">\(b\)</span> is a bias term and <span class="math inline">\(w_1\)</span> and <span class="math inline">\(w_2\)</span> are weights learned during model training, and respectively applied to the individual nodes <span class="math inline">\(i_1\)</span> and <span class="math inline">\(i_2\)</span> of I.</p>
+<div id="fig-nnets" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-nnets-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/2-neural-nets.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-nnets-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Simplified neural network structures, showing a (A) simple 1-layer network (a perceptron) with 1 input layer (I) with two nodes and an output layer (O) with one node; B) a shallow neural network with a single hidden layer with three nodes (H) between the two node input (I) layer and single node (O) output layer; C) a deep neural network with two 3-node hidden layers. Increasing the number of hidden layers, as well as the width of those layers (number of nodes) increases the complexity of the function that the network can approximate. The models in B and C can also be considered examples of multi-layer perceptrons.
+</figcaption>
+</figure>
+</div>
+<p><a href="#eq-1" class="quarto-xref">Equation&nbsp;1</a> can be simplifed to:</p>
+<p><span id="eq-2"><span class="math display">\[O=W \cdot I + b \tag{2}\]</span></span></p>
+<p>Which is convenient, since there may be hundreds to thousands of nodes in I, so W and I contain the values for each input node and weight value in matrix form. We finally complete this simple model by adding one more term:</p>
+<p><span id="eq-3"><span class="math display">\[O=S(W \cdot I + b) \tag{3}\]</span></span></p>
+<p>Here <span class="math inline">\(S\)</span> is a function that may be applied to the outputs of <a href="#eq-2" class="quarto-xref">Equation&nbsp;2</a> to further transform the value, say from a continuous to binary value.</p>
+<p>Increasing in complexity, the network in <a href="#fig-nnets" class="quarto-xref">Figure&nbsp;1</a> B has a hidden layer (H) between input and output layers, in this case with three nodes. Each node in the input layer is connected with each node in the hidden layer, and each node in the hidden layer is connected with the node in the output layer. That means the network is fully connected (although there are no connections between the nodes in each layer), and the connections flow in one direction–from I to O–making this a <a href="https://en.wikipedia.org/wiki/Feedforward_neural_network">feed-forward</a> neural network. This network is also called a multi-layer perceptron, which in this case has two layers–the hidden layer and the output layer (the input layer doesn’t count, since these are just the raw data values, per <a href="https://d2l.ai/chapter_multilayer-perceptrons/mlp.html#incorporating-hidden-layers">DiDL</a>). The same internal function shown in <a href="#eq-1" class="quarto-xref">Equation&nbsp;1</a> is used to connect each layer, but there is one function per receiving node, so we now have three separate functions connecting I to H:</p>
+<p><span id="eq-4"><span class="math display">\[
+\begin{split}
+h_1 = w_{11}i_1 + w_{21}i_2 + b_1\\
+h_2 = w_{12}i_1 + w_{22}i_2 + b_2\\
+h_3 = w_{13}i_1 + w_{23}i_2 + b_3
+\end{split}
+\tag{4}\]</span></span></p>
+<p>Such that there are unique weights and biases learned for each node in H. Here the notation for weights is <span class="math inline">\(w_{ij}\)</span>, where <em>i</em> indicates the number of the neuron in the input and <em>j</em> the position of neuron in the output. As seen between <a href="#eq-1" class="quarto-xref">Equation&nbsp;1</a> and <a href="#eq-2" class="quarto-xref">Equation&nbsp;2</a>, we can simplify using matrix notation:</p>
+<p><span id="eq-5"><span class="math display">\[H=WI + b \tag{5}\]</span></span></p>
+<p>And, we can complete the function by adding an additional term <span class="math inline">\(\sigma\)</span>:</p>
+<p><span id="eq-6"><span class="math display">\[H=\sigma(W \cdot I + b) \tag{6}\]</span></span></p>
+<p>Which is an <em>activation function</em> that, similar to <span class="math inline">\(S\)</span> in <a href="#eq-3" class="quarto-xref">Equation&nbsp;3</a>, is a non-linear transform of the outputs of the inner equations. The activation function enables the network to model complex, non-linear forms. We will cover these in more detail later, but for now we will note that without the activation function, the model would essentially reduce to a linear function. To make the full model, <a href="#eq-6" class="quarto-xref">Equation&nbsp;6</a> is wrapped in another function connecting the hidden layer to the output, thus the model is comprised of these individual functions:</p>
+<p><span id="eq-7"><span class="math display">\[
+\begin{split}
+H&amp;=\sigma_1(W_1I + b_1)\\
+O&amp;=S(\sigma_2(W_2 \cdot H + b_2))
+\end{split}
+\tag{7}\]</span></span></p>
+<p>These are then combined as:</p>
+<p><span id="eq-8"><span class="math display">\[
+O=S(\sigma_2(W_2 \cdot \sigma_1(W_1 \cdot I + b_1) + b_2))
+\tag{8}\]</span></span></p>
+<p>The same construction applies to the model in <a href="#fig-nnets" class="quarto-xref">Figure&nbsp;1</a> C, except it now has two hidden layers, giving it the form of:</p>
+<p><span id="eq-9"><span class="math display">\[
+O=S(\sigma_3(W_3 \cdot \sigma_2(W_2 \cdot \sigma_1(W_1 \cdot I + b_1) + b_2) + b_3))
+\tag{9}\]</span></span></p>
+<p>There are a few important things to note about the model described by <a href="#eq-9" class="quarto-xref">Equation&nbsp;9</a>. First, because the model has at least two hidden layers, it can be considered a <span style="text-decoration: underline;"><strong>deep</strong></span> neural network. Second, the additional hidden layer further increases its ability to represent complex, non-linear forms. Third, the hidden layers and their nodes represent additional features (predictors) that are extracted and learned by the model during the training process. This contrasts with earlier generation ML models, for which features are typically pre-defined and manually calculated beforehand, and passed to the model as part of the input data. For example, if you have ever applied Random Forests <span class="citation" data-cites="breimanRandomForests2001">(<a href="#ref-breimanRandomForests2001" role="doc-biblioref">Breiman 2001</a>)</span> to classify a satellite image, you probably calculated vegetation indices from the bands to provide one or more additional predictors <span class="citation" data-cites="xiongNominal30mCropland2017">(e.g. <a href="#ref-xiongNominal30mCropland2017" role="doc-biblioref">Xiong et al. 2017</a>)</span>. In deep learning models, a large number of additional features are derived from the input data automatically, which is one of their major advantages. For more detail on this aspect of deep learning models, see paragraph 2, page 2 in Part 1 of <span class="citation" data-cites="khallaghiReviewTechnicalFactors2023a">Khallaghi, Eastman, and Estes (<a href="#ref-khallaghiReviewTechnicalFactors2023a" role="doc-biblioref">2023</a>)</span>.</p>
+<p>The second point mentioned above assumes that the model was trained effectively, such that its parameters (weights and biases) enable it to estimate values of the target variable in the input data with minimal error. We’ll look at how deep neural networks (DNNs) are trained in the next sections.</p>
+</section>
+<section id="training-deep-learning-models" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="training-deep-learning-models"><span class="header-section-number">2</span> Training deep learning models</h2>
+<p>To understand how models are trained, let’s take a step back and look at the general approach used to solve a machine learning problem. A machine learning problem consists of the steps in the box below:</p>
+<div id="nte-mlproblem" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;1: Solving an ML problem
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li>Define the problem you are trying to solve. For example, classifying crop fields in satellite imagery</li>
+<li>Collect two types of data necessary to solve the problem:
+<ul>
+<li>Data providing the <strong>predictor</strong> variable, alternatively termed <em>features</em> (<a href="https://d2l.ai/chapter_linear-regression/linear-regression.html#basics">DiDL</a>). In EO, the features are often provided by multi-band satellite imagery</li>
+<li><strong>Labelled data</strong>, also known as the <em>target</em> (<a href="https://d2l.ai/chapter_linear-regression/linear-regression.html#basics">DiDL</a>), which define the objects/values of interest in the predictor data. In this example, the labels would be binary imagery co-located with the satellite imagery, having 0 values for pixels that are not crop fields, and 1s for pixels that are part of crop fields</li>
+</ul></li>
+<li>Select an algorithm, which consists of choosing:
+<ul>
+<li>A particular <strong>model</strong> architecture and design. The diagrams in <a href="#fig-nnets" class="quarto-xref">Figure&nbsp;1</a> represent highly simplified model architectures.<br>
+</li>
+<li>An <strong>objective function</strong> for evaluating model performance, also known as a <strong>cost</strong> function, or most commonly, a <strong>loss</strong> function, which measures the distance between the model’s predicted values and the target values (labels) after each update (models are trained iteratively) of the model’s parameters (weights and biases), providing information on whether parameter changes improve or worsen the model’s fit.<br>
+</li>
+</ul></li>
+<li>Select an <strong>optimization algorithm</strong> for training the model. This algorithm finds the best (optimal) parameter values for the model, drawing on information provided by the objective function.<br>
+</li>
+<li>Select a quantitative <strong>metric</strong>(s) for evaluating the trained model’s performance. There are many different metrics available, including overall accuracy, precision (User’s accuracy, for those of you coming from remote sensing), recall (i.e.&nbsp;Producer’s accuracy), and many others. Often several metrics are used, and they are applied to evaluate model predictions against labelled data that were not used to train the model.</li>
+</ol>
+</div>
+</div>
+<p>The key components in training the model are the objective function and the optimization algorithm, and the labelled data, which work together as shown in <a href="#fig-training" class="quarto-xref">Figure&nbsp;2</a>. The input data is fed into the model, which assigns an intial set of parameters and uses those to make a first set of predictions. Those predictions are then compared to the labels, which provide the target values, i.e.&nbsp;the “truth”. The comparison is made using the objective function, which we will refer to from now on as the loss function, because most objective functions used in deep learning are formulated such that the lower the value, the better the model’s performance <a href="https://d2l.ai/chapter_introduction/index.html#objective-functions">DiDL</a>. Once the loss is calculated, the optimization algorithm is applied to update the model’s initial parameters to minimize the loss, and thereby improve model performance. This parameter update -&gt; prediction -&gt; loss calculation -&gt; optimization process repeats until the model ceases to improve further.</p>
+<div id="fig-training" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-training-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/model_structure.png" class="img-fluid quarto-figure quarto-figure-center figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-training-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: A general schematic of the model training procedure
+</figcaption>
+</figure>
+</div>
+<p>We’ll learn a bit more detail about these key components in the next few sections.</p>
+<section id="loss-functions" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="loss-functions"><span class="header-section-number">2.1</span> Loss functions</h3>
+<p>As mentioned above, the loss function is used to calculate how far away the model’s predictions are from the labels that define the values of the target variable in the input data. The “loss” in the name refers to how much information is lost by the model’s errors. Loss functions play a critical role in determining how effective deep learning models are, and there is a huge literature regarding loss functions <span class="citation" data-cites="khallaghiReviewTechnicalFactors2023a">(see, for example, citations in <a href="#ref-khallaghiReviewTechnicalFactors2023a" role="doc-biblioref">Khallaghi, Eastman, and Estes 2023</a>)</span>.</p>
+<p>Chapters <a href="https://d2l.ai/chapter_linear-regression/linear-regression-scratch.html#defining-the-loss-function">2</a> and <a href="https://d2l.ai/chapter_linear-classification/softmax-regression.html#loss-function">3</a> in Dive into Deep Learning provide examples of two kinds of loss functions, one for the case of a model predicting a continuous variable, and one for a categorial variable. The continuous case is essentially a linear regression, in which the model predicts the value (<span class="math inline">\(\hat{y}\)</span>) of a continous target variable (<span class="math inline">\(y\)</span>), and the loss is:</p>
+<p><span id="eq-lmloss"><span class="math display">\[L(\hat{y},y) = \frac{1}{n}\sum_{i=1}^{n}(\hat{y}_i - y_i)^2  \tag{10}\]</span></span></p>
+<p>Which is average squared difference between each pair <span class="math inline">\(i\)</span> of predictions and labels for all <span class="math inline">\(n\)</span> pairs in the training sample. This is the mean squared error, also known as quadratic loss. We can easily see from <a href="#eq-lmloss" class="quarto-xref">Equation&nbsp;10</a> that if <span class="math inline">\(\hat{y}\)</span> is equal to <span class="math inline">\(y\)</span>, then the loss will be 0.</p>
+<p>For the categorical case, where the model is trained to distinguish between different classes in the input dataset, we have a different construction. First, a model trained on categorical variables initially produces <a href="https://en.wikipedia.org/wiki/Logit">logit values</a>, and it produces one such value for each category being classified. For example, in a model that tries to distinguish between buildings, trees, and roads in an image, it will produce a vector of three logits, say:</p>
+<p><span class="math display">\[
+\hat{y} = (3, 1, -0.5)
+\]</span></p>
+<p>Which are the predicted values for each of the three classes,respectively, for a single input observation. These have to be normalized into probabilities that fall between 0 and 1 and sum to 1, which is done using the <a href="https://en.wikipedia.org/wiki/Softmax_function">softmax function</a>:</p>
+<p><span id="eq-softmax"><span class="math display">\[
+S(\hat{y}) = \frac{e^{\hat{y}_i}}{\displaystyle\sum_{k} e^{\hat{y}_k}}
+\tag{11}\]</span></span></p>
+<p>Note that the softmax here is a specific form of the general function <span class="math inline">\(S\)</span> mentioned in <a href="#eq-3" class="quarto-xref">Equation&nbsp;3</a> - <a href="#eq-8" class="quarto-xref">Equation&nbsp;8</a>. It results in the following values:</p>
+<p><span class="math display">\[
+\hat{y} = (0.858, 0.116, 0.026)
+\]</span></p>
+<p>The largest probability thus becomes the predicted class for this observation (buildings). To calculate the loss, the widely used <em>cross-entropy loss</em> can be used:</p>
+<p><span id="eq-ce"><span class="math display">\[
+L(\hat{y},y) = -\sum_{k=1}^{K}y_{ik}log(\hat{y}_{ik})
+\tag{12}\]</span></span></p>
+<p>In which the <span class="math inline">\(\hat{y}\)</span> is the softmax prediction for each observation <span class="math inline">\(i\)</span> for class <span class="math inline">\(k\)</span>. For our three-class example, if the label indicates that the observation in question corresponds to a building (a label value of 1, with the other two classes set to 0, see note on one-hot encoding), the calculated loss becomes:</p>
+<p><span class="math display">\[
+L(\hat{y},y) = −1 \cdot log(0.858) − 0 \cdot log(0.116) − 0 \cdot log(0.026) = 0.153
+\]</span></p>
+<p>As with the continuous case, the smaller the loss value the better. In this example, the model predicts a high probability for the same class as the label (buildings), so the loss is relatively small. If the softmax predictions were instead (0.6, 0.2, 0.2), indicating the model was less certain about this class, the loss would be substantially higher (0.511).</p>
+<div id="nte-onehot" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;2: One-hot encoding
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Categorical variables are stored using <a href="https://en.wikipedia.org/wiki/One-hot">one-hot encoding</a>, in which a vector of binary values is used to represent the classes of interest. In our example, we would have the following vectors:</p>
+<p><span class="math display">\[
+\begin{align}
+\mathrm{buildings} = (1, 0, 0)\\
+\mathrm{trees} = (0, 1, 0)\\
+\mathrm{roads} = (0, 0, 1)
+\end{align}
+\]</span></p>
+</div>
+</div>
+<div id="nte-differentiable" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;3: Loss functions are differentiable
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>One important thing to remember about the loss function is that it is differentiable. This property enables the model weights to be updated incrementally, because it allows the instantaneous slope of the cost function for each model parameter in the direction of the optimal value to be calculated (<a href="https://www.jeremyjordan.me/gradient-descent/">Jordan</a>).</p>
+</div>
+</div>
+</section>
+<section id="optimization" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="optimization"><span class="header-section-number">2.2</span> Optimization</h3>
+<p>After calculating the loss, the optimization algorithm (the optimizer) uses that information to update the model parameters, so that the loss can be further minimized. The job of the optimizer is to find the distance between the target and the model’s predictions, i.e.&nbsp;to minimize the loss. There are a number of algorithms used for this (see <a href="https://d2l.ai/chapter_optimization/index.html">Chapter 12</a> in DiDL for a subset of these), but what these typically have in common is that they constitute gradient-based learning, and are based on an approach called <em>gradient descent</em>.</p>
+<section id="sec-gd" class="level4" data-number="2.2.1">
+<h4 data-number="2.2.1" class="anchored" data-anchor-id="sec-gd"><span class="header-section-number">2.2.1</span> Gradient descent</h4>
+<section id="gradients" class="level5" data-number="2.2.1.1">
+<h5 data-number="2.2.1.1" class="anchored" data-anchor-id="gradients"><span class="header-section-number">2.2.1.1</span> Gradients</h5>
+<p>Gradient descent works by gradually updating the parameters of the model in the direction along a gradient that minimizes the loss. To understand this, let’s start by defining a gradient. There are several definitions (at its simplest it is simply the slope of a line), but the relevant one here comes from vector calculus, where it refers to the first derivative of a multivariate function that provides both the direction and maximum rate of increase from any point on the surface of that function (<a href="https://en.wikipedia.org/wiki/Gradient">Wikipedia</a>). The negative of the gradient provides the direction and rate of maximum rate of decrease towards the closest minimum point on the surface of the function, which we can visualize as the lowest point of valley in a hilly landscape. Such a minimum point represents the value (here a parameter) that optimally minimizes the function (e.g.&nbsp;points in <a href="#fig-gradients" class="quarto-xref">Figure&nbsp;3</a>). When the minimum point is reached, the function is optimized. If the function is convex (see <a href="https://d2l.ai/chapter_optimization/convexity.html">here</a> for a detailed definition of convexity), then there is only a single, or global, minimum (<a href="#fig-gradients" class="quarto-xref">Figure&nbsp;3</a> A), but the functions defined by the optimization problems tackled by deep learning models are typically non-convex, and have one or more locally optimally values (<a href="#fig-gradients" class="quarto-xref">Figure&nbsp;3</a> B).</p>
+<div id="fig-gradients" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-gradients-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/gradients.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-gradients-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: The shape of the loss (objective or cost) function for a single parameter model, for a case (A) where there is a single global optimum where the model’s estimate f(x) minimizes the distance to the value of the model parameter. The initial parameter estimates start higher up, far away from the minimum, and each model update pushes the estimated parameter down the gradient towards the minimum. In reality, most functions are more complex, and have one or more local minima (B).
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="sec-calcgd" class="level5" data-number="2.2.1.2">
+<h5 data-number="2.2.1.2" class="anchored" data-anchor-id="sec-calcgd"><span class="header-section-number">2.2.1.2</span> Calculating gradient descent</h5>
+<p>We now know that gradients come from derivatives, so let’s understand how they are calculated. In the case we are interested in, the gradient measures how much the model parameters change relative to the model’s error:</p>
+<p><span id="eq-gradient"><span class="math display">\[
+\begin{align}
+\textrm{Gradient} &amp;= \frac{\partial L}{\partial W}\\
+&amp;= \partial_WL
+\end{align}
+\tag{13}\]</span></span></p>
+<p>Which is the generalized expression for the change in loss <span class="math inline">\(L\)</span> with respect to the change in the vector of model weights <span class="math inline">\(W\)</span>. The formula for the gradient itself will be determined by the shape of loss function and the model being estimated. But let’s stick with the general form to see how gradients fit into gradient descent:</p>
+<p><span id="eq-gradient"><span class="math display">\[W = W - \epsilon \frac{\partial L}{\partial W} \tag{14}\]</span></span></p>
+<p>Here the gradient is multiplied by another term, <span class="math inline">\(\epsilon\)</span>, which defines the <em>learning rate</em> (<span class="math inline">\(lr\)</span>), which is subtracted from the model weights, producing a new set of weights. This process is iterative, as the weights are incrementally updated. Why is it incremental? Because in complex functions, the location of the minimum is not known in advance and there is likely no analytical solution for finding it, so the optimizer proceeds in small steps down the gradient, following the steepest path. The size of those steps–how long or short–is controlled by the learning rate, which is discussed in more detail below.</p>
+<div id="nte-mountain" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;4: Getting down from a hill
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>There is a widely used analogy for gradient descent that likens it to a person trying to take the shortest path to get down a hill (see <a href="https://towardsai.net/p/tutorials/the-gradient-descent-algorithm">here</a>, for example). The person starts by looking for the most direct route downhill from their starting position, then starts walking, running, or bounding in that direction, with each gait having a progressively longer stride, which represents the learning rate. With each stride, the person will adjust their direction of travel down the locally steepest slope. The person’s position at each stride represents the current value of the parameters, or weights, the stride length represents the learning rate, and slope and its direction are the gradient.</p>
+</div>
+</div>
+<p>Now let’s look at how we can estimate gradient descent on a fairly simple function. Dive into Deep Learning provides informative examples for the cases of a <a href="https://d2l.ai/chapter_optimization/gd.html#one-dimensional-gradient-descent">simple parabolic function</a> and fitting a simple <a href="https://d2l.ai/chapter_linear-regression/linear-regression.html#minibatch-stochastic-gradient-descent">linear regression model</a>. We’ll use the linear regression example to evaluate this, but borrowing code and formulas from two other sources (<a href="https://brianjmpark.github.io/post/2022-02-22-visualizing-the-gradient-descent-in-r-index/">here</a> and <a href="https://towardsai.net/p/tutorials/the-gradient-descent-algorithm-and-its-variants">here</a>) to help illustrate the concept.</p>
+<p>We’ll start with the formula for a linear regression:</p>
+<p><span id="eq-lm"><span class="math display">\[\hat{y} = b_0 + b_1 \cdot x \tag{15}\]</span></span></p>
+<p>Where <span class="math inline">\(b_0\)</span> is the intercept and <span class="math inline">\(b_1\)</span> is the slope, the two parameters to be estimated. And <a href="#eq-lmloss" class="quarto-xref">Equation&nbsp;10</a> gives us the loss function we need to fit the linear regression. First, we will figure out what the gradients are by taking the partial derivatives of the model parameters with respect to the loss function, which has the general form of:</p>
+<p><span id="eq-lmderiv"><span class="math display">\[
+\frac{\partial}{\partial b_j}L(b_0, b_1) = \frac{\partial}{\partial b_j}\left[\frac{1}{N}\sum_{i}^N(\hat{y}_i - y_i)^2\right]
+\tag{16}\]</span></span></p>
+<p>With <span class="math inline">\(b_j\)</span> representing both the slope and intercept. After derivation, we have:</p>
+<p><span id="eq-pdint"><span class="math display">\[
+\frac{\partial}{\partial b_0}L(b_0, b_1) = \frac{2}{N}\sum_{i}^N(\hat{y}_i - y_i)
+\tag{17}\]</span></span></p>
+<p>For the intercept, and for the slope we have:</p>
+<p><span id="eq-pdslope"><span class="math display">\[
+\frac{\partial}{\partial b_1}L(b_0, b_1) = \frac{2}{N}\sum_{i}^N(\hat{y}_i - y_i) \cdot x_i
+\tag{18}\]</span></span></p>
+<p>And now we use them to update each parameter by using the formulas for stochastic gradient descent:</p>
+<p><span id="eq-gdint"><span class="math display">\[
+b_0 = b_0 - \epsilon\frac{2}{N}\sum_{i}^N(\hat{y}_i - y_i)
+\tag{19}\]</span></span></p>
+<p><span id="eq-gdint"><span class="math display">\[
+b_1 = b_1 - \epsilon\frac{2}{N}\sum_{i}^N(\hat{y}_i - y_i) \cdot x_i
+\tag{20}\]</span></span></p>
+<p>Now let’s implement that. We’ll start by making up some random data first, which are based on a regression line using an arbitary slope and intercept, with noise added. The data are then standardized (standardization/normalization is important in fitting deep learning models–more on that later).</p>
+<div id="cell-fig-random-data" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">7</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>m <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="dv">50</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">100</span>, <span class="dv">100</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> (<span class="op">-</span>m <span class="op">*</span> x <span class="op">+</span> b) <span class="op">+</span> np.random.randn(<span class="dv">100</span>) <span class="op">*</span> <span class="dv">70</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> np.asarray(y)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> np.reshape(y, (y.shape[<span class="dv">0</span>],<span class="dv">1</span>))</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> (x.reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="op">-</span> x.mean()) <span class="op">/</span> x.std()</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> (y <span class="op">-</span> y.mean()) <span class="op">/</span> y.std()</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>plt.scatter(x, y)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"x"</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"y"</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="va">None</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="fig-random-data" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-random-data-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="neural-network-intro_files/figure-html/fig-random-data-output-1.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-random-data-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Randomly generated data and standardized data
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Now, adapting code and plotting from the previous two sources mentioned, we’ll set up some functions that allow us to find the linear model that fits these data best. In the code below, we have functions to use the model coefficients to:</p>
+<ol type="1">
+<li>Make predictions from model coefficients;</li>
+<li>Intialize model weights (choosing the starting weights is also an important consideration that has a number of methods–here we use the common practice of starting with random weights);</li>
+<li>Calculate loss (mean square error);</li>
+<li>Calculate the gradients and update the weights;</li>
+<li>Run the entire process over a specific number of iterations for a specific learning rate</li>
+</ol>
+<div id="gd-functions" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> predict(b0, b1, x):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    yhat <span class="op">=</span> b0 <span class="op">+</span> np.dot(x, b1.T)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> yhat</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> initialize(n_features, x):</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    b0 <span class="op">=</span> np.random.random(<span class="dv">1</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    b1 <span class="op">=</span> np.random.random(n_features)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Reshape intercept and slope</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    b0 <span class="op">=</span> np.reshape(b0,(<span class="dv">1</span>,<span class="dv">1</span>))</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    b1 <span class="op">=</span> np.reshape(b1, (<span class="dv">1</span>, x.shape[<span class="dv">1</span>]))</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> b0, b1</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mse_loss(y, yhat):</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Loss function: Mean squared error"""</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    residual <span class="op">=</span> yhat <span class="op">-</span> y</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    loss <span class="op">=</span> np.<span class="bu">sum</span>((residual)<span class="op">**</span><span class="dv">2</span>) <span class="op">/</span> <span class="bu">len</span>(residual)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> loss</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> gradient_descent(x, y, yhat, b0, b1, lr):</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Calculate gradients and update parameters"""</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Gradient</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    db0 <span class="op">=</span> (np.<span class="bu">sum</span>(yhat <span class="op">-</span> y) <span class="op">*</span> <span class="dv">2</span>) <span class="op">/</span> <span class="bu">len</span>(y)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    db1 <span class="op">=</span> (np.dot((yhat <span class="op">-</span> y).T, x) <span class="op">*</span> <span class="dv">2</span>) <span class="op">/</span> <span class="bu">len</span>(y)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Updating the parameters:</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    b0 <span class="op">=</span> b0.copy() <span class="op">-</span> lr <span class="op">*</span> db0</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    b1 <span class="op">=</span> b1.copy() <span class="op">-</span> lr <span class="op">*</span> db1</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Return the updated parameters:</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> b0, b1</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_gradient_descent(x, y, lr, epochs, seed<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Run gradient descent for a specific learning rate and number of epochs"""</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    losses <span class="op">=</span> []</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    b0s <span class="op">=</span> []</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    b1s <span class="op">=</span> []</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># starting weights</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>    np.random.seed(seed)</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    b0, b1 <span class="op">=</span> initialize(<span class="dv">1</span>, x)</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>        <span class="co"># predictions</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>        yhat <span class="op">=</span> predict(b0, b1, x)</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>        <span class="co"># loss</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>        losses.append(mse_loss(y, yhat))</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>        <span class="co"># gd and update weights</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>        b0, b1 <span class="op">=</span> gradient_descent(x, y, yhat, b0, b1, lr)</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>        b0s.append(b0.item())</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>        b1s.append(b1.item())</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pd.DataFrame({</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>       <span class="st">"epoch"</span>: [i <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">101</span>)], <span class="st">"x"</span>: <span class="bu">list</span>(x.ravel()), </span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>       <span class="st">"y"</span>: <span class="bu">list</span>(y.ravel()), <span class="st">"b0"</span>: b0s, <span class="st">"b1"</span>: b1s, </span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>       <span class="st">"loss"</span>: losses</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>    })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s now run that for 100 epochs (an epoch is essentially one iteration here, see definition in <a href="#nte-epochs" class="quarto-xref">Note&nbsp;5</a>), using a learning rate of 0.1.</p>
+<div id="cell-gd-run" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fit_lm <span class="op">=</span> run_gradient_descent(x, y, <span class="fl">0.1</span>, <span class="dv">100</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>gd_coefs <span class="op">=</span> fit_lm.iloc[<span class="op">-</span><span class="dv">1</span>:][[<span class="st">"b0"</span>, <span class="st">"b1"</span>]]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>gd_coefs.<span class="bu">round</span>(<span class="dv">7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="gd-run" class="cell-output cell-output-display" data-execution_count="3">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">b0</th>
+<th data-quarto-table-cell-role="th">b1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">99</td>
+<td>0.0</td>
+<td>-0.838361</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>The outputs shown above are the updated model parameters for the slope and intercept from the final iteration of gradient descent. Since linear regression can be fit with a single formula in one go (ordinary least squares regression, which you will know from intro stats), we can compare how the gradient descent-based approach performed.</p>
+<div id="lm-coefs" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LinearRegression</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LinearRegression()</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>model.fit(x, y)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>ols_coefs <span class="op">=</span> <span class="bu">list</span>(np.<span class="bu">round</span>([model.intercept_.item(),  model.coef_.item()], <span class="dv">7</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"b0: </span><span class="sc">{</span>ols_coefs[<span class="dv">0</span>]<span class="sc">}</span><span class="ss">, b1: </span><span class="sc">{</span>ols_coefs[<span class="dv">1</span>]<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>b0: -0.0, b1: -0.8383612</code></pre>
+</div>
+</div>
+<p>The results are nearly identical. We will look now at how the model progressed through its training, starting with the loss.</p>
+<div id="fig-loss-coefs" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-loss-coefs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row">
+<div class="cell-output cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-loss-coefs" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div id="fig-loss-coefs-1" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-loss-coefs-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="neural-network-intro_files/figure-html/fig-loss-coefs-output-1.png" id="fig-loss-coefs-1" class="img-fluid figure-img" data-ref-parent="fig-loss-coefs">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-loss-coefs-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a)
+</figcaption>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-loss-coefs" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div id="fig-loss-coefs-2" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-loss-coefs-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="neural-network-intro_files/figure-html/fig-loss-coefs-output-2.png" id="fig-loss-coefs-2" class="img-fluid figure-img" data-ref-parent="fig-loss-coefs">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-loss-coefs-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b)
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-loss-coefs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: The amount of loss (a) and the value of the estimated slope parameter (b) at each epoch
+</figcaption>
+</figure>
+</div>
+<p>Finally, let’s look at the fit of the predictions:</p>
+<div id="cell-fig-predline" class="cell" data-execution_count="6">
+<div class="cell-output cell-output-display">
+<div id="fig-predline" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-predline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="neural-network-intro_files/figure-html/fig-predline-output-1.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-predline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: The fit of the model to the generated data.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="two-flavors-of-stochastic-gradient-descent" class="level4" data-number="2.2.2">
+<h4 data-number="2.2.2" class="anchored" data-anchor-id="two-flavors-of-stochastic-gradient-descent"><span class="header-section-number">2.2.2</span> Two flavors of stochastic gradient descent</h4>
+<p>The example shown above was developed using <em>gradient descent</em>, where the gradients are calculated from the average loss calculated across all of the training samples, and the parameters are updated once. That works nicely in our simple example here, where they are only 100 samples, but deep learning models typically require large training samples, so it can be very inefficient and even ineffective with large training sets to use all samples in the prediction, calculate the loss and gradients, and then finally update the weights.</p>
+<p>There are two alternative approaches, both of which entail taking subsets of samples and adjust the weights after each subset passes through the model, until the full training sample has been processed, thereby completing one epoch. One approach, called <em>stochastic gradient descent</em>, uses only a single sample at a time, while the other uses larger subsets of samples, or batches, ideally at least 32 per batch. This second, more commonly used approach, is called <em>mini-batch stochastic gradient descent</em>. The term <em>stochastic</em> refers to the fact that the samples are randomly selected from the larger training sample during each epoch.</p>
+<div id="nte-epochs" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;5: Epochs, iterations, and batches
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>An <strong>epoch</strong> refers to one full pass of the training sample through the model, wherein all training samples were used to predict the target value, calculate the loss, and then update the parameters.</p>
+<p>Each epoch can be completed all at once, or in a sequence of smaller groups, or <strong>batches</strong>, which can range in size from a single sample to larger groups as usually divisible by 2, e.g.&nbsp;8, 16, 32, 64, 128, etc.</p>
+<p>An <strong>iteration</strong> is one pass of a batch of training data through the model from prediction through parameter update, and the number of iterations per epoch is equal to the size of the training sample divided by the batch size. For example, given a training dataset with 512 samples, the number of iterations per epoch is:</p>
+<pre><code>- 1, for a batch of 512 
+- 16, for a batch of 32
+- 512, for a batch size of 1</code></pre>
+</div>
+</div>
+</section>
+<section id="optimization-challenges" class="level4" data-number="2.2.3">
+<h4 data-number="2.2.3" class="anchored" data-anchor-id="optimization-challenges"><span class="header-section-number">2.2.3</span> Optimization challenges</h4>
+<p>We have already mentioned above some of the disadvantages of gradient descent. Stochastic gradient descent and the mini-batch variant also have some disadvantages, in addition to their key advantages over gradient descent. What are these advantages and disadvantages relative to each other? There are also a number of general challenges associated with optimization that you should become familiar with.</p>
+<div id="nte-oyo1" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;6: On your own
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Explore the sections on optimization (<a href="https://d2l.ai/chapter_linear-regression/linear-regression.html#minibatch-stochastic-gradient-descent">3.1.1.4</a>, <a href="https://d2l.ai/chapter_optimization/index.html">Chapter 12</a>) in Dive Into Deep Learning to learn about: the relative advantages of the three gradient descent approaches, about other challenges associated with optimization, and for more information on other optimization algorithms. <strong>We will ask you about these in class</strong></p>
+</div>
+</div>
+</section>
+</section>
+<section id="forward-and-backwards-propagation" class="level3" data-number="2.3">
+<h3 data-number="2.3" class="anchored" data-anchor-id="forward-and-backwards-propagation"><span class="header-section-number">2.3</span> Forward and backwards propagation</h3>
+<p>At the beginning of this chapter we mentioned that we are talking about feed-forward neural networks, which are distinguished by the fact that information flows through them in only one direction at a time (<a href="https://en.wikipedia.org/wiki/Feedforward_neural_network">source</a>). The previous section touches on these, but we will discuss those flows explicitly here.</p>
+<section id="forward-propagation" class="level4" data-number="2.3.1">
+<h4 data-number="2.3.1" class="anchored" data-anchor-id="forward-propagation"><span class="header-section-number">2.3.1</span> Forward propagation</h4>
+<p>Previously we mentioned that a model first transforms input data into a prediction of some target variable. The flow of information in this case is forwards, or, in other words, the information is propagating or being passed forwards. Therefore, forward propagation in a neural network is the process of calculating the network’s output for a given input that occurs sequentially from the input layer, through the hidden layers, and finally to the output layer.</p>
+<p>Recall <a href="#eq-9" class="quarto-xref">Equation&nbsp;9</a> from our MLP model with two hidden layers (<a href="#fig-nnets" class="quarto-xref">Figure&nbsp;1</a> C). If <span class="math inline">\(l\)</span> represents the chosen loss function and <span class="math inline">\(y\)</span> is the label, the loss for a single data example can be calculated as follows:</p>
+<p><span class="math display">\[L=l(o,y)\]</span></p>
+<p>Which gives us the distance between the label value and the model’s predicted value.</p>
+</section>
+<section id="backpropagation" class="level4" data-number="2.3.2">
+<h4 data-number="2.3.2" class="anchored" data-anchor-id="backpropagation"><span class="header-section-number">2.3.2</span> Backpropagation</h4>
+<p>Having calculated the loss, the information flow reverses, and we start the process of updating the weights. This process, called <strong>backpropagation</strong> involves computing gradients of the loss function with respect to the weights and then updating the weights in the direction that reduces the loss. In <a href="#sec-gd" class="quarto-xref">Section&nbsp;2.2.1</a>, we described the process of backpropagation within the context of a specific optimization algorithm, <em>gradient descent</em>. In general, backpropagation works by traversing in <em>reverse</em> through the network, using the <a href="https://d2l.ai/chapter_preliminaries/calculus.html#chain-rule">chain rule</a> from calculus, which calculates how much each weight contributed to model prediction errors, and keeps track of the necessary math so it can update the weights to improve the network’s performance.</p>
+<div id="nte-chainrule" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;7: Chain rule
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The chain rule of calculus tells us how to differentiate composite functions. Given two functions <span class="math inline">\(f\)</span> and <span class="math inline">\(g\)</span>, where <span class="math inline">\(f\)</span> is a function of <span class="math inline">\(g\)</span>, and <span class="math inline">\(g\)</span> is a function of <span class="math inline">\(x\)</span>, the derivative of <span class="math inline">\(f(g(x))\)</span> with respect to <span class="math inline">\(x\)</span> is:</p>
+<p><span id="eq-chainrule"><span class="math display">\[\frac{d}{d(x)}[f\bigl((g(x)\bigr)] = f'(g(x))g'(x) \tag{21}\]</span></span></p>
+<p>Where <span class="math inline">\(f'(g(x))\)</span> represents the derivative of <span class="math inline">\(f\)</span> with respect to its argument, evaluated at <span class="math inline">\(g(x)\)</span>. It tells us how the function <span class="math inline">\(f\)</span> changes as <span class="math inline">\(g(x)\)</span> changes. <span class="math inline">\(g'(x)\)</span> is the derivative of <span class="math inline">\(g\)</span> with respect to <span class="math inline">\(x\)</span>, describing how <span class="math inline">\(g\)</span> changes as <span class="math inline">\(x\)</span> changes.</p>
+</div>
+</div>
+<p>Backpropagation reuses the stored intermediate values from the forward step to save computation time and resources. However, this approach means that training a neural network requires much more memory than just using it to make predictions (inference). The amount of memory needed is directly related to the size of the network (number of layers) and the batch size (number of data samples processed together). That’s why training larger networks or using larger batches can lead to memory issues.</p>
+<p>For a more developed example of back-propagation, please see Section <a href="https://d2l.ai/chapter_multilayer-perceptrons/backprop.html#backpropagation">5.3.3</a> in Dive into Deep Learning. For a nice example with numbers, see this <a href="https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/">blog post</a>.</p>
+</section>
+</section>
+<section id="learning-rate" class="level3" data-number="2.4">
+<h3 data-number="2.4" class="anchored" data-anchor-id="learning-rate"><span class="header-section-number">2.4</span> Learning rate</h3>
+<p>Our gradient descent also introduced the concept of <em>learning rate</em> (<span class="math inline">\(\epsilon\)</span>), a model hyperparameter (<a href="#sec-hyper" class="quarto-xref">Section&nbsp;2.6</a>) that determines the step size used to update the weights of the network in response to the loss gradient. Typically, it is set to a small positive value, usually ranging between 0.0 and 1.0. Larger values of the learning rate can allow the model to learn faster, but may result in the model failing to converge, or lead to a sub-optimal set of weights as the model overshoots an optimal point. While a cautious approach of using a smaller learning rate can help in avoiding these problems, it leads to longer training times and the potential risk of getting stuck in local minima.</p>
+<div id="fig-lrs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-lrs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://miro.medium.com/v2/resize:fit:1390/format:webp/1*vDtWuAvSKc3Jvdn77ac7XA.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lrs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: The potential effects of varying learning rates on model optimization (<a href="https://miro.medium.com/v2/resize:fit:1390/format:webp/1*vDtWuAvSKc3Jvdn77ac7XA.png">credit</a>)
+</figcaption>
+</figure>
+</div>
+<section id="learning-rate-policies" class="level4" data-number="2.4.1">
+<h4 data-number="2.4.1" class="anchored" data-anchor-id="learning-rate-policies"><span class="header-section-number">2.4.1</span> Learning rate policies</h4>
+<p>An important part of model training is therefore to find a suitable learning rate (LR) policy that facilitates steady improvement in the model and high accuracy at the end of training. However, identifying such an optimal LR policy can be challenging.</p>
+<p>Our simple example of training a model (<a href="#sec-calcgd" class="quarto-xref">Section&nbsp;2.2.1.2</a>) used a fixed learning rate of 0.1. Instead of that single rate, we can change the step size during the training process. This involves replacing the constant learning rate <span class="math inline">\(\epsilon\)</span> with a time-dependent learning rate <span class="math inline">\(\epsilon(t)\)</span>. Such an approach controls the convergence of the optimization algorithm more effectively, but adds an additional layer of complexity, which entails both learning rate initialization and the need to determine the rate at which the learning rate decays. Rapid changes in the learning rate can cause the optimization process to stop prematurely, whereas very slow adjustments might lead to an excessive amount of time being spent on optimization.</p>
+<p>There are many different learning rate schedulers, which fall into several broad classes. Here are a few examples:</p>
+<section id="decaying-lr" class="level5" data-number="2.4.1.1">
+<h5 data-number="2.4.1.1" class="anchored" data-anchor-id="decaying-lr"><span class="header-section-number">2.4.1.1</span> Decaying LR</h5>
+<p>This type of scheduler reduces the LR during the training process by using various forms of decay functions to improve the convergence and reduce overfitting. An example is <strong>polynomial decay</strong>, in which the LR decreases from an initial to a final value using a polynomial function of the total number of steps and the current step. This polynomial function can range from a simple linear to a more complex higher-degree polynomial. See <a href="https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.PolynomialLR.html">PolynomialLR Scheduler in PyTorch</a> for more details.</p>
+</section>
+<section id="cycling" class="level5" data-number="2.4.1.2">
+<h5 data-number="2.4.1.2" class="anchored" data-anchor-id="cycling"><span class="header-section-number">2.4.1.2</span> Cycling</h5>
+<p>These schedulers adjust the LR in a cyclical pattern within a specified range during each predefined step (i.e., fluctuating between a lower and an upper bound throughout a complete run), rather than maintaining a constant rate or progressively reducing it. The rationale is that a higher learning rate can assist in escaping from saddle points. For example, the <strong>cosine scheduler</strong> starts with an initial learning rate and gradually changes it following a cosine curve, meaning the learning rate first decreases and then increases in a cyclical pattern. The length of each cycle, during which the learning rate goes from high to low and back, is predefined. See <a href="https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CosineAnnealingLR.html">CosineLR Scheduler in PyTorch</a> for more details.</p>
+</section>
+<section id="warm-restarts" class="level5" data-number="2.4.1.3">
+<h5 data-number="2.4.1.3" class="anchored" data-anchor-id="warm-restarts"><span class="header-section-number">2.4.1.3</span> Warm restarts</h5>
+<p>A LR scheduler that incorporates <strong>warm restarts</strong> occasionally raises the learning rate. Warm restarts often intentionally lead to temporary divergence in the model. This controlled divergence helps the model navigate past local minima on the cost surface of the task, potentially leading to a superior global minimum. Conceptually it is similar to exploring a valley, ascending an adjacent hill, and then finding a deeper valley in a neighboring area.</p>
+</section>
+</section>
+</section>
+<section id="assessing-model-performance" class="level3" data-number="2.5">
+<h3 data-number="2.5" class="anchored" data-anchor-id="assessing-model-performance"><span class="header-section-number">2.5</span> Assessing model performance</h3>
+<p>As Dive into Deep Learning <a href="https://d2l.ai/chapter_optimization/optimization-intro.html#goal-of-optimization">points out</a>, the goals of the optimizer and the model are at odds with one another. The optimizer seeks to find the set of weights that provide the best fit between model predictions and training labels, whereas the goal of developing a model is to be able to feed it data, particularly new data that were not used to train the model, so that it can make accurate predictions of the target variable.</p>
+<p>The ability of neural networks to approximate any function means that they can make a nearly perfect fit to their training sample, particularly when the sample is relatively small. Such a model might have low training error but high generalization error (see <a href="https://d2l.ai/chapter_linear-regression/generalization.html">here</a> for the definition of each). What we really want is low generalization error. To get a sense of how well the model will generalize, during training a model, in addition to the calculation of loss against the training data, we also evaluate the model’s loss against an independent validation sample, which is a set of labelled data that are separate from the training sample (e.g. <a href="#fig-trainvalloss" class="quarto-xref">Figure&nbsp;8</a>). The relative trajectories of the two loss curves and the size of the gap between them give important insights into how well the model can generalize, and whether it is <em>over</em>- or <em>under-fit</em>.</p>
+<div id="fig-trainvalloss" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-trainvalloss-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://d2l.ai/_images/capacity-vs-error.svg" class="img-fluid figure-img" style="width:90.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-trainvalloss-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: Training and validation loss curves and the information they convey regarding model fit (<a href="https://d2l.ai/_images/capacity-vs-error.svg">credit</a>)
+</figcaption>
+</figure>
+</div>
+<p>There are a number of model development strategies that are used to improve generalizability. Among these are increasing the size of the training sample, which is the recommended approach for improving the ability of any statistical method to provide an accurate estimate of the target of interest. There are also <strong>regularization</strong> techniques, such as <a href="https://d2l.ai/chapter_linear-regression/weight-decay.html#weight-decay">weight decay</a>, which you should read about, along with additional information on <a href="https://d2l.ai/chapter_multilayer-perceptrons/generalization-deep.html">generalization in deep learning</a>. We will cover additional regularization methods during the course of the semester.</p>
+</section>
+<section id="sec-hyper" class="level3" data-number="2.6">
+<h3 data-number="2.6" class="anchored" data-anchor-id="sec-hyper"><span class="header-section-number">2.6</span> Hyper-parameters</h3>
+<p>Hyper-parameters are tunable parameters that control model behavior, which are pre-selected by the model developer and not updated by the model during training. These include variable such as the learning rate, the number of hidden layers in a network, the selection of initial weights, alongside many others. We will cover these in more depth in later sections.</p>
+
+
+
+</section>
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-breimanRandomForests2001" class="csl-entry" role="listitem">
+Breiman, Leo. 2001. <span>“Random <span>Forests</span>.”</span> <em>Machine Learning</em> 45 (1): 5–32. <a href="https://doi.org/10.1023/A:1010933404324">https://doi.org/10.1023/A:1010933404324</a>.
+</div>
+<div id="ref-khallaghiReviewTechnicalFactors2023a" class="csl-entry" role="listitem">
+Khallaghi, Sam, J. Ronald Eastman, and Lyndon D. Estes. 2023. <span>“A Review of Technical Factors to Consider When Designing Neural Networks for Semantic Segmentation of <span>Earth Observation</span> Imagery.”</span> arXiv. <a href="https://doi.org/10.48550/arXiv.2308.09221">https://doi.org/10.48550/arXiv.2308.09221</a>.
+</div>
+<div id="ref-xiongNominal30mCropland2017" class="csl-entry" role="listitem">
+Xiong, Jun, Prasad S. Thenkabail, James C. Tilton, Murali K. Gumma, Pardhasaradhi Teluguntla, Adam Oliphant, Russell G. Congalton, Kamini Yadav, and Noel Gorelick. 2017. <span>“Nominal 30-m <span>Cropland Extent Map</span> of <span>Continental Africa</span> by <span>Integrating Pixel-Based</span> and <span>Object-Based Algorithms Using Sentinel-2</span> and <span>Landsat-8 Data</span> on <span>Google Earth Engine</span>.”</span> <em>Remote Sensing</em> 9 (10): 1065. <a href="https://doi.org/10.3390/rs9101065">https://doi.org/10.3390/rs9101065</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./introduction.html" class="pagination-link" aria-label="1. Introduction">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">1. Introduction</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./mlp.html" class="pagination-link" aria-label="3. Multi-layer perceptrons">
+        <span class="nav-page-text">3. Multi-layer perceptrons</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p><img src="https://cdn.clarku.edu/marketing-communications/wp-content/uploads/sites/15/2025/01/fiat-lux-red.png" class="img-fluid" style="width:20.0%"></p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
