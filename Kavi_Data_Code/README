@@ -1,0 +1,16 @@
+These folders contain testing and training data that Kavi used 
+in his initial ML models for classifying cyanobacteria from other
+image types. The training data is in TrIN and the Testing data is 
+in Test. Note that the category names may not be fully correct. For
+example, "Algie" is spelled wrong (should be Algae") and "Anabaena"
+is more accurately a folder for all filamentous cyanobacteria types.
+The Test folder also contains, a label list of the true image classes:
+labels.csv
+
+Kavi's models are provided on Github:
+https://github.com/KaviFrancis/cyanobacteria-ovr-classifier
+https://github.com/KaviFrancis/Cyanobacteria-Pseudo-Label
+https://github.com/KaviFrancis/Cyanobacteria-Binary-Model-Trainer-macOS
+
+I believe the latter is built for a macOS platform.
+I belive the first and/or second were designed to be used on the Clark HPC GPUs.
