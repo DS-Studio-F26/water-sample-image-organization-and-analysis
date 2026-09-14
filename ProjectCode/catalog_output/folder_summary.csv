@@ -1,0 +1,649 @@
+folder_name,site_raw,site_normalized,water_body_type,date,magnification,sample_code,dilution,is_pp,pp_of_folder,parsed_ok,image_count,unreadable_count,min_width,max_width,min_height,max_height
+Bell Pond_10.14.2023_10x_TM 0.5 dilution -pp,Bell Pond,bell pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,9,0,22,198,34,213
+Bell Pond_10.2.2023_10x_TM 0.5 dilution 1-pp,Bell Pond,bell pond,pond,10.2.2023,10x,TM,0.5 dilution,True,,True,7,0,43,274,42,344
+Bell Pond_5.15.2023_10X_TR1 no dilution-pp,Bell Pond,bell pond,pond,5.15.2023,10x,TR1,no dilution,True,,True,18,0,23,289,31,577
+Bell Pond_5.27.23_10x_AI1 no dilution-pp,Bell Pond,bell pond,pond,5.27.23,10x,AI1,no dilution,True,,True,654,0,20,150,25,141
+Bell Pond_6.12.2023_10x_TM no dilution-pp,Bell Pond,bell pond,pond,6.12.2023,10x,TM,no dilution,True,,True,6,0,34,149,25,139
+Bell Pond_6.24.2023_10x_TM no dilution-pp,Bell Pond,bell pond,pond,6.24.2023,10x,TM,no dilution,True,,True,10,0,39,139,46,166
+Bell Pond_7.10.2023_10x_TM 0.5 dilution-pp,Bell Pond,bell pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,1,0,211,211,307,307
+Bell Pond_7.22.2023_10x_TM 0.5 dilution-PP,Bell Pond,bell pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,4,0,28,139,33,146
+Bell Pond_8.19.2023_10x_TM 0.5 dilution-PP,Bell Pond,bell pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,5,0,31,71,48,73
+Bell Pond_8.7.2023_10x_TM 0.5 dilution-pp,Bell Pond,bell pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,22,0,29,87,30,95
+Bell Pond_9.16.2023_10x_TM 0.5 dilution-pp,Bell Pond,bell pond,pond,9.16.2023,10x,TM,0.5 dilution,True,,True,3,0,30,50,31,50
+Bell_4.29.23_10x_TR1 no dilution-pp,Bell,bell,,4.29.23,10x,TR1,no dilution,True,,True,1,0,67,67,64,64
+Bell_6.19.21_10x_TR1,Bell,bell,,6.19.21,10x,TR1,,False,,True,56,0,24,111,24,110
+Bell_CR10.3.22_10x_AI1 1-pp,Bell,bell,,10.3.22,10x,AI1,,True,,True,217,0,21,198,23,295
+Bell_CR5.2.22_10x_TR1-pp,Bell,bell,,5.2.22,10x,TR1,,True,,True,60,0,25,105,27,108
+Bell_CR5.21.22_10x_AI1-pp,Bell,bell,,5.21.22,10x,AI1,,True,,True,119,0,25,166,27,126
+Bell_CR6.18.22_10x_TR1-pp,Bell,bell,,6.18.22,10x,TR1,,True,,True,191,0,25,114,25,130
+Bell_CR6.6.22_10x_TR1-pp,Bell,bell,,6.6.22,10x,TR1,,True,,True,126,0,27,120,22,248
+Bell_CR7.16.22_10x_AI1-pp,Bell,bell,,7.16.22,10x,AI1,,True,,True,153,0,24,191,23,140
+Bell_CR7.5.22_10x_TR1-pp,Bell,bell,,7.5.22,10x,TR1,,True,,True,246,0,26,110,27,120
+Bell_CR8.1.22_10x_TR1-1 - pp,Bell,bell,,8.1.22,10x,TR1,,True,,True,472,0,20,158,20,166
+Bell_CR9.12.22_10xAI1-pp,Bell,bell,,9.12.22,10x,,,True,,True,178,0,24,135,24,229
+Bell_CR9.12.22_10xTR1 1,Bell,bell,,9.12.22,10x,,,False,,True,9,0,29,67,36,67
+Bell_CR9.24.22_10x_TR1-pp,Bell,bell,,9.24.22,10x,TR1,,True,,True,29,0,29,183,37,286
+Bell_WCMC_CR10.16.21_TR1,Bell_WCMC,bell,,10.16.21,,TR1,,False,,False,11,0,47,176,61,202
+Bell_WCMC_CR10.16.21_TR1-PP,Bell_WCMC,bell,,10.16.21,,TR1,,True,Bell_WCMC_CR10.16.21_TR1,False,9,0,47,176,61,202
+Bell_WCMC_CR9.25.21_10x_TR1,Bell_WCMC,bell,,9.25.21,10x,TR1,,False,,True,130,0,26,160,28,175
+Burncoat 1 _6.3.24_10x_TR1 0.5 Dilution-pp,Burncoat 1,burncoat 1,,6.3.24,10x,TR1,0.5 Dilution,True,,True,590,0,23,241,27,281
+Burncoat Pond_10.14.2023_10x_TM 0.1 dilution -pp,Burncoat Pond,burncoat pond,pond,10.14.2023,10x,TM,0.1 dilution,True,,True,150,0,26,513,29,585
+Burncoat Pond_10.2.2023_10x_TM 0.1 dilution -pp,Burncoat Pond,burncoat pond,pond,10.2.2023,10x,TM,0.1 dilution,True,,True,159,0,24,555,27,570
+Burncoat Pond_10.30.2023_10x_TM 0.5 dilution-pp,Burncoat Pond,burncoat pond,pond,10.30.2023,10x,TM,0.5 dilution,True,,True,926,0,25,183,22,276
+Burncoat Pond_5.15.2023_10X_TR1 0.1 dilution-pp,Burncoat Pond,burncoat pond,pond,5.15.2023,10x,TR1,0.1 dilution,True,,True,47,0,28,135,25,170
+Burncoat Pond_6.24.2023_10x_TM no dilution-pp,Burncoat Pond,burncoat pond,pond,6.24.2023,10x,TM,no dilution,True,,True,1153,0,23,447,23,695
+Burncoat Pond_7.10.2023_10x_TM 0.1 dilution-pp,Burncoat Pond,burncoat pond,pond,7.10.2023,10x,TM,0.1 dilution,True,,True,269,0,22,718,27,687
+Burncoat Pond_7.22.2023_10x_TM 0.1 dilution-pp,Burncoat Pond,burncoat pond,pond,7.22.2023,10x,TM,0.1 dilution,True,,True,185,0,27,678,25,533
+Burncoat Pond_8.19.2023_10x_TM 0.1 dilution -pp,Burncoat Pond,burncoat pond,pond,8.19.2023,10x,TM,0.1 dilution,True,,True,567,0,19,790,26,734
+Burncoat Pond_8.7.2023_10x_TM 0.1 dilution-pp,Burncoat Pond,burncoat pond,pond,8.7.2023,10x,TM,0.1 dilution,True,,True,126,0,18,714,26,653
+Burncoat Pond_9.5.2023_10x_TM 0.1 dilution -pp,Burncoat Pond,burncoat pond,pond,9.5.2023,10x,TM,0.1 dilution,True,,True,217,0,23,755,28,746
+Burncoat_4.29.23_10x_TR1 0.5 dilution-pp,Burncoat,burncoat,,4.29.23,10x,TR1,0.5 dilution,True,,True,230,0,20,201,25,231
+Burncoat_5.27.23_10x_AI1 .1 dilution-pp,Burncoat,burncoat,,5.27.23,10x,AI1,1 dilution,True,,True,3310,0,21,158,24,330
+Burncoat_6.12.2023_10x_TM 0.5 dilution-pp,Burncoat,burncoat,,6.12.2023,10x,TM,0.5 dilution,True,,True,191,0,27,416,27,557
+Burncoat_6.19.21_10x_TR1,Burncoat,burncoat,,6.19.21,10x,TR1,,False,,True,4701,0,17,567,20,829
+Burncoat_CR10.15.22_10x_AI1 .1 dilution-pp,Burncoat,burncoat,,10.15.22,10x,AI1,1 dilution,True,,True,5658,0,22,134,18,341
+Burncoat_CR5.2.22_10x_TR1-pp,Burncoat,burncoat,,5.2.22,10x,TR1,,True,,True,7175,0,17,557,17,1034
+Burncoat_CR5.21.22_10x_AI1-pp,Burncoat,burncoat,,5.21.22,10x,AI1,,True,,True,12239,0,19,350,20,357
+Burncoat_CR6.18.22_10x_TR1 .1 dilution-pp,Burncoat,burncoat,,6.18.22,10x,TR1,1 dilution,True,,True,1058,0,19,382,20,572
+Burncoat_CR6.6.22_10x_TR1-pp,Burncoat,burncoat,,6.6.22,10x,TR1,,True,,True,9860,0,22,263,20,277
+Burncoat_CR7.16.22_10x_AI1 .1dilution-pp,Burncoat,burncoat,,7.16.22,10x,AI1,1dilution,True,,True,5119,0,16,526,19,1084
+Burncoat_CR8.1.22_10x_TR1-1 0.1 dilution - pp,Burncoat,burncoat,,8.1.22,10x,TR1,0.1 dilution,True,,True,5384,0,15,678,22,1108
+Burncoat_CR8.27.22_10X_AI1 0.1 dilution-pp,Burncoat,burncoat,,8.27.22,10x,AI1,0.1 dilution,True,,True,2464,0,17,753,20,969
+Burncoat_WCMC_CR10.16.21_TR1,Burncoat_WCMC,burncoat,,10.16.21,,TR1,,False,,False,1877,0,18,660,24,1062
+Burncoat_WCMC_CR10.16.21_TR1-PP,Burncoat_WCMC,burncoat,,10.16.21,,TR1,,True,Burncoat_WCMC_CR10.16.21_TR1,False,1717,0,18,660,24,1062
+Burncoat_WCMC_CR9.25.21_10x_TR1,Burncoat_WCMC,burncoat,,9.25.21,10x,TR1,,False,,True,4625,0,16,501,21,1059
+Burncoat_WCMC_CR9.25.21_10x_TR1-PP,Burncoat_WCMC,burncoat,,9.25.21,10x,TR1,,True,Burncoat_WCMC_CR9.25.21_10x_TR1,True,4510,0,16,501,21,1059
+Burncoat__6.3.24_10x_TR1 no dilution_pp,Burncoat,burncoat,,6.3.24,10x,TR1,no dilution,True,,True,42,0,28,420,33,488
+Chauncy_4.29.23_10x_TR1 no dilution-pp,Chauncy,chauncy,,4.29.23,10x,TR1,no dilution,True,,True,9,0,39,481,29,425
+Chauncy_5.27.23_10x_TR1 .5 dilution-pp,Chauncy,chauncy,,5.27.23,10x,TR1,5 dilution,True,,True,10,0,34,109,31,164
+Coes Res_10.30.2023_10x_TM 0.5 dilution -pp,Coes Res,coes res,,10.30.2023,10x,TM,0.5 dilution,True,,True,59,0,26,155,29,210
+Coes Res_4.29.23_10x_TR1 no dilution-pp,Coes Res,coes res,,4.29.23,10x,TR1,no dilution,True,,True,44,0,29,98,26,216
+Coes Res_5.27.23_10x_AI1 .5 dilution-pp,Coes Res,coes res,,5.27.23,10x,AI1,5 dilution,True,,True,574,0,21,236,22,225
+Coes Res_5.27.23_10x_TR1 .5 dilution,Coes Res,coes res,,5.27.23,10x,TR1,5 dilution,False,,True,35,0,36,176,30,186
+Coes Res_6.12.2023_10x_TM 0.5 dilution-pp,Coes Res,coes res,,6.12.2023,10x,TM,0.5 dilution,True,,True,22,0,29,111,20,147
+Coes Res_7.10.2023_10x_TM 0.5 dilution-pp,Coes Res,coes res,,7.10.2023,10x,TM,0.5 dilution,True,,True,83,0,29,213,25,283
+Coes Res_CR8.1.22_10x_TR1-1-pp,Coes Res,coes res,,8.1.22,10x,TR1,,True,,True,1780,0,19,431,22,812
+Coes Reservoir_10.14.2023_10x_TM 0.5 dilution -pp,Coes Reservoir,coes reservoir,reservoir,10.14.2023,10x,TM,0.5 dilution,True,,True,228,0,24,358,26,571
+Coes Reservoir_10.2.2023_10x_TM 0.5 dilution -pp,Coes Reservoir,coes reservoir,reservoir,10.2.2023,10x,TM,0.5 dilution,True,,True,247,0,23,462,29,640
+Coes Reservoir_5.15.2023_10X_TR1 no dilution-pp,Coes Reservoir,coes reservoir,reservoir,5.15.2023,10x,TR1,no dilution,True,,True,44,0,24,308,26,161
+Coes Reservoir_6.24.2023_10x_TM no dilution-pp,Coes Reservoir,coes reservoir,reservoir,6.24.2023,10x,TM,no dilution,True,,True,100,0,28,468,27,711
+Coes Reservoir_7.22.2023_10x_TM 0.5 dilution-pp,Coes Reservoir,coes reservoir,reservoir,7.22.2023,10x,TM,0.5 dilution,True,,True,138,0,19,608,28,677
+Coes Reservoir_8.19.2023_10x_TM 0.5 dilution-PP,Coes Reservoir,coes reservoir,reservoir,8.19.2023,10x,TM,0.5 dilution,True,,True,121,0,25,284,26,392
+Coes Reservoir_8.7.2023_10x_TM 0.5 dilution-pp,Coes Reservoir,coes reservoir,reservoir,8.7.2023,10x,TM,0.5 dilution,True,,True,44,0,17,584,30,665
+Coes Reservoir_9.16.2023_10x_TM 0.5 dilution-pp,Coes Reservoir,coes reservoir,reservoir,9.16.2023,10x,TM,0.5 dilution,True,,True,267,0,21,634,22,780
+Coes Reservoir_9.5.2023_10x_TM 0.5 dilution 1-pp,Coes Reservoir,coes reservoir,reservoir,9.5.2023,10x,TM,0.5 dilution,True,,True,44,0,28,202,30,547
+Coes Reservoir_CR10.3.22_10xTR1 0.1 dilution-pp,Coes Reservoir,coes reservoir,reservoir,10.3.22,10x,,0.1 dilution,True,,True,535,0,22,446,19,548
+Coes Reservoir_CR9.12.22_10xAI1-pp,Coes Reservoir,coes reservoir,reservoir,9.12.22,10x,,,True,,True,1279,0,22,746,22,702
+Coes Reservoir_CR9.26.22_10xTRI 0.1 dilution-pp,Coes Reservoir,coes reservoir,reservoir,9.26.22,10x,,0.1 dilution,True,,True,86,0,30,913,29,700
+CoesPond_WCMC_CR10.16.21_TR1,CoesPond_WCMC,coespond,,10.16.21,,TR1,,False,,False,143,0,22,197,30,452
+CoesPond_WCMC_CR10.16.21_TR1-pp,CoesPond_WCMC,coespond,,10.16.21,,TR1,,True,CoesPond_WCMC_CR10.16.21_TR1,False,75,0,22,197,30,452
+CoesPond_WCMC_CR9.25.21_10x_TR1,CoesPond_WCMC,coespond,,9.25.21,10x,TR1,,False,,True,1109,0,22,247,24,273
+CoesPond_WCMC_CR9.25.21_10x_TR1-PP,CoesPond_WCMC,coespond,,9.25.21,10x,TR1,,True,CoesPond_WCMC_CR9.25.21_10x_TR1,True,1107,0,22,247,24,273
+CoesResHaley_CR5.2.22_10x_TR1-pp,CoesResHaley,coesreshaley,,5.2.22,10x,TR1,,True,,True,1540,0,15,280,22,371
+CoesResPat_CR5.2.22_10x_TR1-pp,CoesResPat,coesrespat,,5.2.22,10x,TR1,,True,,True,1315,0,16,472,21,875
+CoesRes_CR6.6.22_10x_TR1-pp,CoesRes,coesres,,6.6.22,10x,TR1,,True,,True,531,0,22,513,22,756
+CoesRes_CR7.19.22_10x_TR1,CoesRes,coesres,,7.19.22,10x,TR1,,False,,True,1968,0,19,719,19,1314
+CoesRes_CR7.5.22_10x_TR1-pp,CoesRes,coesres,,7.5.22,10x,TR1,,True,,True,1932,0,22,396,23,650
+CoesRes_WCMC_CR10.16.21_TR1,CoesRes_WCMC,coesres,,10.16.21,,TR1,,False,,False,162,0,26,496,28,332
+CoesRes_WCMC_CR10.16.21_TR1-PP,CoesRes_WCMC,coesres,,10.16.21,,TR1,,True,CoesRes_WCMC_CR10.16.21_TR1,False,120,0,26,496,28,332
+CoesRes_WCMC_CR9.25.21_10x_TR1,CoesRes_WCMC,coesres,,9.25.21,10x,TR1,,False,,True,1794,0,21,232,20,320
+CoesRes_WCMC_CR9.25.21_10x_TR1-PP,CoesRes_WCMC,coesres,,9.25.21,10x,TR1,,True,CoesRes_WCMC_CR9.25.21_10x_TR1,True,1789,0,21,232,20,320
+Coes_6.19.21_10x_TR1,Coes,coes,,6.19.21,10x,TR1,,False,,True,252,0,27,323,27,375
+Coes_6.19.21_10x_TR2,Coes,coes,,6.19.21,10x,TR2,,False,,True,575,0,20,230,23,248
+Coes_6.3.24_10x_TR1 no dilution-pp,Coes,coes,,6.3.24,10x,TR1,no dilution,True,,True,348,0,23,888,23,1357
+Cooks Pond_10.14.2023_10x_TM 0.5 dilution -pp,Cooks Pond,cooks pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,7,0,28,216,31,196
+Cooks Pond_5.15.2023_10X_TR1 no dilution-pp,Cooks Pond,cooks pond,pond,5.15.2023,10x,TR1,no dilution,True,,True,38,0,28,237,25,271
+Cooks Pond_5.27.23_10x_TR1 no dilution-pp,Cooks Pond,cooks pond,pond,5.27.23,10x,TR1,no dilution,True,,True,30,0,30,117,27,81
+Cooks Pond_6.12.2023_10x_AI no dilution,Cooks Pond,cooks pond,pond,6.12.2023,10x,AI,no dilution,False,,True,1438,0,22,371,22,372
+Cooks Pond_6.12.2023_10x_TM no dilution 2-pp,Cooks Pond,cooks pond,pond,6.12.2023,10x,TM,no dilution,True,,True,82,0,27,173,24,586
+Cooks Pond_6.24.2023_10x_TM no dilution-pp,Cooks Pond,cooks pond,pond,6.24.2023,10x,TM,no dilution,True,,True,204,0,28,152,28,146
+Cooks Pond_7.10.2023_10x_TM 0.5 dilution-pp,Cooks Pond,cooks pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,42,0,27,102,32,96
+Cooks Pond_7.22.2023_10x_TM 0.5 dilution-pp,Cooks Pond,cooks pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,97,0,26,99,26,91
+Cooks Pond_8.19.2023_10x_TM 0.5 dilution-pp,Cooks Pond,cooks pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,24,0,31,179,31,181
+Cooks Pond_8.7.2023_10x_TM 0.5 dilution-PP,Cooks Pond,cooks pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,45,0,32,307,30,293
+Cooks Pond_9.16.2023_10x_TM 0.5 dilution-pp,Cooks Pond,cooks pond,pond,9.16.2023,10x,TM,0.5 dilution,True,,True,105,0,26,231,28,237
+Cooks Pond_9.5.2023_10x_TM 0.5 dilution-pp,Cooks Pond,cooks pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,41,0,25,93,30,79
+Cooks Pond_IT SAMPLE_ 7.10.2023_10x_TM 0.5 dilution,Cooks Pond_IT SAMPLE,cooks pond it sample,,7.10.2023,10x,TM,0.5 dilution,False,,True,58,0,28,262,29,163
+Cooks_4.29.23_10x_TR1 no dilution-pp,Cooks,cooks,,4.29.23,10x,TR1,no dilution,True,,True,35,0,27,79,29,103
+Cooks_6.19.21_10x_TR1,Cooks,cooks,,6.19.21,10x,TR1,,False,,True,486,0,21,272,23,927
+Cooks_6.3.24_10x_TR1-PP,Cooks,cooks,,6.3.24,10x,TR1,,True,,True,81,0,29,176,28,126
+Cooks_CR10.15.22_10x_AI1-pp,Cooks,cooks,,10.15.22,10x,AI1,,True,,True,1932,0,17,385,18,373
+Cooks_CR10.3.22_10x_AI1-pp,Cooks,cooks,,10.3.22,10x,AI1,,True,,True,1161,0,20,343,19,347
+Cooks_CR5.2.22_10x_TR1-pp,Cooks,cooks,,5.2.22,10x,TR1,,True,,True,594,0,20,221,26,250
+Cooks_CR5.21.22_10x_AI1-pp,Cooks,cooks,,5.21.22,10x,AI1,,True,,True,761,0,19,232,23,358
+Cooks_CR6.18.22_10x_TR1-pp,Cooks,cooks,,6.18.22,10x,TR1,,True,,True,948,0,19,208,25,218
+Cooks_CR6.6.22_10x_TR1-pp,Cooks,cooks,,6.6.22,10x,TR1,,True,,True,883,0,19,379,25,331
+Cooks_CR7.16.22_10x_AI1-pp,Cooks,cooks,,7.16.22,10x,AI1,,True,,True,1954,0,17,292,20,254
+Cooks_CR7.5.22_10x_TR1-pp,Cooks,cooks,,7.5.22,10x,TR1,,True,,True,2420,0,19,217,23,375
+Cooks_CR8.1.22_10x_TR1-1-pp,Cooks,cooks,,8.1.22,10x,TR1,,True,,True,1940,0,21,543,21,775
+Cooks_CR8.27.22_10X_AI1-PP,Cooks,cooks,,8.27.22,10x,AI1,,True,,True,1408,0,17,600,22,697
+Cooks_CR9.12.22_10xAI1-pp,Cooks,cooks,,9.12.22,10x,,,True,,True,1264,0,20,582,24,850
+Cooks_CR9.24.22_10x_TR1-pp,Cooks,cooks,,9.24.22,10x,TR1,,True,,True,85,0,25,357,27,505
+Cooks_WCMC_CR10.16.21_TR1,Cooks_WCMC,cooks,,10.16.21,,TR1,,False,,False,150,0,27,403,28,842
+Cooks_WCMC_CR10.16.21_TR1-PP,Cooks_WCMC,cooks,,10.16.21,,TR1,,True,Cooks_WCMC_CR10.16.21_TR1,False,141,0,27,321,28,712
+Cooks_WCMC_CR9.25.21_10x_TR1,Cooks_WCMC,cooks,,9.25.21,10x,TR1,,False,,True,1038,0,21,183,27,315
+Crystal Pond_10.2.2023_10x_TM 0.1 dilution -pp,Crystal Pond,crystal pond,pond,10.2.2023,10x,TM,0.1 dilution,True,,True,9,0,29,150,33,273
+Crystal Pond_5.15.2023_10X_TR1 0.5 dilution-pp,Crystal Pond,crystal pond,pond,5.15.2023,10x,TR1,0.5 dilution,True,,True,294,0,24,203,27,140
+Crystal Pond_5.27.23_10x_AI1 .1 dilution-pp,Crystal Pond,crystal pond,pond,5.27.23,10x,AI1,1 dilution,True,,True,518,0,22,131,26,148
+Crystal Pond_7.10.2023_10x_TM 0.5 dilution-pp,Crystal Pond,crystal pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,31,0,24,150,32,107
+Crystal Pond_7.22.2023_10x_TM 0.5 dilution 2-pp,Crystal Pond,crystal pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,8,0,47,193,48,221
+Crystal Pond_7.22.2023_10x_TM 0.5 dilution-pp,Crystal Pond,crystal pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,3,0,55,114,40,121
+Crystal Pond_8.7.2023_10x_TM 0.5 dilution-pp,Crystal Pond,crystal pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,386,0,19,191,28,196
+Crystal Pond_9.16.2023_10x_TM 0.5 dilution,Crystal Pond,crystal pond,pond,9.16.2023,10x,TM,0.5 dilution,False,,True,118,0,29,143,29,274
+Crystal Pond_9.16.2023_10x_TM 0.5 dilution-pp,Crystal Pond,crystal pond,pond,9.16.2023,10x,TM,0.5 dilution,True,Crystal Pond_9.16.2023_10x_TM 0.5 dilution,True,118,0,29,143,29,274
+Crystal Pond_9.5.2023_10x_TM 0.5 dilution -1,Crystal Pond,crystal pond,pond,9.5.2023,10x,TM,0.5 dilution,False,,True,67,0,26,82,33,112
+Crystal Pond_9.5.2023_10x_TM 0.5 dilution -pp,Crystal Pond,crystal pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,67,0,26,82,33,112
+Crystal_4.29.23_10x_TR1 0.5 dilution-pp,Crystal,crystal,,4.29.23,10x,TR1,0.5 dilution,True,,True,282,0,26,223,26,150
+Crystal_6.12.2023_10x_TM 0.5 dilution-pp,Crystal,crystal,,6.12.2023,10x,TM,0.5 dilution,True,,True,125,0,24,250,31,285
+Crystal_6.24.2023_10x_TM 0.5 dilution-pp,Crystal,crystal,,6.24.2023,10x,TM,0.5 dilution,True,,True,277,0,20,345,24,418
+Crystal_6.3.24_10x_TR1 no dilution-pp,Crystal,crystal,,6.3.24,10x,TR1,no dilution,True,,True,47,0,29,321,28,803
+Crystal_WCMC_CR9.25.21_10x_TR1,Crystal_WCMC,crystal,,9.25.21,10x,TR1,,False,,True,4173,0,17,257,20,314
+Crystal_WCMC_CR9.25.21_10x_TR1-PP,Crystal_WCMC,crystal,,9.25.21,10x,TR1,,True,Crystal_WCMC_CR9.25.21_10x_TR1,True,4159,0,17,257,20,314
+Curtis_6.19.21_10x_TR1,Curtis,curtis,,6.19.21,10x,TR1,,False,,True,802,0,19,300,24,1516
+Curtis_WCMC_CR10.16.21_TR1,Curtis_WCMC,curtis,,10.16.21,,TR1,,False,,False,49,0,30,258,37,347
+Curtis_WCMC_CR10.16.21_TR1-PP,Curtis_WCMC,curtis,,10.16.21,,TR1,,True,Curtis_WCMC_CR10.16.21_TR1,False,23,0,30,258,37,347
+Curtis_WCMC_CR9.25.21_10x_TR1,Curtis_WCMC,curtis,,9.25.21,10x,TR1,,False,,True,631,0,23,162,21,177
+Dark Brook_CR7.5.22_10x_TR1-pp,Dark Brook,dark brook,,7.5.22,10x,TR1,,True,,True,452,0,24,176,26,281
+Dark Brook_CR8.1.22_10x_TR1-1-pp,Dark Brook,dark brook,,8.1.22,10x,TR1,,True,,True,670,0,19,487,21,537
+Dark Brook_CR9.12.22_10xAI1-pp,Dark Brook,dark brook,,9.12.22,10x,,,True,,True,412,0,22,150,23,315
+Dark Brook_CR9.12.22_10xTR1,Dark Brook,dark brook,,9.12.22,10x,,,False,,True,33,0,36,185,34,216
+DarkBrook_CR10.15.22_10x_AI1-pp,DarkBrook,darkbrook,,10.15.22,10x,AI1,,True,,True,582,0,19,275,23,279
+DarkBrook_CR5.2.22_10x_TR1-pp,DarkBrook,darkbrook,,5.2.22,10x,TR1,,True,,True,439,0,16,276,25,384
+DarkBrook_CR6.6.22_10x_TR1-pp,DarkBrook,darkbrook,,6.6.22,10x,TR1,,True,,True,265,0,19,215,23,326
+DarkBrook_CR7.16.22_10x_AI1-pp,DarkBrook,darkbrook,,7.16.22,10x,AI1,,True,,True,464,0,18,233,25,433
+East Lake Waushacum_5.15.2023_10X_TR1 no dilution-pp,East Lake Waushacum,east lake waushacum,lake,5.15.2023,10x,TR1,no dilution,True,,True,42,0,28,190,26,369
+Ecotarium Pond_10.14.2023_10x_TM 0.5 dilution -pp,Ecotarium Pond,ecotarium pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,61,0,29,132,29,152
+Ecotarium Pond_10.2.2023_10x_TM 0.5 dilution -pp,Ecotarium Pond,ecotarium pond,pond,10.2.2023,10x,TM,0.5 dilution,True,,True,6,0,25,81,57,98
+Ecotarium_5.15.2023_10X_TR1 0.1 dilution-pp,Ecotarium,ecotarium,,5.15.2023,10x,TR1,0.1 dilution,True,,True,24,0,28,259,33,226
+Ecotarium_5.27.23_10x_AI1 .1 dilution-pp,Ecotarium,ecotarium,,5.27.23,10x,AI1,1 dilution,True,,True,290,0,25,200,24,333
+Ecotarium_6.12.2023_10x_TM 0.1 dilution-pp,Ecotarium,ecotarium,,6.12.2023,10x,TM,0.1 dilution,True,,True,26,0,28,260,31,417
+Ecotarium_6.24.2023_10x_TM 0.5 dilution-pp,Ecotarium,ecotarium,,6.24.2023,10x,TM,0.5 dilution,True,,True,37,0,28,125,29,105
+Ecotarium_6.3.24_10x_TR1 0.5 Dilution-pp,Ecotarium,ecotarium,,6.3.24,10x,TR1,0.5 Dilution,True,,True,154,0,25,279,22,420
+Ecotarium_7.10.2023_10x_TM 0.5 dilution-pp,Ecotarium,ecotarium,,7.10.2023,10x,TM,0.5 dilution,True,,True,182,0,22,495,27,429
+Ecotarium_7.22.2023_10x_TM 0.1 dilution-pp,Ecotarium,ecotarium,,7.22.2023,10x,TM,0.1 dilution,True,,True,18,0,29,146,29,331
+Ecotarium_8.19.2023_10x_TM 0.1 dilution -pp,Ecotarium,ecotarium,,8.19.2023,10x,TM,0.1 dilution,True,,True,11,0,30,180,54,458
+Ecotarium_8.19.2023_10x_TM 0.1 dilution 1,Ecotarium,ecotarium,,8.19.2023,10x,TM,0.1 dilution,False,,True,30,0,33,131,28,184
+Ecotarium_8.19.2023_10x_TM 0.1 dilution 1-pp,Ecotarium,ecotarium,,8.19.2023,10x,TM,0.1 dilution,True,Ecotarium_8.19.2023_10x_TM 0.1 dilution 1,True,15,0,33,131,28,184
+Ecotarium_8.7.2023_10x_TM 0.1 dilution-pp,Ecotarium,ecotarium,,8.7.2023,10x,TM,0.1 dilution,True,,True,28,0,27,113,34,149
+Ecotarium_9.16.2023_10x_TM 0.1 dilution-pp,Ecotarium,ecotarium,,9.16.2023,10x,TM,0.1 dilution,True,,True,7,0,30,54,38,59
+Ecotarium_9.5.2023_10x_TM 0.1 dilution -pp,Ecotarium,ecotarium,,9.5.2023,10x,TM,0.1 dilution,True,,True,40,0,31,171,25,250
+Ecotarium_CR10.3.22_10x AI1 0.1 dilution-pp,Ecotarium,ecotarium,,10.3.22,10x,,0.1 dilution,True,,True,257,0,20,92,25,159
+Ecotarium_CR5.2.22_10x_TR1-pp,Ecotarium,ecotarium,,5.2.22,10x,TR1,,True,,True,524,0,20,288,15,297
+Ecotarium_CR5.21.22_10x_AI1 .1 dilution-pp,Ecotarium,ecotarium,,5.21.22,10x,AI1,1 dilution,True,,True,4982,0,19,403,20,340
+Ecotarium_CR6.18.22_10x_TR1 .1 dilution-pp,Ecotarium,ecotarium,,6.18.22,10x,TR1,1 dilution,True,,True,868,0,21,247,22,862
+Ecotarium_CR6.6.22_10x_TR1 .1dilution-pp,Ecotarium,ecotarium,,6.6.22,10x,TR1,1dilution,True,,True,3521,0,17,258,21,339
+Ecotarium_CR7.16.22_10x_AI1 0.1 dilution-pp,Ecotarium,ecotarium,,7.16.22,10x,AI1,0.1 dilution,True,,True,359,0,21,174,21,162
+Ecotarium_CR7.5.22_10x_TR1 . 1dilution-pp,Ecotarium,ecotarium,,7.5.22,10x,TR1,1dilution,True,,True,595,0,21,219,23,364
+Ecotarium_CR8.1.22_10x_TR1-1 0.1 dilution - pp,Ecotarium,ecotarium,,8.1.22,10x,TR1,0.1 dilution,True,,True,8029,0,18,632,20,869
+Ecotarium_CR8.27.22_10X_AI1 0.1 dilution-pp,Ecotarium,ecotarium,,8.27.22,10x,AI1,0.1 dilution,True,,True,1151,0,22,404,25,372
+Ecotarium_CR9.12.22_10xAI1 0.1 dilution-pp,Ecotarium,ecotarium,,9.12.22,10x,,0.1 dilution,True,,True,753,0,20,371,18,392
+Elm Park Pond_10.2.2023_10x_TM 0.1 dilution -pp,Elm Park Pond,elm park pond,park,10.2.2023,10x,TM,0.1 dilution,True,,True,303,0,18,412,25,469
+Elm Park Pond_7.22.2023_10x_TM 0.1 dilution-pp,Elm Park Pond,elm park pond,park,7.22.2023,10x,TM,0.1 dilution,True,,True,277,0,18,628,25,637
+Elm Park Pond_8.19.2023_10x_TM 0.1 dilution 1,Elm Park Pond,elm park pond,park,8.19.2023,10x,TM,0.1 dilution,False,,True,414,0,25,483,22,569
+Elm Park Pond_8.19.2023_10x_TM 0.1 dilution 1-pp,Elm Park Pond,elm park pond,park,8.19.2023,10x,TM,0.1 dilution,True,Elm Park Pond_8.19.2023_10x_TM 0.1 dilution 1,True,404,0,25,483,22,569
+Elm Park Pond_CR9.24.22_10x_TR1 0.1 dilution-pp,Elm Park Pond,elm park pond,park,9.24.22,10x,TR1,0.1 dilution,True,,True,611,0,21,224,23,420
+Elm Park_5.27.23_10x_AI1 .1 dilution-pp,Elm Park,elm park,park,5.27.23,10x,AI1,1 dilution,True,,True,4902,0,18,763,21,1041
+Elm Park_6.12.2023_10x_TM 0.1 dilution-pp,Elm Park,elm park,park,6.12.2023,10x,TM,0.1 dilution,True,,True,837,0,20,379,25,601
+Elm Park_9.16.2023_10x_TM 0.1 dilution-pp,Elm Park,elm park,park,9.16.2023,10x,TM,0.1 dilution,True,,True,625,0,20,328,24,536
+Elm Park_CR7.5.22_10x_TR1 .1 dilution-pp,Elm Park,elm park,park,7.5.22,10x,TR1,1 dilution,True,,True,3008,0,19,663,20,1198
+Elm Park_CR9.12.22_10xAI1 0.1 dilution-pp,Elm Park,elm park,park,9.12.22,10x,,0.1 dilution,True,,True,2908,0,21,330,20,369
+Elm Parkl Pond_5.15.2023_10X_TR1 0.1 dilution-pp,Elm Parkl Pond,elm parkl pond,pond,5.15.2023,10x,TR1,0.1 dilution,True,,True,200,0,18,492,21,714
+ElmParkPond_CR10.3.22_10x_AI1 (.1dilution)-pp,ElmParkPond,elmparkpond,,10.3.22,10x,AI1,1dilution,True,,True,1895,0,21,313,22,349
+ElmParkPond_CR6.18.22_10x_TR1 .1dilution-pp,ElmParkPond,elmparkpond,,6.18.22,10x,TR1,1dilution,True,,True,10236,0,14,690,20,842
+ElmPark_CR6.6.22_10x_TR1 .1 dilution-pp,ElmPark,elmpark,,6.6.22,10x,TR1,1 dilution,True,,True,4936,0,18,481,19,778
+ElmPark_CR7.16.22_10x_AI1 .1 dilution-pp,ElmPark,elmpark,,7.16.22,10x,AI1,1 dilution,True,,True,13106,0,18,349,21,839
+Elm_CR5.2.22_10x_TR1-pp,Elm,elm,,5.2.22,10x,TR1,,True,,True,16383,0,17,440,21,367
+Elm_CR5.21.22_10x_AI1 .1 dilution-pp,Elm,elm,,5.21.22,10x,AI1,1 dilution,True,,True,13106,0,19,360,23,732
+Elm_CR5.21.22_10x_TR1,Elm,elm,,5.21.22,10x,TR1,,False,,True,6,0,29,66,28,58
+Elm_CR8.1.22_10x_TR1-1 0.1 Dilution - pp,Elm,elm,,8.1.22,10x,TR1,0.1 Dilution,True,,True,3324,0,19,436,19,990
+Faluluh_CR10.1.21_10x_TR1,Faluluh,faluluh,,10.1.21,10x,TR1,,False,,True,15853,0,19,367,21,688
+Farm Pond_10.14.2023_10x_TM 0.5 dilution -pp,Farm Pond,farm pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,7,0,34,196,32,295
+Farm Pond_10.30.2023_10x_TM 0.5 dilution -pp,Farm Pond,farm pond,pond,10.30.2023,10x,TM,0.5 dilution,True,,True,16,0,43,105,45,93
+Farm Pond_4.29.23_10x_TR1 no dilution-pp,Farm Pond,farm pond,pond,4.29.23,10x,TR1,no dilution,True,,True,12,0,42,96,33,132
+Farm Pond_5.27.23_10x_TR1 no dilution-pp,Farm Pond,farm pond,pond,5.27.23,10x,TR1,no dilution,True,,True,13,0,32,189,43,180
+Farm Pond_6.24.2023_10x_TM no dilution-pp,Farm Pond,farm pond,pond,6.24.2023,10x,TM,no dilution,True,,True,11,0,26,75,29,86
+Farm Pond_7.10.2023_10x_TM 0.5 dilution-pp,Farm Pond,farm pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,26,0,40,91,51,109
+Farm Pond_7.22.2023_10x_TM 0.5 dilution-pp,Farm Pond,farm pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,16,0,44,189,35,220
+Farm Pond_8.19.2023_10x_TM 0.5 dilution-PP,Farm Pond,farm pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,18,0,29,130,32,160
+Farm Pond_8.7.2023_10x_TM 0.5 dilution-PP,Farm Pond,farm pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,22,0,35,172,38,247
+Farm Pond_9.16.2023_10x_TM 0.5 dilution-pp,Farm Pond,farm pond,pond,9.16.2023,10x,TM,0.5 dilution,True,,True,7,0,36,192,33,242
+Farm Pond_9.5.2023_10x_TM 0.5 dilution-pp,Farm Pond,farm pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,15,0,34,113,45,137
+Farm Pond_CR9.12.22_10xAI1-pp,Farm Pond,farm pond,pond,9.12.22,10x,,,True,,True,654,0,19,165,20,340
+FarmPond_CR6.18.22_10x_TR1-pp,FarmPond,farmpond,,6.18.22,10x,TR1,,True,,True,81,0,21,103,25,118
+FarmPond_CR8.1.22_10x_TR1-1 - pp,FarmPond,farmpond,,8.1.22,10x,TR1,,True,,True,273,0,20,343,21,413
+FarmPond_WCMC_CR9.30.21_TR1,FarmPond_WCMC,farmpond,,9.30.21,,TR1,,False,,False,196,0,26,142,25,210
+Farm_6.19.21_10x_TR1,Farm,farm,,6.19.21,10x,TR1,,False,,True,130,0,22,139,23,236
+Farm_6.3.24_10x_TR1-PP,Farm,farm,,6.3.24,10x,TR1,,True,,True,11,0,47,123,51,134
+Farm_CR10.15.22_10x_AI1-pp,Farm,farm,,10.15.22,10x,AI1,,True,,True,1354,0,20,166,24,258
+Farm_CR5.21.22_10x_AI1-pp,Farm,farm,,5.21.22,10x,AI1,,True,,True,229,0,21,312,23,357
+Farm_CR7.16.22_10x_AI1-pp,Farm,farm,,7.16.22,10x,AI1,,True,,True,348,0,23,133,24,330
+Farm_CR8.27.22_10x_TR1-PP,Farm,farm,,8.27.22,10x,TR1,,True,,True,35,0,24,230,27,213
+Farm_CR9.24.22_10x_TR1-pp,Farm,farm,,9.24.22,10x,TR1,,True,,True,17,0,29,182,28,184
+Farm_WCMC_CR10.16.21_TR1,Farm_WCMC,farm,,10.16.21,,TR1,,False,,False,3,0,39,94,46,480
+Farm_WCMC_CR10.16.21_TR1-PP,Farm_WCMC,farm,,10.16.21,,TR1,,True,Farm_WCMC_CR10.16.21_TR1,False,3,0,39,94,46,480
+FlintRamp_CR5.2.22_10x_TR1-pp,FlintRamp,flintramp,,5.2.22,10x,TR1,,True,,True,1022,0,20,277,21,420
+Flint_6.19.21_10x_TR1,Flint,flint,,6.19.21,10x,TR1,,False,,True,327,0,25,283,23,1239
+Flint_CR10.15.22_10x_AI1 .1dilution-pp,Flint,flint,,10.15.22,10x,AI1,1dilution,True,,True,402,0,18,420,26,881
+Flint_CR6.6.22_10x_TR1-pp,Flint,flint,,6.6.22,10x,TR1,,True,,True,579,0,23,920,22,1264
+Flint_CR7.16.22_10x_AI1-pp,Flint,flint,,7.16.22,10x,AI1,,True,,True,1396,0,18,708,20,732
+Flint_CR8.1.22_10x_TR1-1 - pp,Flint,flint,,8.1.22,10x,TR1,,True,,True,1546,0,17,553,23,701
+Flint_CR8.27.22_10X_AI1-PP,Flint,flint,,8.27.22,10x,AI1,,True,,True,1797,0,14,517,16,1049
+Flint_CR9.12.22_10xAI1-pp,Flint,flint,,9.12.22,10x,,,True,,True,3005,0,15,717,18,602
+Flint_WCMC_CR10.16.21_TR1,Flint_WCMC,flint,,10.16.21,,TR1,,False,,False,100,0,24,469,29,865
+Flint_WCMC_CR10.16.21_TR1-PP,Flint_WCMC,flint,,10.16.21,,TR1,,True,Flint_WCMC_CR10.16.21_TR1,False,70,0,24,469,29,865
+Flint_WCMC_CR9.25.21_10x_TR1,Flint_WCMC,flint,,9.25.21,10x,TR1,,False,,True,779,0,21,652,19,523
+Green Hill Park Pond_CR10.3.22_10x AI1 0.1 dilution-pp,Green Hill Park Pond,green hill park pond,park,10.3.22,10x,,0.1 dilution,True,,True,459,0,19,269,24,760
+Green Hill Park_4.29.23_10x_TR1-pp,Green Hill Park,green hill park,park,4.29.23,10x,TR1,,True,,True,25,0,26,228,36,181
+Green Hill Pond_10.14.2023_10x_TM 0.5 dilution -pp,Green Hill Pond,green hill pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,385,0,22,797,24,1050
+Green Hill Pond_10.2.2023_10x_TM 0.1 dilution -pp,Green Hill Pond,green hill pond,pond,10.2.2023,10x,TM,0.1 dilution,True,,True,25,0,30,608,26,464
+Green Hill Pond_10.30.2023_10x_TM 0.5 dilution-pp,Green Hill Pond,green hill pond,pond,10.30.2023,10x,TM,0.5 dilution,True,,True,122,0,22,514,28,779
+Green Hill Pond_5.15.2023_10X_TR1 0.5 dilution-pp,Green Hill Pond,green hill pond,pond,5.15.2023,10x,TR1,0.5 dilution,True,,True,18,0,27,206,29,184
+Green Hill Pond_6.24.2023_10x_TM no dilution-pp,Green Hill Pond,green hill pond,pond,6.24.2023,10x,TM,no dilution,True,,True,46,0,31,484,31,469
+Green Hill Pond_7.10.2023_10x_TM 0.5 dilution-pp,Green Hill Pond,green hill pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,63,0,33,527,28,532
+Green Hill Pond_7.22.2023_10x_TM 0.5 dilution-pp,Green Hill Pond,green hill pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,109,0,24,570,27,368
+Green Hill Pond_8.19.2023_10x_TM 0.5 dilution-pp,Green Hill Pond,green hill pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,588,0,20,671,24,759
+Green Hill Pond_8.7.2023_10x_TM 0.5 dilution-pp,Green Hill Pond,green hill pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,196,0,23,640,25,895
+Green Hill Pond_9.16.2023_10x_TM 0.1 dilution,Green Hill Pond,green hill pond,pond,9.16.2023,10x,TM,0.1 dilution,False,,True,198,0,24,660,25,1018
+Green Hill Pond_9.16.2023_10x_TM 0.1 dilution-pp,Green Hill Pond,green hill pond,pond,9.16.2023,10x,TM,0.1 dilution,True,Green Hill Pond_9.16.2023_10x_TM 0.1 dilution,True,34,0,24,564,30,400
+Green Hill Pond_9.5.2023_10x_TM 0.5 dilution -pp,Green Hill Pond,green hill pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,388,0,21,657,26,710
+Green Hill_5.27.23_10x_AI1 .5 dilution-pp,Green Hill,green hill,,5.27.23,10x,AI1,5 dilution,True,,True,903,0,22,155,25,221
+Green Hill_6.12.2023_10x_TM 0.5 dilution-pp,Green Hill,green hill,,6.12.2023,10x,TM,0.5 dilution,True,,True,21,0,37,388,28,288
+Green Hill_6.19.21_10x_TR1,Green Hill,green hill,,6.19.21,10x,TR1,,False,,True,1763,0,23,261,21,551
+Green Hill_CR8.1.22_10x_TR1-1 0.1 Dilution - pp,Green Hill,green hill,,8.1.22,10x,TR1,0.1 Dilution,True,,True,131,0,25,147,26,139
+Green Hill_CR8.27.22_10X_AI1-0.1 dilution-pp,Green Hill,green hill,,8.27.22,10x,AI1,0.1 dilution,True,,True,208,0,24,452,24,932
+Green Hill_CR9.12.22_10xAI1 0.1 dilution-pp,Green Hill,green hill,,9.12.22,10x,,0.1 dilution,True,,True,354,0,20,418,24,739
+GreenHillPark_CR5.2.22_10x_TR1-pp,GreenHillPark,greenhillpark,,5.2.22,10x,TR1,,True,,True,1352,0,18,263,23,330
+GreenHillPark_CR7.5.22_10x_TR1-pp,GreenHillPark,greenhillpark,,7.5.22,10x,TR1,,True,,True,1164,0,24,460,22,1021
+GreenHill_CR10.15.22_10x_AI1 .1 dilution-pp,GreenHill,greenhill,,10.15.22,10x,AI1,1 dilution,True,,True,793,0,22,263,23,419
+GreenHill_CR5.21.22_10x_AI1-pp,GreenHill,greenhill,,5.21.22,10x,AI1,,True,,True,962,0,20,450,25,1258
+GreenHill_CR6.6.22_10x_TR1-pp,GreenHill,greenhill,,6.6.22,10x,TR1,,True,,True,747,0,25,253,24,223
+GreenHill_CR7.16.22_10x_AI1 0.1 dilution-pp,GreenHill,greenhill,,7.16.22,10x,AI1,0.1 dilution,True,,True,299,0,25,263,26,737
+GreenHill_CR9.24.22_10x_TR1-pp,GreenHill,greenhill,,9.24.22,10x,TR1,,True,,True,652,0,23,834,25,1128
+Indian Lake Shore Joe_5.15.2023_10X_TR1 0.5 dilution-pp,Indian Lake Shore Joe,indian lake shore joe,lake,5.15.2023,10x,TR1,0.5 dilution,True,,True,110,0,27,485,25,801
+Indian Lake Shore Melissa_5.15.2023_10X_TR1 0.5 dilution-pp,Indian Lake Shore Melissa,indian lake shore melissa,lake,5.15.2023,10x,TR1,0.5 dilution,True,,True,399,0,21,299,24,449
+Indian Lake_10.14.2023_10x_TM 0.5 dilution -pp,Indian Lake,indian lake,lake,10.14.2023,10x,TM,0.5 dilution,True,,True,348,0,18,731,26,816
+Indian Lake_10.2.2023_10x_TM 0.5 dilution -pp,Indian Lake,indian lake,lake,10.2.2023,10x,TM,0.5 dilution,True,,True,811,0,19,471,26,1041
+Indian Lake_10.30.2023_10x_TM 0.5 dilution-pp,Indian Lake,indian lake,lake,10.30.2023,10x,TM,0.5 dilution,True,,True,222,0,23,623,22,519
+Indian Lake_4.29.23_10x_TR1 no dilution-pp,Indian Lake,indian lake,lake,4.29.23,10x,TR1,no dilution,True,,True,147,0,23,163,26,233
+Indian Lake_5.27.23_10x_AI1 .5 dilution-pp,Indian Lake,indian lake,lake,5.27.23,10x,AI1,5 dilution,True,,True,72,0,28,166,30,298
+Indian Lake_6.12.2023_10x_TM 0.5 dilution-pp,Indian Lake,indian lake,lake,6.12.2023,10x,TM,0.5 dilution,True,,True,55,0,30,143,29,193
+Indian Lake_6.24.2023_10x_TM no dilution-pp,Indian Lake,indian lake,lake,6.24.2023,10x,TM,no dilution,True,,True,14,0,35,116,34,168
+Indian Lake_7.10.2023_10x_TM 0.5 dilution-pp,Indian Lake,indian lake,lake,7.10.2023,10x,TM,0.5 dilution,True,,True,62,0,27,561,28,833
+Indian Lake_7.22.2023_10x_TM 0.5 dilution-pp,Indian Lake,indian lake,lake,7.22.2023,10x,TM,0.5 dilution,True,,True,58,0,29,627,28,941
+Indian Lake_8.19.2023_10x_TM 0.5 dilution-pp,Indian Lake,indian lake,lake,8.19.2023,10x,TM,0.5 dilution,True,,True,313,0,23,330,26,308
+Indian Lake_8.7.2023_10x_TM 0.5 dilution-pp,Indian Lake,indian lake,lake,8.7.2023,10x,TM,0.5 dilution,True,,True,365,0,27,803,27,934
+Indian Lake_9.16.2023_10x_TM 0.5 dilution-pp,Indian Lake,indian lake,lake,9.16.2023,10x,TM,0.5 dilution,True,,True,662,0,20,509,27,426
+Indian Lake_9.5.2023_10x_TM 0.5 dilution -pp,Indian Lake,indian lake,lake,9.5.2023,10x,TM,0.5 dilution,True,,True,143,0,20,721,29,600
+Indian Lake_CR9.24.22_10x_TR1-pp,Indian Lake,indian lake,lake,9.24.22,10x,TR1,,True,,True,226,0,21,542,28,364
+Indian Shore Park_CR10.3.22_10x AI1 0.1 dilution-pp,Indian Shore Park,indian shore park,shore,10.3.22,10x,,0.1 dilution,True,,True,574,0,16,644,20,322
+IndianLake_CR6.18.22_10x_TR1-pp,IndianLake,indianlake,,6.18.22,10x,TR1,,True,,True,2535,0,19,255,25,234
+IndianShorePark_CR5.2.22_10x_TR1-pp,IndianShorePark,indianshorepark,,5.2.22,10x,TR1,,True,,True,2285,0,19,293,23,463
+IndianShorePark_CR6.6.22_10x_TR1-pp,IndianShorePark,indianshorepark,,6.6.22,10x,TR1,,True,,True,4807,0,18,239,22,279
+Indian_6.3.24_10x_TR1 no dilution-pp,Indian,indian,,6.3.24,10x,TR1,no dilution,True,,True,101,0,23,265,26,254
+Indian_CR10.15.22_10x_AI1-pp-1,Indian,indian,,10.15.22,10x,AI1,,True,,True,2644,0,16,374,19,1089
+Indian_CR5.2.22_10x_TR1-pp,Indian,indian,,5.2.22,10x,TR1,,True,,True,1326,0,18,328,21,456
+Indian_CR5.21.22_10x_AI1-pp,Indian,indian,,5.21.22,10x,AI1,,True,,True,1304,0,21,310,25,297
+Indian_CR6.6.22_10x_TR1,Indian,indian,,6.6.22,10x,TR1,,False,,True,4261,0,16,622,23,1920
+Indian_CR6.6.22_10x_TR2-pp,Indian,indian,,6.6.22,10x,TR2,,True,,True,4263,0,23,613,21,833
+Indian_CR7.16.22_10x_AI1 .25 dilution-pp,Indian,indian,,7.16.22,10x,AI1,25 dilution,True,,True,1457,0,17,292,20,807
+Indian_CR7.5.22_10x_TR1-pp,Indian,indian,,7.5.22,10x,TR1,,True,,True,3463,0,17,258,19,339
+Indian_CR8.1.22_10x_TR1-1 - PP,Indian,indian,,8.1.22,10x,TR1,,True,,True,4109,0,16,571,20,634
+Indian_CR8.27.22_10X_AI1-pp,Indian,indian,,8.27.22,10x,AI1,,True,,True,2506,0,15,756,18,694
+Indian_WCMC_CR10.16.21_TR1,Indian_WCMC,indian,,10.16.21,,TR1,,False,,False,349,0,25,268,27,368
+Indian_WCMC_CR10.16.21_TR1-PP,Indian_WCMC,indian,,10.16.21,,TR1,,True,Indian_WCMC_CR10.16.21_TR1,False,325,0,25,268,27,368
+Indian_WCMC_CR9.25.21_10x_TR1,Indian_WCMC,indian,,9.25.21,10x,TR1,,False,,True,3001,0,18,484,21,907
+Indian_WCMC_CR9.25.21_10x_TR1-PP,Indian_WCMC,indian,,9.25.21,10x,TR1,,True,Indian_WCMC_CR9.25.21_10x_TR1,True,2781,0,18,484,21,907
+Jordan Pond_10.2.2023_10x_TM 0.5 dilution -pp,Jordan Pond,jordan pond,pond,10.2.2023,10x,TM,0.5 dilution,True,,True,30,0,27,235,28,246
+Jordan Pond_10.30.2023_10x_TM 0.5 dilution-pp,Jordan Pond,jordan pond,pond,10.30.2023,10x,TM,0.5 dilution,True,,True,19,0,34,436,33,625
+Jordan Pond_5.15.2023_10X_TR1 no dilution-pp,Jordan Pond,jordan pond,pond,5.15.2023,10x,TR1,no dilution,True,,True,40,0,27,179,30,224
+Jordan Pond_6.24.2023_10x_TM no dilution-pp,Jordan Pond,jordan pond,pond,6.24.2023,10x,TM,no dilution,True,,True,358,0,21,494,26,976
+Jordan Pond_7.10.2023_10x_TM 0.5 dilution-pp,Jordan Pond,jordan pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,134,0,29,664,22,1062
+Jordan Pond_7.22.2023_10x_TM 0.5 dilution-pp,Jordan Pond,jordan pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,65,0,29,754,29,634
+Jordan Pond_8.7.2023_10x_TM 0.5 dilution-pp,Jordan Pond,jordan pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,137,0,24,892,28,544
+Jordan Pond_9.5.2023_10x_TM 0.5 dilution -pp,Jordan Pond,jordan pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,42,0,28,210,29,277
+Jordan Pond_CR9.24.22_10x_TR1-pp-1,Jordan Pond,jordan pond,pond,9.24.22,10x,TR1,,True,,True,35,0,24,223,31,248
+Jordan_4.29.23_10x_TR1 no dilution-pp,Jordan,jordan,,4.29.23,10x,TR1,no dilution,True,,True,25,0,32,162,30,208
+Jordan_5.27.23_10x_TR1_.5 dilution-pp,Jordan,jordan,,5.27.23,10x,,5 dilution,True,,True,10,0,33,91,35,95
+Jordan_6.12.2023_10x_TM no dilution-pp,Jordan,jordan,,6.12.2023,10x,TM,no dilution,True,,True,27,0,33,467,30,795
+Jordan_6.3.24_10x_TR1 no dilution-pp,Jordan,jordan,,6.3.24,10x,TR1,no dilution,True,,True,29,0,26,283,30,389
+Jordan_CR10.15.22_10x_AI1-pp,Jordan,jordan,,10.15.22,10x,AI1,,True,,True,834,0,23,245,25,328
+Jordan_CR5.21.22_10x_AI1-pp,Jordan,jordan,,5.21.22,10x,AI1,,True,,True,461,0,20,114,21,116
+Jordan_CR7.16.22_10x_AI1,Jordan,jordan,,7.16.22,10x,AI1,,False,,True,388,0,14,797,23,1650
+Jordan_CR8.27.22_10X_AI1-pp,Jordan,jordan,,8.27.22,10x,AI1,,True,,True,648,0,21,156,21,175
+Kiver Pond_10.14.2023_10x_TM 0.1 dilution -pp,Kiver Pond,kiver pond,pond,10.14.2023,10x,TM,0.1 dilution,True,,True,14,0,33,178,41,85
+Kiver Pond_10.2.2023_10x_TM 0.1 dilution -pp,Kiver Pond,kiver pond,pond,10.2.2023,10x,TM,0.1 dilution,True,,True,11,0,29,91,33,120
+Kiver Pond_5.15.2023_10X_TR1 0.5 dilution-pp,Kiver Pond,kiver pond,pond,5.15.2023,10x,TR1,0.5 dilution,True,,True,34,0,23,317,30,454
+Kiver Pond_6.24.2023_10x_TM 0.5 dilution-pp,Kiver Pond,kiver pond,pond,6.24.2023,10x,TM,0.5 dilution,True,,True,538,0,18,337,24,452
+Kiver Pond_7.10.2023_10x_TM 0.1 dilution-pp,Kiver Pond,kiver pond,pond,7.10.2023,10x,TM,0.1 dilution,True,,True,597,0,24,570,18,487
+Kiver Pond_7.22.2023_10x_TM 0.1 dilution-pp,Kiver Pond,kiver pond,pond,7.22.2023,10x,TM,0.1 dilution,True,,True,5,0,30,67,31,141
+Kiver Pond_8.7.2023_10x_TM 0.1 dilution-pp1,Kiver Pond,kiver pond,pond,8.7.2023,10x,TM,0.1 dilution,False,,True,396,0,20,231,25,407
+Kiver Pond_9.16.2023_10x_TM 0.1 dilution-pp,Kiver Pond,kiver pond,pond,9.16.2023,10x,TM,0.1 dilution,True,,True,8,0,37,76,43,206
+Kiver Pond_9.5.2023_10x_TM 0.1 dilution -pp,Kiver Pond,kiver pond,pond,9.5.2023,10x,TM,0.1 dilution,True,,True,164,0,27,154,29,275
+Kiver_4.29.23_10x_TR1 0.5 dilution-pp,Kiver,kiver,,4.29.23,10x,TR1,0.5 dilution,True,,True,73,0,21,315,32,424
+Kiver_5.27.23_10x_AI1 .1 dilution-pp,Kiver,kiver,,5.27.23,10x,AI1,1 dilution,True,,True,1109,0,22,197,18,300
+Kiver_6.12.2023_10x_TM 0.1 dilution-pp,Kiver,kiver,,6.12.2023,10x,TM,0.1 dilution,True,,True,967,0,24,505,25,534
+Kiver_6.3.24_10x_TR1 0.5 Dilution-pp,Kiver,kiver,,6.3.24,10x,TR1,0.5 Dilution,True,,True,1513,0,23,609,26,755
+Kiver_CR10.15.22_10x_AI1 .1dilution-pp,Kiver,kiver,,10.15.22,10x,AI1,1dilution,True,,True,483,0,21,163,24,304
+Kiver_CR5.2.22_10x_TR1-pp,Kiver,kiver,,5.2.22,10x,TR1,,True,,True,16383,0,16,534,18,802
+Kiver_CR5.21.22_10x_AI1 .1 dilution-pp,Kiver,kiver,,5.21.22,10x,AI1,1 dilution,True,,True,3061,0,18,300,17,347
+Kiver_CR6.18.22_10x_TR1 .1dilution-pp,Kiver,kiver,,6.18.22,10x,TR1,1dilution,True,,True,316,0,25,153,21,167
+Kiver_CR6.6.22_10x_TR1 .1dilution-pp,Kiver,kiver,,6.6.22,10x,TR1,1dilution,True,,True,349,0,24,226,15,340
+Kiver_CR7.16.22_10x_AI1 .1 dilution-pp,Kiver,kiver,,7.16.22,10x,AI1,1 dilution,True,,True,1675,0,15,455,14,561
+Kiver_CR7.5.22_10x_TR1-pp,Kiver,kiver,,7.5.22,10x,TR1,,True,,True,2720,0,18,314,18,401
+Kiver_CR8.1.22_10x_TR1-1 0.1 dilution - pp,Kiver,kiver,,8.1.22,10x,TR1,0.1 dilution,True,,True,409,0,19,101,24,134
+Kiver_CR8.27.22_10X_AI1 0.1 dilution-pp,Kiver,kiver,,8.27.22,10x,AI1,0.1 dilution,True,,True,1164,0,19,428,22,622
+Kiver_CR9.24.22_10x_TR1 0.1 dilution-pp,Kiver,kiver,,9.24.22,10x,TR1,0.1 dilution,True,,True,287,0,21,316,26,395
+Kiver_WCMC_CR10.16.21_TR2,Kiver_WCMC,kiver,,10.16.21,,TR2,,False,,False,3588,0,19,485,20,586
+Kiver_WCMC_CR10.16.21_TR2-PP,Kiver_WCMC,kiver,,10.16.21,,TR2,,True,Kiver_WCMC_CR10.16.21_TR2,False,2505,0,19,485,20,586
+Kiver_WCMC_CR9.25.21_10x_TR1,Kiver_WCMC,kiver,,9.25.21,10x,TR1,,False,,True,3496,0,17,550,19,708
+Kiver_WCMC_CR9.25.21_10x_TR1-PP,Kiver_WCMC,kiver,,9.25.21,10x,TR1,,True,Kiver_WCMC_CR9.25.21_10x_TR1,True,3300,0,17,550,19,708
+Lake Chauncey_6.12.2023_10x_TM no dilution-pp,Lake Chauncey,lake chauncey,lake,6.12.2023,10x,TM,no dilution,True,,True,39,0,31,252,26,240
+Lake Chauncey_6.24.2023_10x_TM no dilution-pp,Lake Chauncey,lake chauncey,lake,6.24.2023,10x,TM,no dilution,True,,True,35,0,31,245,29,455
+Lake Chauncey_7.10.2023_10x_TM 0.5 dilution-pp,Lake Chauncey,lake chauncey,lake,7.10.2023,10x,TM,0.5 dilution,True,,True,139,0,30,693,27,798
+Lake Chauncey_7.22.2023_10x_TM 0.5 dilution-pp,Lake Chauncey,lake chauncey,lake,7.22.2023,10x,TM,0.5 dilution,True,,True,532,0,22,814,25,993
+Lake Chauncey_8.7.2023_10x_TM 0.5 dilution-pp,Lake Chauncey,lake chauncey,lake,8.7.2023,10x,TM,0.5 dilution,True,,True,323,0,25,789,23,1059
+Lake Chauncy_10.14.2023_10x_TM 0.5 dilution -pp,Lake Chauncy,lake chauncy,lake,10.14.2023,10x,TM,0.5 dilution,True,,True,77,0,26,685,28,871
+Lake Chauncy_10.2.2023_10x_TM 0.5 dilution -pp,Lake Chauncy,lake chauncy,lake,10.2.2023,10x,TM,0.5 dilution,True,,True,43,0,21,411,28,313
+Lake Chauncy_5.15.2023_10X_TR1 no dilution-pp,Lake Chauncy,lake chauncy,lake,5.15.2023,10x,TR1,no dilution,True,,True,33,0,30,276,33,264
+Lake Chauncy_8.19.2023_10x_TM 0.5 dilution 2-pp,Lake Chauncy,lake chauncy,lake,8.19.2023,10x,TM,0.5 dilution,True,,True,426,0,20,761,28,1197
+Lake Chauncy_9.16.2023_10x_TM 0.5 dilution-pp,Lake Chauncy,lake chauncy,lake,9.16.2023,10x,TM,0.5 dilution,True,,True,206,0,22,468,26,1218
+Lake Ellie_10.14.2023_10x_TM 0.1 dilution -pp,Lake Ellie,lake ellie,lake,10.14.2023,10x,TM,0.1 dilution,True,,True,89,0,19,166,28,167
+Lake Ellie_10.2.2023_10x_TM 0.1 dilution -pp,Lake Ellie,lake ellie,lake,10.2.2023,10x,TM,0.1 dilution,True,,True,31,0,45,125,34,101
+Lake Ellie_10.30.2023_10x_TM 0.5 dilution-pp,Lake Ellie,lake ellie,lake,10.30.2023,10x,TM,0.5 dilution,True,,True,383,0,17,221,23,511
+Lake Ellie_5.27.23_10x_AI1 .1 dilution-pp,Lake Ellie,lake ellie,lake,5.27.23,10x,AI1,1 dilution,True,,True,866,0,19,169,20,168
+Lake Ellie_6.12.2023_10x_TM 0.1 dilution-pp,Lake Ellie,lake ellie,lake,6.12.2023,10x,TM,0.1 dilution,True,,True,151,0,29,155,27,221
+Lake Ellie_6.24.2023_10x_TM 0.1 dilution-pp,Lake Ellie,lake ellie,lake,6.24.2023,10x,TM,0.1 dilution,True,,True,143,0,19,134,27,231
+Lake Ellie_7.10.2023_10x_TM 0.1 dilution-pp,Lake Ellie,lake ellie,lake,7.10.2023,10x,TM,0.1 dilution,True,,True,101,0,28,167,30,169
+Lake Ellie_7.22.2023_10x_TM 0.1 dilution-pp,Lake Ellie,lake ellie,lake,7.22.2023,10x,TM,0.1 dilution,True,,True,360,0,20,133,24,99
+Lake Ellie_9.16.2023_10x_TM 0.1 dilution-pp,Lake Ellie,lake ellie,lake,9.16.2023,10x,TM,0.1 dilution,True,,True,202,0,26,217,25,147
+Lake Ellie_9.5.2023_10x_TM 0.1 dilution -pp,Lake Ellie,lake ellie,lake,9.5.2023,10x,TM,0.1 dilution,True,,True,268,0,26,136,29,155
+Lake Lashaway_10.14.2023_10x_TM 0.5 dilution -pp,Lake Lashaway,lake lashaway,lake,10.14.2023,10x,TM,0.5 dilution,True,,True,39,0,30,304,28,943
+Lake Lashaway_10.2.2023_10x_TM 0.5 dilution -pp,Lake Lashaway,lake lashaway,lake,10.2.2023,10x,TM,0.5 dilution,True,,True,37,0,29,168,31,552
+Lake Lashaway_10.30.2023_10x_TM 0.5 dilution 1-pp,Lake Lashaway,lake lashaway,lake,10.30.2023,10x,TM,0.5 dilution,True,,True,35,0,30,222,31,324
+Lake Lashaway_5.15.2023_10X_TR1 no dilution-pp,Lake Lashaway,lake lashaway,lake,5.15.2023,10x,TR1,no dilution,True,,True,56,0,29,205,24,172
+Lake Lashaway_5.27.23_10x_AI1 no dilution-pp,Lake Lashaway,lake lashaway,lake,5.27.23,10x,AI1,no dilution,True,,True,1361,0,21,163,25,243
+Lake Lashaway_6.12.2023_10x_TM no dilution-pp,Lake Lashaway,lake lashaway,lake,6.12.2023,10x,TM,no dilution,True,,True,25,0,40,176,36,231
+Lake Lashaway_6.24.2023_10x_TM no dilution-pp,Lake Lashaway,lake lashaway,lake,6.24.2023,10x,TM,no dilution,True,,True,19,0,36,250,27,235
+Lake Lashaway_7.10.2023_10x_TM 0.5 dilution-pp,Lake Lashaway,lake lashaway,lake,7.10.2023,10x,TM,0.5 dilution,True,,True,25,0,27,183,27,169
+Lake Lashaway_7.22.2023_10x_TM 0.5 dilution-pp,Lake Lashaway,lake lashaway,lake,7.22.2023,10x,TM,0.5 dilution,True,,True,71,0,29,233,28,224
+Lake Lashaway_8.19.2023_10x_TM 0.5 dilution-pp,Lake Lashaway,lake lashaway,lake,8.19.2023,10x,TM,0.5 dilution,True,,True,194,0,28,328,30,601
+Lake Lashaway_8.7.2023_10x_TM 0.5 dilution-pp,Lake Lashaway,lake lashaway,lake,8.7.2023,10x,TM,0.5 dilution,True,,True,123,0,26,370,30,406
+Lake Lashaway_9.16.2023_10x_TM 0.5 dilution-pp,Lake Lashaway,lake lashaway,lake,9.16.2023,10x,TM,0.5 dilution,True,,True,204,0,26,404,28,382
+Lake Lashaway_9.5.2023_10x_TM 0.5 dilution-pp,Lake Lashaway,lake lashaway,lake,9.5.2023,10x,TM,0.5 dilution,True,,True,73,0,25,235,29,280
+Lake Quinsig_8.7.2023_10x_TM 0.5 dilution-pp,Lake Quinsig,lake quinsig,lake,8.7.2023,10x,TM,0.5 dilution,True,,True,189,0,22,671,29,895
+Lake Quinsigamond_10.14.2023_10x_TM 0.5 dilution -pp,Lake Quinsigamond,lake quinsigamond,lake,10.14.2023,10x,TM,0.5 dilution,True,,True,164,0,24,597,28,1040
+Lake Quinsigamond_10.30.2023_10x_TM 0.5 dilution-pp,Lake Quinsigamond,lake quinsigamond,lake,10.30.2023,10x,TM,0.5 dilution,True,,True,126,0,22,726,29,1059
+Lake Quinsigamond_5.27.23_10x_AI1 no dilution-pp,Lake Quinsigamond,lake quinsigamond,lake,5.27.23,10x,AI1,no dilution,True,,True,1258,0,20,379,21,506
+Lake Quinsigamond_8.19.2023_10x_TM 0.5 dilution-pp 1,Lake Quinsigamond,lake quinsigamond,lake,8.19.2023,10x,TM,0.5 dilution,True,,True,106,0,26,724,27,889
+Lake Quinsigamond_9.16.2023_10x_TM 0.5 dilution-pp,Lake Quinsigamond,lake quinsigamond,lake,9.16.2023,10x,TM,0.5 dilution,True,,True,109,0,23,833,30,694
+Lake Quinsigamond_9.5.2023_10x_TM 0.5 dilution -pp,Lake Quinsigamond,lake quinsigamond,lake,9.5.2023,10x,TM,0.5 dilution,True,,True,55,0,30,550,29,650
+Lake Waushacum_5.27.23_10x_AI1 no dilution-pp,Lake Waushacum,lake waushacum,lake,5.27.23,10x,AI1,no dilution,True,,True,949,0,19,256,22,516
+Lashaway_4.29.23_10x_TR1 no dilution-pp,Lashaway,lashaway,,4.29.23,10x,TR1,no dilution,True,,True,27,0,29,176,33,402
+Lashaway_6.3.24_10x_TR1 no dilution-PP,Lashaway,lashaway,,6.3.24,10x,TR1,no dilution,True,,True,24,0,27,157,34,350
+Leeseville_5.27.23_10x_AI1 no dilution-pp,Leeseville,leeseville,,5.27.23,10x,AI1,no dilution,True,,True,1572,0,18,205,22,408
+Leeseville_6.19.21_10x_TR1,Leeseville,leeseville,,6.19.21,10x,TR1,,False,,True,2488,0,17,440,24,709
+Leeseville_CR10.15.22_10x_AI1-pp,Leeseville,leeseville,,10.15.22,10x,AI1,,True,,True,933,0,19,362,19,243
+Leeseville_CR5.21.22_10x_AI1-pp,Leeseville,leeseville,,5.21.22,10x,AI1,,True,,True,999,0,19,188,22,291
+Leeseville_CR6.18.22_10x_TR1-pp,Leeseville,leeseville,,6.18.22,10x,TR1,,True,,True,418,0,17,95,25,87
+Leeseville_CR7.16.22_10x_AI1-pp,Leeseville,leeseville,,7.16.22,10x,AI1,,True,,True,366,0,20,154,23,153
+Leeseville_WCMC_CR10.16.21_TR1,Leeseville_WCMC,leeseville,,10.16.21,,TR1,,False,,False,351,0,25,253,28,465
+Leeseville_WCMC_CR10.16.21_TR1-PP,Leeseville_WCMC,leeseville,,10.16.21,,TR1,,True,Leeseville_WCMC_CR10.16.21_TR1,False,175,0,25,253,28,465
+Leeseville_WCMC_CR9.25.21_10x_TR1,Leeseville_WCMC,leeseville,,9.25.21,10x,TR1,,False,,True,869,0,19,271,24,373
+Leeseville_WCMC_CR9.25.21_10x_TR1-PP,Leeseville_WCMC,leeseville,,9.25.21,10x,TR1,,True,Leeseville_WCMC_CR9.25.21_10x_TR1,True,865,0,19,271,24,373
+Leesville Pond_10.30.2023_10x_TM 0.5 dilution-pp,Leesville Pond,leesville pond,pond,10.30.2023,10x,TM,0.5 dilution,True,,True,28,0,27,240,31,147
+Leesville Pond_5.15.2023_10X_TR1 no dilution-pp,Leesville Pond,leesville pond,pond,5.15.2023,10x,TR1,no dilution,True,,True,20,0,30,286,29,168
+Leesville Pond_6.24.2023_10x_TM no dilution-pp,Leesville Pond,leesville pond,pond,6.24.2023,10x,TM,no dilution,True,,True,102,0,29,667,28,587
+Leesville Pond_7.22.2023_10x_TM 0.5 dilution-pp,Leesville Pond,leesville pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,45,0,25,579,33,799
+Leesville Pond_8.19.2023_10x_TM 0.5 dilution-pp,Leesville Pond,leesville pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,14,0,29,92,34,82
+Leesville Pond_9.16.2023_10x_TM 0.5 dilution-pp,Leesville Pond,leesville pond,pond,9.16.2023,10x,TM,0.5 dilution,True,,True,9,0,35,220,43,233
+Leesville Pond_9.5.2023_10x_TM 0.5 dilution -pp,Leesville Pond,leesville pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,3,0,97,268,103,122
+Leesville_4.29.23_10x_TR1 no dilution-pp,Leesville,leesville,,4.29.23,10x,TR1,no dilution,True,,True,112,0,27,266,17,294
+Leesville_6.12.2023_10x_TM no dilution-pp,Leesville,leesville,,6.12.2023,10x,TM,no dilution,True,,True,48,0,27,323,29,525
+Leesville_CR8.27.22_10X_AI1-pp,Leesville,leesville,,8.27.22,10x,AI1,,True,,True,1615,0,19,334,21,300
+Leesville_CR9.24.22_10x_TR1-pp,Leesville,leesville,,9.24.22,10x,TR1,,True,,True,32,0,28,302,26,304
+Little Indian Lake_10.14.2023_10x_TM 0.1 dilution -pp,Little Indian Lake,little indian lake,lake,10.14.2023,10x,TM,0.1 dilution,True,,True,134,0,26,211,25,270
+Little Indian Lake_10.30.2023_10x_TM 0.5 dilution-pp,Little Indian Lake,little indian lake,lake,10.30.2023,10x,TM,0.5 dilution,True,,True,746,0,19,324,26,573
+Little Indian Lake_7.22.2023_10x_TM 0.1 dilution-pp,Little Indian Lake,little indian lake,lake,7.22.2023,10x,TM,0.1 dilution,True,,True,71,0,27,734,27,695
+Little Indian Lake_8.7.2023_10x_TM 0.1 dilution-pp,Little Indian Lake,little indian lake,lake,8.7.2023,10x,TM,0.1 dilution,True,,True,134,0,17,735,27,649
+Little Indian Lake_9.5.2023_10x_TM 0.1 dilution -pp,Little Indian Lake,little indian lake,lake,9.5.2023,10x,TM,0.1 dilution,True,,True,570,0,22,530,27,604
+Little Indian_10.2.2023_10x_TM 0.1 dilution -pp,Little Indian,little indian,,10.2.2023,10x,TM,0.1 dilution,True,,True,75,0,30,205,27,245
+Little Indian_4.29.23_10x_TR1 0.5 dilution-pp,Little Indian,little indian,,4.29.23,10x,TR1,0.5 dilution,True,,True,108,0,25,165,27,282
+Little Indian_5.15.2023_10X_TR1 0.5 dilution-pp,Little Indian,little indian,,5.15.2023,10x,TR1,0.5 dilution,True,,True,63,0,26,227,29,375
+Little Indian_5.27.23_10x_TR1 .1 dilution-pp,Little Indian,little indian,,5.27.23,10x,TR1,1 dilution,True,,True,439,0,25,109,24,116
+Little Indian_6.12.2023_10x_TM 0.5 dilution 2-pp,Little Indian,little indian,,6.12.2023,10x,TM,0.5 dilution,True,,True,147,0,30,122,26,158
+Little Indian_6.12.2023_10x_TM 0.5 dilution-pp,Little Indian,little indian,,6.12.2023,10x,TM,0.5 dilution,True,,True,69,0,27,191,26,250
+Little Indian_6.24.2023_10x_TM 0.1 dilution-pp,Little Indian,little indian,,6.24.2023,10x,TM,0.1 dilution,True,,True,114,0,27,267,25,114
+Little Indian_6.24.2023_10x_TM 0.5 dilution-pp,Little Indian,little indian,,6.24.2023,10x,TM,0.5 dilution,True,,True,927,0,21,395,24,354
+Little Indian_6.3.24_10x_TR1 0.5 Dilution-pp,Little Indian,little indian,,6.3.24,10x,TR1,0.5 Dilution,True,,True,1547,0,19,554,23,351
+Little Indian_7.10.2023_10x_TM 0.1 dilution-pp,Little Indian,little indian,,7.10.2023,10x,TM,0.1 dilution,True,,True,95,0,29,329,28,328
+Little Indian_8.19.2023_10x_TM 0.5 dilution-pp,Little Indian,little indian,,8.19.2023,10x,TM,0.5 dilution,True,,True,2240,0,18,501,25,776
+Little Indian_9.16.2023_10x_TM 0.1 dilution-pp,Little Indian,little indian,,9.16.2023,10x,TM,0.1 dilution,True,,True,268,0,25,593,26,596
+Little Indian_CR5.21.22_10x_AI1-pp,Little Indian,little indian,,5.21.22,10x,AI1,,True,,True,1500,0,19,476,22,410
+Little Indian_CR8.27.22_10X_AI1-pp,Little Indian,little indian,,8.27.22,10x,AI1,,True,,True,3264,0,16,548,20,621
+Little Indian_CR9.24.22_10x_TR1 0.1 dilution-pp,Little Indian,little indian,,9.24.22,10x,TR1,0.1 dilution,True,,True,117,0,22,512,31,877
+LittleIndian_CR10.15.22_10x_AI1 .1dilution-pp,LittleIndian,littleindian,,10.15.22,10x,AI1,1dilution,True,,True,1480,0,19,427,21,1038
+LittleIndian_CR5.2.22_10x_TR1-pp,LittleIndian,littleindian,,5.2.22,10x,TR1,,True,,True,8195,0,18,332,18,484
+LittleIndian_CR6.18.22_10x_TR1 .25 dilution-pp,LittleIndian,littleindian,,6.18.22,10x,TR1,25 dilution,True,,True,2172,0,21,249,24,402
+LittleIndian_CR6.6.22_10x_TR1-pp,LittleIndian,littleindian,,6.6.22,10x,TR1,,True,,True,3618,0,21,643,22,523
+LittleIndian_CR7.16.22_10x_AI1-pp,LittleIndian,littleindian,,7.16.22,10x,AI1,,True,,True,3255,0,18,550,21,601
+LittleIndian_CR7.5.22_10x_TR1 .1 dilution-pp,LittleIndian,littleindian,,7.5.22,10x,TR1,1 dilution,True,,True,1587,0,18,480,20,747
+LittleIndian_CR8.1.22_10x_TR1-1 0.1 dilution - pp,LittleIndian,littleindian,,8.1.22,10x,TR1,0.1 dilution,True,,True,1999,0,19,453,18,814
+LittleIndian_WCMC_CR10.16.21_TR1,LittleIndian_WCMC,littleindian,,10.16.21,,TR1,,False,,False,1419,0,18,430,27,814
+LittleIndian_WCMC_CR10.16.21_TR1-PP,LittleIndian_WCMC,littleindian,,10.16.21,,TR1,,True,LittleIndian_WCMC_CR10.16.21_TR1,False,843,0,18,430,27,814
+LittleIndian_WCMC_CR9.25.21_10x_TR1,LittleIndian_WCMC,littleindian,,9.25.21,10x,TR1,,False,,True,1654,0,18,509,25,779
+LittleIndian_WCMC_CR9.25.21_10x_TR1-PP,LittleIndian_WCMC,littleindian,,9.25.21,10x,TR1,,True,LittleIndian_WCMC_CR9.25.21_10x_TR1,True,1626,0,18,509,25,779
+Manchaug Pond_10.14.2023_10x_TM 0.5 dilution -pp,Manchaug Pond,manchaug pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,9,0,27,133,32,123
+Manchaug Pond_10.2.2023_10x_TM 0.5 dilution -pp,Manchaug Pond,manchaug pond,pond,10.2.2023,10x,TM,0.5 dilution,True,,True,3,0,76,427,64,309
+Manchaug Pond_5.15.2023_10X_TR1 no dilution-pp,Manchaug Pond,manchaug pond,pond,5.15.2023,10x,TR1,no dilution,True,,True,49,0,28,239,32,252
+Manchaug Pond_6.24.2023_10x_TM no dilution-pp,Manchaug Pond,manchaug pond,pond,6.24.2023,10x,TM,no dilution,True,,True,17,0,31,115,27,164
+Manchaug Pond_7.10.2023_10x_TM 0.5 dilution-pp,Manchaug Pond,manchaug pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,60,0,31,298,30,183
+Manchaug Pond_7.22.2023_10x_TM 0.5 dilution-pp,Manchaug Pond,manchaug pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,43,0,34,458,33,354
+Manchaug Pond_8.19.2023_10x_TM 0.5 dilution-PP,Manchaug Pond,manchaug pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,30,0,27,123,29,285
+Manchaug Pond_8.7.2023_10x_TM 0.5 dilution-pp,Manchaug Pond,manchaug pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,17,0,39,352,33,363
+Manchaug Pond_9.16.2023_10x_TM 0.5 dilution-pp,Manchaug Pond,manchaug pond,pond,9.16.2023,10x,TM,0.5 dilution,True,,True,11,0,41,152,40,124
+Manchaug Pond_9.5.2023_10x_TM 0.5 dilution-pp,Manchaug Pond,manchaug pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,6,0,49,148,41,166
+Manchaug_4.29.23_10x_TR1 no dilution-pp,Manchaug,manchaug,,4.29.23,10x,TR1,no dilution,True,,True,48,0,23,245,26,342
+Manchaug_5.27.23_10x_AI1 no dilution-pp,Manchaug,manchaug,,5.27.23,10x,AI1,no dilution,True,,True,876,0,21,247,24,402
+Manchaug_6.12.2023_10x_TM no dilution-pp,Manchaug,manchaug,,6.12.2023,10x,TM,no dilution,True,,True,37,0,27,202,31,159
+Manchaug_6.19.21_10x_TR1,Manchaug,manchaug,,6.19.21,10x,TR1,,False,,True,184,0,19,164,22,673
+Manchaug_6.3.24_10x_TR1 no dilution-PP,Manchaug,manchaug,,6.3.24,10x,TR1,no dilution,True,,True,35,0,28,291,28,313
+Manchaug_CR10.15.22_10x_AI1-pp,Manchaug,manchaug,,10.15.22,10x,AI1,,True,,True,153,0,18,169,25,184
+Manchaug_CR10.3.22_10x_AI1-pp,Manchaug,manchaug,,10.3.22,10x,AI1,,True,,True,122,0,26,138,25,107
+Manchaug_CR5.2.22_10x_TR1-pp,Manchaug,manchaug,,5.2.22,10x,TR1,,True,,True,231,0,19,140,25,187
+Manchaug_CR5.21.22_10x_AI1-pp,Manchaug,manchaug,,5.21.22,10x,AI1,,True,,True,509,0,21,229,26,245
+Manchaug_CR6.18.22_10x_TR1-pp,Manchaug,manchaug,,6.18.22,10x,TR1,,True,,True,232,0,24,229,25,201
+Manchaug_CR6.6.22_10x_TR1-pp,Manchaug,manchaug,,6.6.22,10x,TR1,,True,,True,437,0,19,242,22,266
+Manchaug_CR7.16.22_10x_AI1-pp,Manchaug,manchaug,,7.16.22,10x,AI1,,True,,True,295,0,27,364,25,295
+Manchaug_CR7.5.22_10x_TR1-pp,Manchaug,manchaug,,7.5.22,10x,TR1,,True,,True,457,0,21,222,23,307
+Manchaug_CR8.1.22_10x_TR1-1 - pp,Manchaug,manchaug,,8.1.22,10x,TR1,,True,,True,276,0,24,440,25,257
+Manchaug_CR8.27.22_10X_AI1-pp,Manchaug,manchaug,,8.27.22,10x,AI1,,True,,True,425,0,23,235,25,141
+Manchaug_CR9.12.22_10xAI1-pp,Manchaug,manchaug,,9.12.22,10x,,,True,,True,364,0,25,76,24,151
+Manchaug_CR9.24.22_10x_TR1-pp,Manchaug,manchaug,,9.24.22,10x,TR1,,True,,True,9,0,51,150,46,141
+Manchaug_WCMC_CR10.16.21_TR1,Manchaug_WCMC,manchaug,,10.16.21,,TR1,,False,,False,18,0,27,113,30,131
+Manchaug_WCMC_CR10.16.21_TR1-PP,Manchaug_WCMC,manchaug,,10.16.21,,TR1,,True,Manchaug_WCMC_CR10.16.21_TR1,False,18,0,27,113,30,131
+Manchaug_WCMC_CR9.25.21_10x_TR1,Manchaug_WCMC,manchaug,,9.25.21,10x,TR1,,False,,True,279,0,23,144,25,217
+Manchaug_WCMC_CR9.25.21_10x_TR1-PP,Manchaug_WCMC,manchaug,,9.25.21,10x,TR1,,True,Manchaug_WCMC_CR9.25.21_10x_TR1,True,271,0,23,144,25,217
+Newton Pond_10.14.2023_10x_TM 0.5 dilution -pp,Newton Pond,newton pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,27,0,31,113,30,111
+Newton Pond_10.2.2023_10x_TM 0.5 dilution -pp,Newton Pond,newton pond,pond,10.2.2023,10x,TM,0.5 dilution,True,,True,17,0,34,302,31,347
+Newton Pond_5.15.2023_10X_TR1 no dilution-pp,Newton Pond,newton pond,pond,5.15.2023,10x,TR1,no dilution,True,,True,61,0,21,250,28,417
+Newton Pond_6.12.2023_10x_TM no dilution-pp,Newton Pond,newton pond,pond,6.12.2023,10x,TM,no dilution,True,,True,42,0,31,178,31,146
+Newton Pond_6.24.2023_10x_TM no dilution-pp,Newton Pond,newton pond,pond,6.24.2023,10x,TM,no dilution,True,,True,78,0,26,333,25,364
+Newton Pond_7.10.2023_10x_TM 0.5 dilution-pp,Newton Pond,newton pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,135,0,28,192,28,155
+Newton Pond_7.22.2023_10x_TM 0.5 dilution-pp,Newton Pond,newton pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,70,0,30,231,29,501
+Newton Pond_8.19.2023_10x_TM 0.5 dilution-PP,Newton Pond,newton pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,45,0,29,94,29,89
+Newton Pond_8.7.2023_10x_TM 0.5 dilution-pp,Newton Pond,newton pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,73,0,26,427,29,731
+Newton Pond_9.16.2023_10x_TM 0.5 dilution-pp,Newton Pond,newton pond,pond,9.16.2023,10x,TM,0.5 dilution,True,,True,71,0,29,224,27,217
+Newton Pond_9.5.2023_10x_TM 0.5 dilution-pp,Newton Pond,newton pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,27,0,22,261,33,269
+NewtonPond_CR6.18.22_10x_TR1-pp,NewtonPond,newtonpond,,6.18.22,10x,TR1,,True,,True,450,0,22,210,24,185
+Newton_4.29.23_10x_TR1 no dilution-pp,Newton,newton,,4.29.23,10x,TR1,no dilution,True,,True,26,0,34,159,36,279
+Newton_5.27.23_10x_TR2 no dilution-pp,Newton,newton,,5.27.23,10x,TR2,no dilution,True,,True,23,0,28,152,30,265
+Newton_6.19.21_10x_TR1,Newton,newton,,6.19.21,10x,TR1,,False,,True,204,0,25,83,24,163
+Newton_6.3.24_10x_TR1 no dilution-pp,Newton,newton,,6.3.24,10x,TR1,no dilution,True,,True,16,0,30,122,26,147
+Newton_CR10.15.22_10x_AI1-pp,Newton,newton,,10.15.22,10x,AI1,,True,,True,1696,0,17,315,16,284
+Newton_CR10.3.22_10x_AI1-pp,Newton,newton,,10.3.22,10x,AI1,,True,,True,303,0,18,200,20,430
+Newton_CR5.2.22_10x_TR1-pp,Newton,newton,,5.2.22,10x,TR1,,True,,True,311,0,19,167,23,181
+Newton_CR5.21.22_10x_AI1-pp,Newton,newton,,5.21.22,10x,AI1,,True,,True,607,0,18,233,25,239
+Newton_CR6.6.22_10x_TR1-pp1,Newton,newton,,6.6.22,10x,TR1,,False,,True,803,0,22,229,24,219
+Newton_CR7.16.22_10x_AI1,Newton,newton,,7.16.22,10x,AI1,,False,,True,167,0,15,479,28,816
+Newton_CR7.16.22_10x_AI2-pp,Newton,newton,,7.16.22,10x,AI2,,True,,True,1625,0,21,169,19,170
+Newton_CR7.5.22_10x_TR1-pp,Newton,newton,,7.5.22,10x,TR1,,True,,True,1377,0,23,160,21,303
+Newton_CR8.1.22_10x_TR1-1 - pp,Newton,newton,,8.1.22,10x,TR1,,True,,True,584,0,21,320,25,330
+Newton_CR8.27.22_10X_AI1-pp,Newton,newton,,8.27.22,10x,AI1,,True,,True,0,0,,,,
+Newton_CR9.12.22_10xAI1-pp,Newton,newton,,9.12.22,10x,,,True,,True,601,0,19,153,22,312
+Newton_CR9.24.22_10x_TR1-pp,Newton,newton,,9.24.22,10x,TR1,,True,,True,1,0,156,156,121,121
+Newton_WCMC_CR10.16.21_TR1,Newton_WCMC,newton,,10.16.21,,TR1,,False,,False,181,0,23,229,28,342
+Newton_WCMC_CR10.16.21_TR1-PP,Newton_WCMC,newton,,10.16.21,,TR1,,True,Newton_WCMC_CR10.16.21_TR1,False,156,0,23,229,28,342
+Newton_WCMC_CR9.25.21_10x_TR1,Newton_WCMC,newton,,9.25.21,10x,TR1,,False,,True,333,0,20,132,24,191
+Patch Pond_10.14.2023_10x_TM 0.5 dilution -pp,Patch Pond,patch pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,90,0,23,223,27,251
+Patch Pond_10.2.2023_10x_TM 0.5 dilution -pp,Patch Pond,patch pond,pond,10.2.2023,10x,TM,0.5 dilution,True,,True,67,0,34,215,32,142
+Patch Pond_10.30.2023_10x_TM 0.5 dilution-pp,Patch Pond,patch pond,pond,10.30.2023,10x,TM,0.5 dilution,True,,True,125,0,29,213,21,187
+Patch Pond_10.30.2023_10x_TM 0.5 dilution-pp IMPORT TEST,Patch Pond,patch pond,pond,10.30.2023,10x,TM,0.5 dilution,True,,True,125,0,29,213,21,187
+Patch Pond_4.29.23_10x_TR1 0.5 dilution-pp,Patch Pond,patch pond,pond,4.29.23,10x,TR1,0.5 dilution,True,,True,34,0,27,228,26,177
+Patch Pond_5.15.2023_10X_TR1 0.5 dilution-pp,Patch Pond,patch pond,pond,5.15.2023,10x,TR1,0.5 dilution,True,,True,166,0,23,458,22,705
+Patch Pond_5.27.23_10x_TR1 .1 dilution-pp,Patch Pond,patch pond,pond,5.27.23,10x,TR1,1 dilution,True,,True,325,0,23,104,24,137
+Patch Pond_6.12.2023_10x_TM 0.1 dilution-pp,Patch Pond,patch pond,pond,6.12.2023,10x,TM,0.1 dilution,True,,True,97,0,23,464,25,542
+Patch Pond_6.24.2023_10x_TM 0.5 dilution-pp,Patch Pond,patch pond,pond,6.24.2023,10x,TM,0.5 dilution,True,,True,20,0,29,487,29,656
+Patch Pond_7.10.2023_10x_TM 0.5 dilution-pp,Patch Pond,patch pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,16,0,28,371,32,483
+Patch Pond_7.22.2023_10x_TM 0.5 dilution-pp,Patch Pond,patch pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,46,0,25,395,27,130
+Patch Pond_8.19.2023_10x_TM 0.5 dilution 2-pp,Patch Pond,patch pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,43,0,33,414,29,510
+Patch Pond_8.7.2023_10x_TM 0.1 dilution-pp,Patch Pond,patch pond,pond,8.7.2023,10x,TM,0.1 dilution,True,,True,41,0,34,311,34,211
+Patch Pond_9.16.2023_10x_TM 0.5 dilution-pp,Patch Pond,patch pond,pond,9.16.2023,10x,TM,0.5 dilution,True,,True,113,0,24,586,28,653
+Patch Pond_9.5.2023_10x_TM 0.5 dilution -pp,Patch Pond,patch pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,63,0,21,245,26,248
+Patch Pond_CR10.3.22_10x AI1 0.1 dilution-pp,Patch Pond,patch pond,pond,10.3.22,10x,,0.1 dilution,True,,True,1124,0,21,242,22,353
+Patch Pond_CR9.24.22_10x_TR1 0.1 dilution-pp,Patch Pond,patch pond,pond,9.24.22,10x,TR1,0.1 dilution,True,,True,42,0,30,287,29,313
+Patch Res Breeze Dr_7.10.2023_10x_TM 0.5 dilution-pp,Patch Res Breeze Dr,patch res breeze dr,,7.10.2023,10x,TM,0.5 dilution,True,,True,180,0,27,540,26,744
+Patch Res Breeze Dr_7.22.2023_10x_TM 0.5 dilution-pp,Patch Res Breeze Dr,patch res breeze dr,,7.22.2023,10x,TM,0.5 dilution,True,,True,259,0,26,471,25,637
+Patch Res_10.2.2023_10x_TM 0.5 dilution -pp,Patch Res,patch res,,10.2.2023,10x,TM,0.5 dilution,True,,True,179,0,27,398,29,488
+Patch Res_10.30.2023_10x_TM 0.5 dilution-pp,Patch Res,patch res,,10.30.2023,10x,TM,0.5 dilution,True,,True,106,0,29,171,28,258
+Patch Res_4.29.23_10x_TR1 no dilution-pp,Patch Res,patch res,,4.29.23,10x,TR1,no dilution,True,,True,54,0,29,218,29,157
+Patch Res_5.27.23_10x_AI1 .1 dilution-pp,Patch Res,patch res,,5.27.23,10x,AI1,1 dilution,True,,True,106,0,25,81,26,115
+Patch Res_6.12.2023_10x_TM 0.5 dilution-ppp,Patch Res,patch res,,6.12.2023,10x,TM,0.5 dilution,True,,True,435,0,25,389,27,491
+Patch Res_7.10.2023_10x_TM 0.5 dilution-pp,Patch Res,patch res,,7.10.2023,10x,TM,0.5 dilution,True,,True,252,0,26,557,27,993
+Patch Res_7.10.2023_SCUM_10x_TM 0.1 dilution-pp,Patch Res,patch res,,7.10.2023,10x,TM,0.1 dilution,True,,True,4251,0,23,847,23,1078
+Patch Res_7.22.2023_10x_TM 0.5 dilution-pp,Patch Res,patch res,,7.22.2023,10x,TM,0.5 dilution,True,,True,94,0,28,351,27,414
+Patch Res_8.19.2023_10x_TM 0.5 dilution-pp,Patch Res,patch res,,8.19.2023,10x,TM,0.5 dilution,True,,True,55,0,21,610,27,648
+Patch Res_9.16.2023_10x_TM 0.5 dilution-pp,Patch Res,patch res,,9.16.2023,10x,TM,0.5 dilution,True,,True,233,0,27,394,27,915
+Patch Res_9.5.2023_10x_TM 0.5 dilution -pp,Patch Res,patch res,,9.5.2023,10x,TM,0.5 dilution,True,,True,372,0,25,588,26,562
+Patch Reservoir_10.14.2023_10x_TM 0.5 dilution -pp,Patch Reservoir,patch reservoir,reservoir,10.14.2023,10x,TM,0.5 dilution,True,,True,272,0,26,258,25,239
+Patch Reservoir_5.15.2023_10X_TR1 no dilution-pp,Patch Reservoir,patch reservoir,reservoir,5.15.2023,10x,TR1,no dilution,True,,True,41,0,29,182,24,181
+Patch Reservoir_6.12.2023_10x_TM no dilution-pp,Patch Reservoir,patch reservoir,reservoir,6.12.2023,10x,TM,no dilution,True,,True,144,0,28,218,25,386
+Patch Reservoir_6.24.2023_10x_TM no dilution-pp,Patch Reservoir,patch reservoir,reservoir,6.24.2023,10x,TM,no dilution,True,,True,91,0,26,623,29,470
+Patch Reservoir_8.7.2023_10x_TM 0.5 dilution-pp,Patch Reservoir,patch reservoir,reservoir,8.7.2023,10x,TM,0.5 dilution,True,,True,900,0,27,526,25,573
+Patch Reservoir_CR9.12.22_10xAI 0.1 dilution-pp,Patch Reservoir,patch reservoir,reservoir,9.12.22,10x,,0.1 dilution,True,,True,875,0,16,582,24,1287
+Patch reservoir Breeze_8.7.2023_10x_TM 0.5 dilution-pp,Patch reservoir Breeze,patch reservoir breeze,reservoir,8.7.2023,10x,TM,0.5 dilution,True,,True,854,0,24,405,29,564
+PatchPond_CR10.15.22_10x_AI1-pp,PatchPond,patchpond,,10.15.22,10x,AI1,,True,,True,1642,0,18,262,22,425
+PatchPond_CR5.2.22_10x_TR1-pp,PatchPond,patchpond,,5.2.22,10x,TR1,,True,,True,1404,0,17,272,24,379
+PatchPond_CR5.21.22_10x_AI1-pp2,PatchPond,patchpond,,5.21.22,10x,AI1,,False,,True,2879,0,17,265,18,384
+PatchPond_CR6.18.22_10x_TR1-pp,PatchPond,patchpond,,6.18.22,10x,TR1,,True,,True,6160,0,18,313,21,396
+PatchPond_CR6.6.22_10x_TR1 .1dilution-pp,PatchPond,patchpond,,6.6.22,10x,TR1,1dilution,True,,True,2371,0,18,357,16,325
+PatchPond_CR7.16.22_10x_AI1 0.1 dilution-pp,PatchPond,patchpond,,7.16.22,10x,AI1,0.1 dilution,True,,True,305,0,24,168,25,210
+PatchPond_CR7.5.22_10x_TR1-pp,PatchPond,patchpond,,7.5.22,10x,TR1,,True,,True,3769,0,20,709,20,858
+PatchPond_CR8.27.22_10X_AI1 0.1 dilution-pp,PatchPond,patchpond,,8.27.22,10x,AI1,0.1 dilution,True,,True,523,0,20,189,24,487
+PatchRes_CR5.2.22_10x_TR1-pp,PatchRes,patchres,,5.2.22,10x,TR1,,True,,True,1617,0,17,220,22,261
+PatchRes_CR6.6.22_10x_TR1-pp,PatchRes,patchres,,6.6.22,10x,TR1,,True,,True,2117,0,19,487,21,409
+PatchRes_CR7.5.22_10x_TR1 .1 dilution-pp,PatchRes,patchres,,7.5.22,10x,TR1,1 dilution,True,,True,476,0,26,656,24,1029
+PatchRes_CR8.1.22_10x_TR1-1 - pp,PatchRes,patchres,,8.1.22,10x,TR1,,True,,True,1634,0,16,167,19,722
+PatchRes_WCMC_CR9.25.21_10x_TR1,PatchRes_WCMC,patchres,,9.25.21,10x,TR1,,False,,True,924,0,23,126,24,293
+Patch_6.19.21_10x_TR1,Patch,patch,,6.19.21,10x,TR1,,False,,True,1317,0,16,302,25,436
+Quinsig Kings Point_6.3.24_10x_TR1 no dilution-pp,Quinsig Kings Point,quinsig kings point,,6.3.24,10x,TR1,no dilution,True,,True,76,0,26,397,30,330
+Quinsig Lake Park_6.3.24_10x_TR1 no dilution-pp,Quinsig Lake Park,quinsig lake park,lake,6.3.24,10x,TR1,no dilution,True,,True,77,0,29,243,30,285
+Quinsig_4.29.23_10x_TR1 no dilution-pp,Quinsig,quinsig,,4.29.23,10x,TR1,no dilution,True,,True,21,0,26,283,29,283
+Quinsig_5.15.2023_10X_TR1 no dilution-pp,Quinsig,quinsig,,5.15.2023,10x,TR1,no dilution,True,,True,119,0,23,364,26,370
+Quinsig_6.12.2023_10x_TM no dilution-pp,Quinsig,quinsig,,6.12.2023,10x,TM,no dilution,True,,True,98,0,30,259,30,274
+Quinsig_6.19.21_10x_TR1,Quinsig,quinsig,,6.19.21,10x,TR1,,False,,True,399,0,19,255,22,301
+Quinsig_6.24.2023_10x_TM no dilution-pp,Quinsig,quinsig,,6.24.2023,10x,TM,no dilution,True,,True,195,0,26,278,31,416
+Quinsig_7.10.2023_10x_TM 0.5 dilution-pp,Quinsig,quinsig,,7.10.2023,10x,TM,0.5 dilution,True,,True,157,0,29,599,28,577
+Quinsig_7.22.2023_10x_TM 0.5 dilution-pp,Quinsig,quinsig,,7.22.2023,10x,TM,0.5 dilution,True,,True,249,0,27,662,29,1081
+Quinsig_CR10.15.22_10x_AI1-pp,Quinsig,quinsig,,10.15.22,10x,AI1,,True,,True,1078,0,17,856,22,1404
+Quinsig_CR5.21.22_10x_AI1-pp,Quinsig,quinsig,,5.21.22,10x,AI1,,True,,True,406,0,19,913,26,839
+Quinsig_CR6.18.22_10x_TR1-pp,Quinsig,quinsig,,6.18.22,10x,TR1,,True,,True,468,0,22,236,22,234
+Quinsig_CR6.6.22_10x_TR1-pp,Quinsig,quinsig,,6.6.22,10x,TR1,,True,,True,193,0,19,150,27,160
+Quinsig_CR7.16.22_10x_AI1-pp,Quinsig,quinsig,,7.16.22,10x,AI1,,True,,True,850,0,21,505,25,1020
+Quinsig_CR7.5.22_10x_TR1-pp,Quinsig,quinsig,,7.5.22,10x,TR1,,True,,True,272,0,19,309,23,533
+Quinsig_CR8.1.22_10x_TR1-1-pp,Quinsig,quinsig,,8.1.22,10x,TR1,,True,,True,1234,0,24,397,22,284
+Quinsig_CR9.24.22_10x_TR1-pp,Quinsig,quinsig,,9.24.22,10x,TR1,,True,,True,57,0,29,686,30,453
+Quinsig_CR9.28.22_10x_AI1,Quinsig,quinsig,,9.28.22,10x,AI1,,False,,True,839,0,20,468,24,882
+Quinsig_WCMC_CR10.16.21_TR1,Quinsig_WCMC,quinsig,,10.16.21,,TR1,,False,,False,38,0,21,303,32,652
+Quinsig_WCMC_CR10.16.21_TR1-PP,Quinsig_WCMC,quinsig,,10.16.21,,TR1,,True,Quinsig_WCMC_CR10.16.21_TR1,False,38,0,21,303,32,652
+Quinsig_WCMC_CR9.25.21_10x_TR1,Quinsig_WCMC,quinsig,,9.25.21,10x,TR1,,False,,True,749,0,18,546,21,1088
+Salisbury Pond_10.14.2023_10x_TM 0.5 dilution -pp,Salisbury Pond,salisbury pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,1262,0,24,499,22,960
+Salisbury Pond_10.2.2023_10x_TM 0.1 dilution -pp,Salisbury Pond,salisbury pond,pond,10.2.2023,10x,TM,0.1 dilution,True,,True,71,0,21,161,33,202
+Salisbury Pond_5.15.2023_10X_TR1 0.5 dilution-pp,Salisbury Pond,salisbury pond,pond,5.15.2023,10x,TR1,0.5 dilution,True,,True,75,0,24,152,28,205
+Salisbury Pond_6.24.2023_10x_TM 0.1 dilution-pp,Salisbury Pond,salisbury pond,pond,6.24.2023,10x,TM,0.1 dilution,True,,True,84,0,30,153,27,179
+Salisbury Pond_7.22.2023_10x_TM 0.5 dilution-pp,Salisbury Pond,salisbury pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,83,0,26,468,27,478
+Salisbury Pond_8.19.2023_10x_TM 0.5 dilution -pp,Salisbury Pond,salisbury pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,39,0,26,180,23,196
+Salisbury Pond_9.16.2023_10x_TM 0.5 dilution,Salisbury Pond,salisbury pond,pond,9.16.2023,10x,TM,0.5 dilution,False,,True,2263,0,23,609,21,1087
+Salisbury Pond_9.16.2023_10x_TM 0.5 dilution-pp,Salisbury Pond,salisbury pond,pond,9.16.2023,10x,TM,0.5 dilution,True,Salisbury Pond_9.16.2023_10x_TM 0.5 dilution,True,1001,0,23,503,21,1087
+Salisbury_4.19.23_10x_TR1 0.5,Salisbury,salisbury,,4.19.23,10x,TR1,,False,,True,95,0,27,362,29,253
+Salisbury_4.29.23_10x_TR1 0.5 dilution-pp,Salisbury,salisbury,,4.29.23,10x,TR1,0.5 dilution,True,,True,95,0,27,362,29,253
+Salisbury_5.27.23_10x_TR1 .5 dilution-pp,Salisbury,salisbury,,5.27.23,10x,TR1,5 dilution,True,,True,102,0,27,140,27,212
+Salisbury_6.19.21_10x_TR1,Salisbury,salisbury,,6.19.21,10x,TR1,,False,,True,511,0,21,153,23,130
+Salisbury_CR10.3.22_10x AI1 0.1 dilution-pp,Salisbury,salisbury,,10.3.22,10x,,0.1 dilution,True,,True,206,0,19,94,22,133
+Salisbury_CR5.2.22_10x_TR1-pp,Salisbury,salisbury,,5.2.22,10x,TR1,,True,,True,1207,0,19,265,23,425
+Salisbury_CR5.21.22_10x_AI1-pp,Salisbury,salisbury,,5.21.22,10x,AI1,,True,,True,4151,0,18,171,18,514
+Salisbury_CR6.18.22_10x_TR1-pp,Salisbury,salisbury,,6.18.22,10x,TR1,,True,,True,1473,0,19,163,25,316
+Salisbury_CR6.6.22_10x_TR1-pp,Salisbury,salisbury,,6.6.22,10x,TR1,,True,,True,5269,0,17,187,20,236
+Salisbury_CR7.16.22_10x_AI1 .1dilition-pp,Salisbury,salisbury,,7.16.22,10x,AI1,,True,,True,726,0,19,177,21,165
+Salisbury_CR7.5.22_10x_TR1 .1 dilution-pp,Salisbury,salisbury,,7.5.22,10x,TR1,1 dilution,True,,True,3593,0,20,345,20,657
+Salisbury_CR8.1.22_10x_TR1-1 0.1 dilution - pp,Salisbury,salisbury,,8.1.22,10x,TR1,0.1 dilution,True,,True,1104,0,21,205,21,367
+Salisbury_CR9.12.22_10xAI1 0.1 dilution-pp,Salisbury,salisbury,,9.12.22,10x,,0.1 dilution,True,,True,957,0,20,133,23,372
+Salisbury_CR9.24.22_10x_TR1 0.1 dilution-pp,Salisbury,salisbury,,9.24.22,10x,TR1,0.1 dilution,True,,True,39,0,26,104,25,70
+Salisbury_WCMC_CR10.16.21_TR1,Salisbury_WCMC,salisbury,,10.16.21,,TR1,,False,,False,452,0,22,235,24,416
+Salisbury_WCMC_CR10.16.21_TR1-PP,Salisbury_WCMC,salisbury,,10.16.21,,TR1,,True,Salisbury_WCMC_CR10.16.21_TR1,False,220,0,22,235,24,416
+Salisbury_WCMC_CR9.25.21_10x_TR1,Salisbury_WCMC,salisbury,,9.25.21,10x,TR1,,False,,True,2090,0,18,217,23,355
+Salisbury_WCMC_CR9.25.21_10x_TR1-PP,Salisbury_WCMC,salisbury,,9.25.21,10x,TR1,,True,Salisbury_WCMC_CR9.25.21_10x_TR1,True,2026,0,18,217,23,355
+Singletary_CR5.2.22_10x_TR1-pp,Singletary,singletary,,5.2.22,10x,TR1,,True,,True,612,0,18,243,22,272
+Singletary_CR5.21.22_10x_AI1-pp,Singletary,singletary,,5.21.22,10x,AI1,,True,,True,678,0,18,249,22,280
+Singletary_CR6.18.22_10x_TR1-pp,Singletary,singletary,,6.18.22,10x,TR1,,True,,True,355,0,21,263,23,379
+Singletary_CR6.6.22_10x_TR1-pp,Singletary,singletary,,6.6.22,10x,TR1,,True,,True,633,0,19,339,24,415
+Singletary_CR7.16.22_10x_AI1-pp,Singletary,singletary,,7.16.22,10x,AI1,,True,,True,615,0,16,328,26,391
+Singletary_CR7.5.22_10x_TR1-pp,Singletary,singletary,,7.5.22,10x,TR1,,True,,True,476,0,22,308,19,321
+Singletary_CR8.1.22_10x_TR1-1 - pp,Singletary,singletary,,8.1.22,10x,TR1,,True,,True,460,0,16,176,24,374
+Sterling_CR10.15.22_10x_AI1-pp,Sterling,sterling,,10.15.22,10x,AI1,,True,,True,751,0,16,344,23,819
+Sterling_CR5.21.22_10x_AI1-pp,Sterling,sterling,,5.21.22,10x,AI1,,True,,True,396,0,24,102,27,142
+Sterling_CR6.18.22_10x_TR1-pp,Sterling,sterling,,6.18.22,10x,TR1,,True,,True,296,0,24,446,26,815
+Stevens Pond_10.14.2023_10x_TM 0.5 dilution -pp,Stevens Pond,stevens pond,pond,10.14.2023,10x,TM,0.5 dilution,True,,True,11,0,38,139,34,109
+Stevens Pond_10.2.2023_10x_TM 0.5 dilution -pp,Stevens Pond,stevens pond,pond,10.2.2023,10x,TM,0.5 dilution,True,,True,4,0,35,218,35,126
+Stevens Pond_5.15.2023_10X_TR1 no dilution-pp,Stevens Pond,stevens pond,pond,5.15.2023,10x,TR1,no dilution,True,,True,28,0,43,176,36,339
+Stevens Pond_6.24.2023_10x_TM no dilution-pp,Stevens Pond,stevens pond,pond,6.24.2023,10x,TM,no dilution,True,,True,42,0,31,96,30,116
+Stevens Pond_7.10.2023_10x_TM 0.5 dilution-pp,Stevens Pond,stevens pond,pond,7.10.2023,10x,TM,0.5 dilution,True,,True,10,0,36,165,32,154
+Stevens Pond_7.22.2023_10x_TM 0.5 dilution-pp,Stevens Pond,stevens pond,pond,7.22.2023,10x,TM,0.5 dilution,True,,True,26,0,30,402,29,355
+Stevens Pond_8.19.2023_10x_TM 0.5 dilution -pp,Stevens Pond,stevens pond,pond,8.19.2023,10x,TM,0.5 dilution,True,,True,10,0,41,188,42,279
+Stevens Pond_8.7.2023_10x_TM 0.5 dilution-pp,Stevens Pond,stevens pond,pond,8.7.2023,10x,TM,0.5 dilution,True,,True,363,0,24,472,24,455
+Stevens Pond_9.16.2023_10x_TM 0.5 dilution-pp,Stevens Pond,stevens pond,pond,9.16.2023,10x,TM,0.5 dilution,True,,True,5,0,31,146,34,392
+Stevens Pond_9.5.2023_10x_TM 0.5 dilution-pp,Stevens Pond,stevens pond,pond,9.5.2023,10x,TM,0.5 dilution,True,,True,8,0,49,85,52,109
+Stevens_4.29.23_10x_TR1 no dilution-pp,Stevens,stevens,,4.29.23,10x,TR1,no dilution,True,,True,28,0,23,354,27,430
+Stevens_5.27.23_10x_AI1 no dilution-pp,Stevens,stevens,,5.27.23,10x,AI1,no dilution,True,,True,795,0,22,195,25,294
+Stevens_6.12.2023_10x_TM no dilution-pp,Stevens,stevens,,6.12.2023,10x,TM,no dilution,True,,True,24,0,27,119,31,144
+Stevens_6.3.24_10x_TR1 no dilution-pp,Stevens,stevens,,6.3.24,10x,TR1,no dilution,True,,True,7,0,33,180,34,177
+Stevens_CR10.15.22_10x_AI1-pp,Stevens,stevens,,10.15.22,10x,AI1,,True,,True,126,0,21,97,27,100
+Stevens_CR10.3.22_10x AI1-pp,Stevens,stevens,,10.3.22,10x,,,True,,True,471,0,22,237,22,185
+Stevens_CR5.2.22_10x_TR1-pp,Stevens,stevens,,5.2.22,10x,TR1,,True,,True,215,0,21,165,21,155
+Stevens_CR5.21.22_10x_AI1-pp,Stevens,stevens,,5.21.22,10x,AI1,,True,,True,404,0,19,388,25,915
+Stevens_CR6.18.22_10x_TR1-pp,Stevens,stevens,,6.18.22,10x,TR1,,True,,True,208,0,23,136,24,103
+Stevens_CR6.6.22_10x_TR1-pp,Stevens,stevens,,6.6.22,10x,TR1,,True,,True,313,0,26,116,26,189
+Stevens_CR7.5.22_10x_TR1-pp,Stevens,stevens,,7.5.22,10x,TR1,,True,,True,542,0,20,165,24,85
+Stevens_CR8.1.22_10x_TR1-1-pp,Stevens,stevens,,8.1.22,10x,TR1,,True,,True,201,0,21,75,26,103
+Stevens_CR8.27.22_10X_AI1-pp,Stevens,stevens,,8.27.22,10x,AI1,,True,,True,1430,0,19,95,21,128
+Stevens_CR9.12.22_10xAI1-pp,Stevens,stevens,,9.12.22,10x,,,True,,True,477,0,21,131,25,301
+Stoneville_6.19.21_10x_TR1,Stoneville,stoneville,,6.19.21,10x,TR1,,False,,True,581,0,17,319,20,395
+Stoneville_WCMC_CR10.16.21_TR1,Stoneville_WCMC,stoneville,,10.16.21,,TR1,,False,,False,19,0,22,192,28,138
+Stoneville_WCMC_CR10.16.21_TR1-PP,Stoneville_WCMC,stoneville,,10.16.21,,TR1,,True,Stoneville_WCMC_CR10.16.21_TR1,False,19,0,22,192,28,138
+UNKNOWN_9.16.2023_10x_TM 0.5 dilution,UNKNOWN,unknown,,9.16.2023,10x,TM,0.5 dilution,False,,True,158,0,27,388,28,511
+University_6.19.21_10x_TR1,University,university,,6.19.21,10x,TR1,,False,,True,1291,0,22,734,24,875
+University_WCMC_CR10.16.21_TR1,University_WCMC,university,,10.16.21,,TR1,,False,,False,1152,0,25,292,25,1421
+University_WCMC_CR10.16.21_TR1-PP,University_WCMC,university,,10.16.21,,TR1,,True,University_WCMC_CR10.16.21_TR1,False,1078,0,25,292,25,1421
+Washicum_CR7.16.22_10x_AI1-pp,Washicum,washicum,,7.16.22,10x,AI1,,True,,True,500,0,19,388,22,523
+Washicum_CR8.27.22_10X_AI1-pp,Washicum,washicum,,8.27.22,10x,AI1,,True,,True,602,0,17,125,23,132
+Washicum_CR9.12.22_10xAI1-pp,Washicum,washicum,,9.12.22,10x,,,True,,True,681,0,22,253,21,484
+Waushacum_10.2.2023_10x_TM 0.5 dilution -pp,Waushacum,waushacum,,10.2.2023,10x,TM,0.5 dilution,True,,True,16,0,31,288,34,304
+Waushacum_6.12.2023_10x_TM no dilution-pp,Waushacum,waushacum,,6.12.2023,10x,TM,no dilution,True,,True,25,0,27,149,32,170
+Waushacum_6.24.2023_10x_TM no dilution-pp,Waushacum,waushacum,,6.24.2023,10x,TM,no dilution,True,,True,9,0,37,117,38,133
+Waushacum_7.10.2023_10x_TM 0.5 dilution-pp,Waushacum,waushacum,,7.10.2023,10x,TM,0.5 dilution,True,,True,19,0,36,187,40,188
+Waushacum_8.7.2023_10x_TM 0.5 dilution-pp,Waushacum,waushacum,,8.7.2023,10x,TM,0.5 dilution,True,,True,68,0,30,491,30,309
+Waushacum_9.16.2023_10x_TM 0.5 dilution-pp,Waushacum,waushacum,,9.16.2023,10x,TM,0.5 dilution,True,,True,13,0,29,86,29,137
+Waushacum_9.5.2023_10x_TM 0.5 dilution-pp,Waushacum,waushacum,,9.5.2023,10x,TM,0.5 dilution,True,,True,16,0,24,172,30,166
+Waushacum_CR7.5.22_10x_TR1-pp,Waushacum,waushacum,,7.5.22,10x,TR1,,True,,True,317,0,22,157,24,251
+Waushacum_CR9.24.22_10x_TR1-pp,Waushacum,waushacum,,9.24.22,10x,TR1,,True,,True,67,0,30,262,27,541
+jordan_CR7.16.22_10x_AI2-pp,jordan,jordan,,7.16.22,10x,AI2,,True,,True,2930,0,19,402,19,789
+nolable_6.19.21_10x_TR1,nolable,nolable,,6.19.21,10x,TR1,,False,,True,5215,0,20,460,15,593

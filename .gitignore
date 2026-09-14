@@ -1,0 +1,11 @@
+# Raw image datasets — too large/numerous for git (hundreds of thousands of files, several GB)
+ProjectCode/WCMC_raw_images_2023_and_others/
+
+# Cataloging script output: the raw manifest CSV is ~140MB (over GitHub's 100MB
+# file limit) and regenerates from `python ProjectCode/catalog_images.py`, so it
+# stays local. folder_summary.csv, qa_log.csv, and the gzip-compressed manifest
+# (image_manifest.csv.gz, ~13MB) are small enough to commit and are NOT ignored.
+ProjectCode/catalog_output/image_manifest.csv
+
+# macOS
+.DS_Store
