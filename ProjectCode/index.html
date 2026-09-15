@@ -1,1 +1,196 @@
-<head></head>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Sample Image Catalog — Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+  <div class="dashboard-container">
+
+    <!-- Header -->
+    <header id="dashboard-header">
+      <h1>Water Sample Image Catalog</h1>
+      <p>Browse, sort, and filter the cataloged microscopy images from water sample collection events.</p>
+    </header>
+
+    <!-- Stats Cards -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-folders">—</div>
+        <div class="stat-label">Folders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-images">—</div>
+        <div class="stat-label">Total Images</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-sites">—</div>
+        <div class="stat-label">Unique Sites</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-dates">—</div>
+        <div class="stat-label">Date Range</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-pp">—</div>
+        <div class="stat-label">PP / Raw Split</div>
+      </div>
+    </section>
+
+    <!-- Filter Bar -->
+    <section id="filter-bar">
+      <div class="filter-group">
+        <label for="search-input">Search</label>
+        <input type="text" id="search-input" placeholder="Search folder names..." autocomplete="off">
+      </div>
+      <div class="filter-group">
+        <label for="filter-site_normalized">Site</label>
+        <select id="filter-site_normalized" class="filter-select">
+          <option value="">All Sites</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-water_body_type">Water Body</label>
+        <select id="filter-water_body_type" class="filter-select">
+          <option value="">All Types</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-date">Date</label>
+        <select id="filter-date" class="filter-select">
+          <option value="">All Dates</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-sample_code">Sample Code</label>
+        <select id="filter-sample_code" class="filter-select">
+          <option value="">All Codes</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-dilution">Dilution</label>
+        <select id="filter-dilution" class="filter-select">
+          <option value="">All Dilutions</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-is_pp">Processing</label>
+        <select id="filter-is_pp" class="filter-select">
+          <option value="">PP & Raw</option>
+          <option value="true">Post-Processed (PP)</option>
+          <option value="false">Raw Only</option>
+        </select>
+      </div>
+      <div class="filter-group" style="flex-direction: row; align-items: flex-end; gap: 0.5rem;">
+        <button class="btn" id="clear-filters-btn">Clear All</button>
+        <span class="filter-badge" id="filter-badge" style="display:none;">0</span>
+      </div>
+    </section>
+
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" style="display:none;">
+      <div class="spinner"></div>
+      <span>Loading catalog data…</span>
+    </div>
+
+    <!-- Data Table -->
+    <section id="data-table-container">
+      <table>
+        <thead>
+          <tr>
+            <th data-sortable data-col="folder_name" class="sortable">Folder Name</th>
+            <th data-sortable data-col="site_normalized" class="sortable">Site</th>
+            <th data-sortable data-col="water_body_type" class="sortable">Water Body</th>
+            <th data-sortable data-col="date" class="sortable">Date</th>
+            <th data-sortable data-col="sample_code" class="sortable">Sample Code</th>
+            <th data-sortable data-col="dilution" class="sortable">Dilution</th>
+            <th data-sortable data-col="is_pp" class="sortable">Type</th>
+            <th data-sortable data-col="image_count" class="sortable text-right">Images</th>
+            <th>Dimensions</th>
+            <th data-sortable data-col="parsed_ok" class="sortable">Status</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Pagination -->
+    <section id="pagination">
+      <span class="page-info" id="pagination-info">Showing 0 folders</span>
+      <div id="pagination-container" style="display:flex; gap:0.25rem; align-items:center;"></div>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <label for="page-size" class="text-muted" style="font-size:0.8rem;">Per page:</label>
+        <select id="page-size">
+          <option value="10">10</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section id="charts-section">
+      <div class="chart-card">
+        <h3>Top Sites by Image Count</h3>
+        <div class="chart-container">
+          <canvas id="chart-site"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Images by Collection Date</h3>
+        <div class="chart-container">
+          <canvas id="chart-timeline"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Water Body Type Distribution</h3>
+        <div class="chart-container">
+          <canvas id="chart-type"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- QA Log Section -->
+    <section id="qa-section">
+      <div class="qa-header" id="qa-log-container">
+        <h2>QA Log</h2>
+        <button class="qa-toggle-btn" id="qa-toggle-btn">Show QA Log</button>
+      </div>
+      <div class="qa-content" id="qa-log-content" style="display:none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>Target</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody id="qa-table-body">
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div><!-- end .dashboard-container -->
+
+  <!-- Detail Panel (slide-in from right) -->
+  <div class="panel-backdrop" id="detail-overlay"></div>
+  <aside id="detail-panel">
+    <div class="panel-header">
+      <h2>Folder Details</h2>
+      <button class="close-btn" id="detail-close" aria-label="Close detail panel">&times;</button>
+    </div>
+    <div class="panel-content" id="detail-content">
+    </div>
+  </aside>
+
+  <script src="dashboard.js"></script>
+</body>
+
+</html>
