@@ -86,7 +86,10 @@ def parse_folder_name(name: str) -> dict:
     cut_at = date_match.start() if date_match else (sample_match.start() if sample_match else len(name))
     site_raw = name[:cut_at].strip(" _-")
 
-    water_body_match = WATER_BODY_RE.search(site_raw)
+    # Camel-split first so a glued word like "ElmPark" or "CoesPond" is still
+    # recognized -- \bPark\b has no boundary between the lowercase "m" and
+    # uppercase "P" in "ElmPark" otherwise.
+    water_body_match = WATER_BODY_RE.search(_camel_split(site_raw))
 
     return {
         "site_raw": site_raw,
@@ -279,6 +282,18 @@ def main():
     site_map = build_site_normalization_map({p["site_raw"] for p in folder_parsed.values()})
     for parsed in folder_parsed.values():
         parsed["site_normalized"] = site_map[parsed["site_raw"]]
+
+    # Backfill water_body_type from the resolved site where a folder's own
+    # name has no water-body word at all (e.g. plain "Bell" merges into
+    # "bell pond", so it should report "pond" too, not stay unknown) -- but
+    # only for the unambiguous pond/lake/reservoir types resolved by merging;
+    # "park"/"shore" aren't part of site_normalized so there's nothing to
+    # backfill from for those.
+    for parsed in folder_parsed.values():
+        if parsed["water_body_type"] is None:
+            last_word = parsed["site_normalized"].split()[-1] if parsed["site_normalized"] else ""
+            if last_word in ("pond", "lake", "reservoir"):
+                parsed["water_body_type"] = last_word
 
     print("Hashing raw/-pp pairs to flag duplicates...")
     duplicate_relpaths = find_duplicate_relpaths(root, folder_parsed)
