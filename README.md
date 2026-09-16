@@ -8,8 +8,10 @@ A jupyter notebook on CNN: https://github.com/ageron/handson-mlp/blob/main/12_de
 ## Image catalog
 
 `ProjectCode/catalog_images.py` scans the image dataset and outputs a CSV
-manifest (one row per image, plus a folder summary and QA log) into
-`ProjectCode/catalog_output/`.
+manifest (one row per image, plus a folder summary) into
+`ProjectCode/catalog_output/`. Magnification is assumed to be 10x for every
+folder, and raw-side images that duplicate a `-pp` copy are flagged
+(`is_duplicate`) rather than removed.
 
 ```bash
 pip3 install Pillow
