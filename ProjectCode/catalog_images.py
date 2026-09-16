@@ -58,6 +58,16 @@ SAMPLE_CODE_RE = re.compile(
 )
 WATER_BODY_RE = re.compile(r"\b(Pond|Lake|Reservoir|Park|Shore)\b", re.IGNORECASE)
 
+# Splits glued camelCase words in raw folder names (ElmPark -> Elm Park,
+# LittleIndian -> Little Indian) so site merging can find them.
+CAMEL_RE = re.compile(r"(?<=[a-z])(?=[A-Z])")
+# "Pond"/"Lake"/"Reservoir" ("Res" abbreviates Reservoir) are mutually
+# exclusive classifications of a body of water -- a single site can't
+# genuinely be both. "Park"/"Shore" describe a place, not a water-body type
+# (a park can contain a pond), so they're not treated as conflicting.
+CORE_WATER_TYPE_RE = re.compile(r"\b(pond|lake|reservoir|res)\b", re.IGNORECASE)
+STRIP_WORDS_RE = re.compile(r"\b(pond|lake|reservoir|res|park|shore)\b", re.IGNORECASE)
+
 ASSUMED_MAGNIFICATION = "10x"
 
 
@@ -80,7 +90,10 @@ def parse_folder_name(name: str) -> dict:
 
     return {
         "site_raw": site_raw,
-        "site_normalized": normalize_site(site_raw),
+        # site_normalized is filled in later, once every folder's site_raw is
+        # known -- merging decisions need the full set of variants, not just
+        # this one string. See build_site_normalization_map().
+        "site_normalized": None,
         "water_body_type": water_body_match.group(1).lower() if water_body_match else None,
         "date": date_match.group(1) if date_match else None,
         "magnification": ASSUMED_MAGNIFICATION,
@@ -90,26 +103,73 @@ def parse_folder_name(name: str) -> dict:
     }
 
 
-def normalize_site(site_raw: str) -> str:
-    """Best-effort canonical site name: strip separators/collection tags, lowercase.
-
-    Deliberately does NOT strip water-body-type words (Pond/Lake/Reservoir/Park/Shore)
-    in general -- doing so previously merged distinct sites like "Patch Pond" and
-    "Patch Reservoir" into one. Under-merging is safer than silently conflating
-    different sites.
-
-    One confirmed exception: any site starting with "Bell" is the same site
-    recorded under a shorter name (confirmed assumption, not a guess), so it's
-    forced to "bell pond" here rather than left split into "bell" / "bell pond".
+def compute_site_root(site_raw: str) -> str:
+    """Aggressively-merged site key: splits camelCase, strips collection tags,
+    water-body words, and digits. Two site_raw values sharing a root are
+    assumed to be the same physical site recorded inconsistently, UNLESS
+    build_site_normalization_map() finds them genuinely conflicting.
     """
-    s = site_raw.replace("_", " ")
+    s = _camel_split(site_raw)
     s = re.sub(r"\bWCMC\b", "", s, flags=re.IGNORECASE)
     s = re.sub(r"\bCR\b", "", s, flags=re.IGNORECASE)
-    s = re.sub(r"\s+", " ", s).strip()
     s = s.lower()
-    if s.startswith("bell"):
-        return "bell pond"
-    return s
+    s = STRIP_WORDS_RE.sub("", s)
+    s = re.sub(r"\b\d+\b", "", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s if s else site_raw.lower().strip()
+
+
+def _camel_split(site_raw: str) -> str:
+    """"CoesPond_WCMC" -> "Coes Pond WCMC" -- shared by compute_site_root and
+    core_water_types_in so a glued word like "CoesPond" is recognized as
+    containing "Pond" by both (a plain \\bpond\\b on the un-split string
+    misses it: there's no word boundary between the lowercase "s" and
+    uppercase "P").
+    """
+    return CAMEL_RE.sub(" ", site_raw.replace("_", " "))
+
+
+def core_water_types_in(site_raw: str) -> set:
+    return {
+        "reservoir" if m.group(1).lower() == "res" else m.group(1).lower()
+        for m in CORE_WATER_TYPE_RE.finditer(_camel_split(site_raw))
+    }
+
+
+def build_site_normalization_map(all_site_raw: set) -> dict:
+    """Map every site_raw to a merged site_normalized, EXCEPT roots whose
+    variants span more than one core water-body type (e.g. "Patch Pond" and
+    "Patch Reservoir") -- those genuinely might be two different physical
+    sites sharing a name, so they're kept separate rather than guessed at.
+    """
+    roots = collections.defaultdict(set)
+    for raw in all_site_raw:
+        roots[compute_site_root(raw)].add(raw)
+
+    mapping = {}
+    for root, raws in roots.items():
+        all_types = set()
+        for r in raws:
+            all_types |= core_water_types_in(r)
+
+        if len(all_types) <= 1:
+            canonical = f"{root} {next(iter(all_types))}".strip() if all_types else root
+            for r in raws:
+                mapping[r] = canonical
+        else:
+            print(f"NOTE: '{root}' spans multiple water body types {sorted(all_types)} "
+                  f"-- not merged: {sorted(raws)}")
+            for r in raws:
+                own_types = core_water_types_in(r)
+                if len(own_types) == 1:
+                    mapping[r] = f"{root} {next(iter(own_types))}".strip()
+                else:
+                    # No type on this specific raw name -- leave as the bare
+                    # root rather than guess which of the conflicting types
+                    # it belongs to.
+                    mapping[r] = root
+
+    return mapping
 
 
 def image_id_for(rel_path: str) -> str:
@@ -213,16 +273,12 @@ def main():
 
     folder_parsed = {f.name: parse_folder_name(f.name) for f in included_folders}
 
-    # Site names that collapse together but disagree on water-body type (e.g.
-    # a "Pond" and a "Reservoir" sharing a name) may be two different real
-    # sites -- not auto-resolved, just surfaced here for visibility.
-    site_groups = collections.defaultdict(set)
+    # Merge site name variants (Bell/Bell_WCMC/Bell Pond -> "bell pond", etc.)
+    # everywhere EXCEPT roots that genuinely span >1 water-body type -- those
+    # print a NOTE instead of being silently merged. See build_site_normalization_map().
+    site_map = build_site_normalization_map({p["site_raw"] for p in folder_parsed.values()})
     for parsed in folder_parsed.values():
-        site_groups[parsed["site_normalized"]].add(parsed["site_raw"])
-    for site_normalized, raws in site_groups.items():
-        types = {WATER_BODY_RE.search(r).group(1).lower() for r in raws if WATER_BODY_RE.search(r)}
-        if len(types) > 1:
-            print(f"NOTE: site '{site_normalized}' spans water body types {sorted(types)}: {sorted(raws)}")
+        parsed["site_normalized"] = site_map[parsed["site_raw"]]
 
     print("Hashing raw/-pp pairs to flag duplicates...")
     duplicate_relpaths = find_duplicate_relpaths(root, folder_parsed)
