@@ -3,7 +3,7 @@ Catalog script for the water sample image dataset.
 
 Walks a dataset root (default: WCMC_raw_images_2023_and_others), parses metadata
 out of each sample-event folder name, reads each image's dimensions/format/mode,
-flags raw/pp duplicate images, and writes:
+and writes:
 
   - image_manifest.csv     — one row per image (the seed data for the future
                               labeling database / app; includes an empty `label`
@@ -12,19 +12,25 @@ flags raw/pp duplicate images, and writes:
                               the raw CSV runs well over GitHub's 100MB file
                               limit, the gzip copy does not (pandas can read it
                               directly via pd.read_csv(path, compression="gzip"))
-  - folder_summary.csv     — one row per sample-event folder (counts, dimension
-                              range, pp/raw pairing)
+  - folder_summary.csv     — one row per sample-event folder actually included
+                              (counts, dimension range, pp/raw pairing)
 
 Magnification is assumed to be 10x for every folder (confirmed with the
 professor — folders that don't record it in their name were just named less
 completely, not shot at a different magnification), so every folder parses
 cleanly and there's no QA log of unparsed folders.
 
-Duplicate detection: for folders that are part of a raw/-pp pair (same site,
-date, and sample code), images are content-hashed. A raw-side image whose
-hash also appears in its -pp sibling is flagged `is_duplicate=True` rather
-than removed -- the underlying files are never touched, so the flag can be
-recomputed if the pairing logic changes.
+Folder selection: for folders that are part of a raw/-pp pair (same site,
+date, and sample code), only the -pp version is cataloged -- confirmed with
+Prof. Ahlgren that -pp is the city's standard post-processed output, so the
+raw counterpart is dropped entirely rather than flagged. Raw folders with no
+-pp counterpart are kept as-is. Nothing on disk is touched; rerunning the
+script just recomputes which folders are included.
+
+Capture mode: sample_code is also classified into capture_mode -- "autoimage"
+for AI* codes, "trigger" for TR*/TM codes (confirmed with Prof. Ahlgren: AI =
+autoimage mode, TR1/TM = trigger mode, which uses laser-triggered detection
+and is the preferred/standardized mode post-2022).
 
 Usage:
     python catalog_images.py [--root PATH] [--out-dir PATH] [--source-tag NAME]
@@ -71,6 +77,18 @@ STRIP_WORDS_RE = re.compile(r"\b(pond|lake|reservoir|res|park|shore)\b", re.IGNO
 ASSUMED_MAGNIFICATION = "10x"
 
 
+def capture_mode_for(sample_code: str) -> str:
+    """AI* -> autoimage mode; TR*/TM -> trigger mode (laser-triggered
+    detection, preferred and standardized post-2022 per Prof. Ahlgren)."""
+    if not sample_code:
+        return None
+    if sample_code.startswith("AI"):
+        return "autoimage"
+    if sample_code.startswith("TR") or sample_code.startswith("TM"):
+        return "trigger"
+    return None
+
+
 def parse_folder_name(name: str) -> dict:
     date_match = DATE_RE.search(name)
     dilution_match = DILUTION_RE.search(name)
@@ -101,6 +119,7 @@ def parse_folder_name(name: str) -> dict:
         "date": date_match.group(1) if date_match else None,
         "magnification": ASSUMED_MAGNIFICATION,
         "sample_code": sample_match.group(1).upper() if sample_match else None,
+        "capture_mode": capture_mode_for(sample_match.group(1).upper() if sample_match else None),
         "dilution": dilution,
         "is_pp": is_pp,
     }
@@ -179,13 +198,6 @@ def image_id_for(rel_path: str) -> str:
     return hashlib.sha1(rel_path.encode("utf-8")).hexdigest()[:16]
 
 
-def md5_of(path: Path) -> str:
-    h = hashlib.md5()
-    with open(path, "rb") as f:
-        h.update(f.read())
-    return h.hexdigest()
-
-
 def read_image_info(path: Path) -> dict:
     try:
         with Image.open(path) as im:
@@ -208,38 +220,29 @@ def read_image_info(path: Path) -> dict:
         }
 
 
-def find_duplicate_relpaths(root: Path, folder_parsed: dict) -> set:
-    """Return the set of raw-side image relative paths whose content is also
-    present in their -pp sibling folder (same site + date + sample_code).
-    Only folders that are part of such a pair get hashed -- the rest of the
-    dataset is untouched by this step.
+def select_folders_preferring_pp(folder_parsed: dict) -> tuple:
+    """Group folders by (site_raw, date, sample_code). If a group has any
+    -pp folder(s), only those are kept -- the raw counterpart is dropped
+    entirely (confirmed with Prof. Ahlgren: -pp is the city's standard
+    post-processed output). Groups with no -pp folder keep their raw
+    folder(s) as-is. Returns (selected_names, dropped_raw_names).
     """
     groups = collections.defaultdict(list)
     for folder_name, parsed in folder_parsed.items():
         key = (parsed["site_raw"], parsed["date"], parsed["sample_code"])
         groups[key].append(folder_name)
 
-    duplicate_relpaths = set()
-
+    selected = set()
+    dropped = set()
     for key, folder_names in groups.items():
         pp_folders = [f for f in folder_names if folder_parsed[f]["is_pp"]]
-        raw_folders = [f for f in folder_names if not folder_parsed[f]["is_pp"]]
-        if not pp_folders or not raw_folders:
-            continue
+        if pp_folders:
+            selected.update(pp_folders)
+            dropped.update(f for f in folder_names if f not in pp_folders)
+        else:
+            selected.update(folder_names)
 
-        pp_hashes = set()
-        for pp_folder in pp_folders:
-            for p in (root / pp_folder).iterdir():
-                if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS and not p.name.startswith("._"):
-                    pp_hashes.add(md5_of(p))
-
-        for raw_folder in raw_folders:
-            for p in (root / raw_folder).iterdir():
-                if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS and not p.name.startswith("._"):
-                    if md5_of(p) in pp_hashes:
-                        duplicate_relpaths.add(str(p.relative_to(root)))
-
-    return duplicate_relpaths
+    return selected, dropped
 
 
 def main():
@@ -295,9 +298,13 @@ def main():
             if last_word in ("pond", "lake", "reservoir"):
                 parsed["water_body_type"] = last_word
 
-    print("Hashing raw/-pp pairs to flag duplicates...")
-    duplicate_relpaths = find_duplicate_relpaths(root, folder_parsed)
-    print(f"Flagged {len(duplicate_relpaths)} raw-side images as duplicates of a -pp copy.")
+    # Prefer -pp: when a raw folder and its -pp sibling both exist (same
+    # site + date + sample_code), only the -pp folder is cataloged.
+    selected_names, dropped_names = select_folders_preferring_pp(folder_parsed)
+    for name in sorted(dropped_names):
+        print(f"Dropping raw folder (has a -pp counterpart): {name}")
+    print(f"Dropped {len(dropped_names)} raw folders in favor of their -pp counterpart.")
+    included_folders = [f for f in included_folders if f.name in selected_names]
 
     manifest_rows = []
     folder_stats = {}
@@ -333,9 +340,9 @@ def main():
                 "date": parsed["date"],
                 "magnification": parsed["magnification"],
                 "sample_code": parsed["sample_code"],
+                "capture_mode": parsed["capture_mode"],
                 "dilution": parsed["dilution"],
                 "is_pp": parsed["is_pp"],
-                "is_duplicate": rel_path in duplicate_relpaths,
                 "width": info["width"],
                 "height": info["height"],
                 "file_size_bytes": img_path.stat().st_size,
@@ -356,6 +363,7 @@ def main():
             "date": parsed["date"],
             "magnification": parsed["magnification"],
             "sample_code": parsed["sample_code"],
+            "capture_mode": parsed["capture_mode"],
             "dilution": parsed["dilution"],
             "is_pp": parsed["is_pp"],
             "image_count": len(image_files),
@@ -366,11 +374,14 @@ def main():
             "max_height": max(heights) if heights else None,
         }
 
-    # Note raw/pp pairs so folder_summary makes the relationship visible.
+    # Note which dropped raw folder each -pp folder replaced, so the
+    # relationship stays visible even though the raw folder itself has no
+    # row of its own anymore. Checked against the full parsed set (not the
+    # filtered folder_stats), since the raw folder was deliberately dropped.
     for folder_name, stats in folder_stats.items():
         if stats["is_pp"]:
             raw_candidate = re.sub(PP_RE, "", folder_name).strip(" _-")
-            stats["pp_of_folder"] = raw_candidate if raw_candidate in folder_stats else ""
+            stats["pp_of_folder"] = raw_candidate if raw_candidate in folder_parsed else ""
         else:
             stats["pp_of_folder"] = ""
 
@@ -387,7 +398,7 @@ def main():
     summary_path = out_dir / "folder_summary.csv"
     summary_fields = [
         "folder_name", "site_raw", "site_normalized", "water_body_type", "date", "magnification",
-        "sample_code", "dilution", "is_pp", "pp_of_folder",
+        "sample_code", "capture_mode", "dilution", "is_pp", "pp_of_folder",
         "image_count", "unreadable_count", "min_width", "max_width", "min_height", "max_height",
     ]
     with summary_path.open("w", newline="") as f:
@@ -395,12 +406,11 @@ def main():
         writer.writeheader()
         writer.writerows(folder_stats.values())
 
-    duplicate_count = sum(1 for r in manifest_rows if r["is_duplicate"])
-
     print(f"Folders scanned: {len(sample_folders)}")
-    print(f"Folders excluded: {len(excluded)}")
+    print(f"Folders excluded (test/scratch): {len(excluded)}")
+    print(f"Folders dropped (raw, superseded by -pp): {len(dropped_names)}")
+    print(f"Folders cataloged: {len(included_folders)}")
     print(f"Images cataloged: {len(manifest_rows)}")
-    print(f"Images flagged as duplicates: {duplicate_count}")
     print(f"Wrote: {manifest_path}")
     print(f"Wrote: {manifest_gz_path} (commit this one — under GitHub's 100MB limit)")
     print(f"Wrote: {summary_path}")

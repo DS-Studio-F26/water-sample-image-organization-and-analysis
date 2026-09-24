@@ -10,8 +10,12 @@ A jupyter notebook on CNN: https://github.com/ageron/handson-mlp/blob/main/12_de
 `ProjectCode/catalog_images.py` scans the image dataset and outputs a CSV
 manifest (one row per image, plus a folder summary) into
 `ProjectCode/catalog_output/`. Magnification is assumed to be 10x for every
-folder, and raw-side images that duplicate a `-pp` copy are flagged
-(`is_duplicate`) rather than removed.
+folder. When a raw folder has a `-pp` counterpart (same site, date, and
+sample code), only the `-pp` folder is cataloged -- confirmed with the
+professor that `-pp` is the city's standard post-processed output. Nothing on
+disk is touched; rerunning the script just recomputes which folders are
+included. `sample_code` is also classified into `capture_mode`
+(`autoimage` for AI* codes, `trigger` for TR*/TM codes).
 
 ```bash
 pip3 install Pillow
