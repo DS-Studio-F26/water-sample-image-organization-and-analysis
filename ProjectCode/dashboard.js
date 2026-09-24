@@ -862,33 +862,257 @@ function renderQALog() {
 }
 
 // 12. Detail Panel
-function openDetailPanel(row) {
+
+// Cache for the folder-name → hash-key index
+let folderIndex = null;
+
+async function loadFolderIndex() {
+  if (folderIndex) return folderIndex;
+  try {
+    const res = await fetch('catalog_output/folder_images/_index.json');
+    if (res.ok) {
+      folderIndex = await res.json();
+    }
+  } catch (e) {
+    console.warn('Could not load folder image index:', e);
+  }
+  return folderIndex || {};
+}
+
+function formatBytes(bytes) {
+  if (bytes == null) return '-';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+async function openDetailPanel(row) {
   const panel = document.getElementById('detail-panel');
   const overlay = document.getElementById('detail-overlay');
   const content = document.getElementById('detail-content');
   if (!panel || !overlay || !content) return;
-  
-  let html = `<h3>${row.folder_name}</h3>`;
-  html += `<table class="detail-table"><tbody>`;
-  
-  const fields = Object.keys(row).sort();
-  fields.forEach(f => {
-    let val = row[f];
-    if (val === null || val === undefined) val = '';
-    html += `<tr><th>${f}</th><td>${val}</td></tr>`;
+
+  // --- Folder metadata section ---
+  const metaFields = [
+    ['Site', row.site_normalized],
+    ['Water Body', row.water_body_type],
+    ['Date', row.date],
+    ['Magnification', row.magnification],
+    ['Sample Code', row.sample_code],
+    ['Dilution', row.dilution],
+    ['Type', row.is_pp ? 'Post-Processed (PP)' : 'Raw'],
+    ['Image Count', row.image_count != null ? row.image_count.toLocaleString() : '-'],
+    ['Dimensions', (row.min_width && row.max_width)
+      ? `${row.min_width}×${row.min_height} – ${row.max_width}×${row.max_height}`
+      : '-'],
+    ['Parse Status', row.parsed_ok ? '✓ OK' : '✗ Error'],
+  ];
+
+  let html = `<h3 class="detail-folder-title" title="${escapeHTML(row.folder_name)}">${escapeHTML(row.folder_name)}</h3>`;
+  html += '<table class="detail-table"><tbody>';
+  metaFields.forEach(([label, val]) => {
+    html += `<tr><th>${label}</th><td>${val || '-'}</td></tr>`;
   });
-  
-  html += `</tbody></table>`;
-  
-  html += `<div class="detail-images-placeholder">`;
-  html += `<h4>Images</h4>`;
-  html += `<p>Image listing coming soon...</p>`;
-  html += `</div>`;
-  
+  html += '</tbody></table>';
+
+  // --- Image listing placeholder (loading state) ---
+  html += '<div class="detail-images-section">';
+  html += '<div class="detail-images-header">';
+  html += '<h4>Images</h4>';
+  html += '</div>';
+  html += '<div id="detail-images-container"><div class="detail-loading"><div class="spinner"></div> Loading images…</div></div>';
+  html += '</div>';
+
   content.innerHTML = html;
-  
   panel.classList.add('open');
   overlay.classList.add('open');
+
+  // --- Load image data ---
+  const index = await loadFolderIndex();
+  const entry = index[row.folder_name];
+  const container = document.getElementById('detail-images-container');
+  if (!container) return;
+
+  if (!entry) {
+    container.innerHTML = '<p class="text-muted">No image data available. Run <code>python prepare_image_data.py</code> to generate.</p>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`catalog_output/folder_images/${entry.key}.json`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const images = await res.json();
+    renderImageListing(container, images, row);
+  } catch (e) {
+    container.innerHTML = `<p class="text-muted">Failed to load image data: ${e.message}</p>`;
+  }
+}
+
+function renderImageListing(container, images, folderRow) {
+  if (!images || images.length === 0) {
+    container.innerHTML = '<p class="text-muted">No images found in this folder.</p>';
+    return;
+  }
+
+  // State for image listing
+  let imageSort = { col: 'filename', dir: 'asc' };
+  let imageSearch = '';
+
+  function getFilteredImages() {
+    let filtered = images;
+    if (imageSearch) {
+      const q = imageSearch.toLowerCase();
+      filtered = filtered.filter(img => img.filename.toLowerCase().includes(q));
+    }
+    filtered.sort((a, b) => {
+      const dir = imageSort.dir === 'asc' ? 1 : -1;
+      let va = a[imageSort.col];
+      let vb = b[imageSort.col];
+      if (va == null) va = '';
+      if (vb == null) vb = '';
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+      return String(va).localeCompare(String(vb)) * dir;
+    });
+    return filtered;
+  }
+
+  function render() {
+    const filtered = getFilteredImages();
+    const totalSize = filtered.reduce((s, img) => s + (img.file_size_bytes || 0), 0);
+
+    let html = '';
+
+    // Controls bar
+    html += '<div class="img-controls">';
+    html += `<input type="text" class="img-search" id="detail-img-search" placeholder="Search filenames…" value="${escapeHTML(imageSearch)}">`;
+    html += `<span class="img-count">${filtered.length} of ${images.length} images (${formatBytes(totalSize)})</span>`;
+    html += '</div>';
+
+    // Download All link (zip not available, but we provide folder path)
+    html += '<div class="img-actions">';
+    html += `<button class="btn btn-primary btn-sm" id="detail-download-all">⬇ Download All Visible (${filtered.length})</button>`;
+    html += '</div>';
+
+    // Image table
+    html += '<div class="img-table-wrap">';
+    html += '<table class="img-table">';
+    html += '<thead><tr>';
+
+    const columns = [
+      { key: 'filename', label: 'Filename' },
+      { key: 'width', label: 'W' },
+      { key: 'height', label: 'H' },
+      { key: 'file_size_bytes', label: 'Size' },
+      { key: 'format', label: 'Fmt' },
+      { key: 'label', label: 'Label' },
+    ];
+
+    columns.forEach(col => {
+      const sortClass = imageSort.col === col.key
+        ? (imageSort.dir === 'asc' ? 'sort-asc' : 'sort-desc')
+        : '';
+      html += `<th class="sortable img-th ${sortClass}" data-img-col="${col.key}">${col.label}</th>`;
+    });
+    html += '<th class="img-th">Action</th>';
+    html += '</tr></thead><tbody>';
+
+    // Limit to 200 rows for performance, show "and X more" if truncated
+    const displayLimit = 200;
+    const displayImages = filtered.slice(0, displayLimit);
+
+    displayImages.forEach(img => {
+      const imgPath = `../WCMC_raw_images_2023_and_others/${img.relative_path}`;
+      const dims = (img.width && img.height) ? `${img.width}` : '-';
+      const hDims = (img.width && img.height) ? `${img.height}` : '-';
+      html += '<tr>';
+      html += `<td class="img-filename" title="${escapeHTML(img.filename)}">${escapeHTML(truncateStr(img.filename, 30))}</td>`;
+      html += `<td class="img-num">${dims}</td>`;
+      html += `<td class="img-num">${hDims}</td>`;
+      html += `<td class="img-num">${formatBytes(img.file_size_bytes)}</td>`;
+      html += `<td>${img.format || '-'}</td>`;
+      html += `<td>${img.label ? `<span class="badge pp-badge">${escapeHTML(img.label)}</span>` : '<span class="text-muted">—</span>'}</td>`;
+      html += `<td><a href="${encodeURI(imgPath)}" download="${escapeHTML(img.filename)}" class="btn-download" title="Download">⬇</a>`;
+      html += ` <a href="${encodeURI(imgPath)}" target="_blank" class="btn-view" title="View">👁</a></td>`;
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += '</div>';
+
+    if (filtered.length > displayLimit) {
+      html += `<p class="text-muted img-truncated">Showing first ${displayLimit} of ${filtered.length} images. Use search to narrow results.</p>`;
+    }
+
+    container.innerHTML = html;
+
+    // --- Attach event listeners ---
+
+    // Search
+    const searchInput = document.getElementById('detail-img-search');
+    if (searchInput) {
+      let timeout;
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          imageSearch = e.target.value;
+          render();
+          // Re-focus and restore cursor position
+          const newInput = document.getElementById('detail-img-search');
+          if (newInput) {
+            newInput.focus();
+            newInput.setSelectionRange(newInput.value.length, newInput.value.length);
+          }
+        }, 250);
+      });
+    }
+
+    // Column sort
+    container.querySelectorAll('th[data-img-col]').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.imgCol;
+        if (imageSort.col === col) {
+          imageSort.dir = imageSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          imageSort.col = col;
+          imageSort.dir = 'asc';
+        }
+        render();
+      });
+    });
+
+    // Download All — triggers sequential download of visible images
+    const downloadAllBtn = document.getElementById('detail-download-all');
+    if (downloadAllBtn) {
+      downloadAllBtn.addEventListener('click', () => {
+        const toDownload = filtered.slice(0, displayLimit);
+        if (toDownload.length > 50) {
+          if (!confirm(`This will download ${toDownload.length} files. Continue?`)) return;
+        }
+        toDownload.forEach((img, i) => {
+          setTimeout(() => {
+            const a = document.createElement('a');
+            a.href = encodeURI(`../WCMC_raw_images_2023_and_others/${img.relative_path}`);
+            a.download = img.filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }, i * 100); // stagger downloads to avoid browser blocking
+        });
+      });
+    }
+  }
+
+  render();
+}
+
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function closeDetailPanel() {
