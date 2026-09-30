@@ -10,3 +10,15 @@ ProjectCode/catalog_output/image_manifest.csv
 
 # macOS
 .DS_Store
+
+# Plan A hosting: secrets (DB password, R2 keys) live in ProjectCode/.env --
+# never commit it. ProjectCode/.env.example holds the placeholders.
+.env
+ProjectCode/.env
+
+# Python bytecode
+__pycache__/
+
+# Cloudflare Worker: npm packages and wrangler's local dev state
+node_modules/
+.wrangler/

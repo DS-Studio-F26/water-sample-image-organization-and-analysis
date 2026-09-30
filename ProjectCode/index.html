@@ -13,9 +13,15 @@
 
     <!-- Header -->
     <header id="dashboard-header">
-      <h1>Water Sample Image Catalog</h1>
-      <p>Browse, sort, and filter the cataloged microscopy images from water sample collection events.</p>
+      <div class="header-text">
+        <h1>Water Sample Image Catalog</h1>
+        <p>Browse, sort, and filter the cataloged microscopy images from water sample collection events.</p>
+      </div>
+      <div class="auth-area" id="auth-area"></div>
     </header>
+
+    <!-- Shown when the database can't be reached -->
+    <div class="alert alert-error" id="data-error" role="alert" hidden></div>
 
     <!-- Stats Cards -->
     <section class="stats-grid">
@@ -72,6 +78,12 @@
         </select>
       </div>
       <div class="filter-group">
+        <label for="filter-capture_mode">Capture Mode</label>
+        <select id="filter-capture_mode" class="filter-select">
+          <option value="">All Modes</option>
+        </select>
+      </div>
+      <div class="filter-group">
         <label for="filter-dilution">Dilution</label>
         <select id="filter-dilution" class="filter-select">
           <option value="">All Dilutions</option>
@@ -107,11 +119,11 @@
             <th data-sortable data-col="water_body_type" class="sortable">Water Body</th>
             <th data-sortable data-col="date" class="sortable">Date</th>
             <th data-sortable data-col="sample_code" class="sortable">Sample Code</th>
+            <th data-sortable data-col="capture_mode" class="sortable">Capture Mode</th>
             <th data-sortable data-col="dilution" class="sortable">Dilution</th>
             <th data-sortable data-col="is_pp" class="sortable">Type</th>
             <th data-sortable data-col="image_count" class="sortable text-right">Images</th>
             <th>Dimensions</th>
-            <th data-sortable data-col="parsed_ok" class="sortable">Status</th>
           </tr>
         </thead>
         <tbody id="table-body">
@@ -177,6 +189,12 @@
       </div>
     </section>
 
+    <footer class="site-footer">
+      <a href="privacy.html">Privacy Policy</a>
+      <span aria-hidden="true">·</span>
+      <span>Clark University Data Science Studio</span>
+    </footer>
+
   </div><!-- end .dashboard-container -->
 
   <!-- Detail Panel (slide-in from right) -->
@@ -190,6 +208,11 @@
     </div>
   </aside>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+    integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+    crossorigin="anonymous"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
   <script src="dashboard.js"></script>
 </body>
 

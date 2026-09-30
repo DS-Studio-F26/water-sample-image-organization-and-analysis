@@ -1,0 +1,112 @@
+# Deploys the Water Sample Image Catalog to Cloudflare.
+#
+#   push to `host`   -> the dashboard to Cloudflare Pages (every push), and the
+#                       image Worker only when ProjectCode/worker/ changed
+#   Run workflow     -> the dashboard, plus the Worker if "Also deploy the
+#   (Actions tab)       image Worker" is ticked
+#
+# Needs the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# See the README section "Hosting (Plan A)".
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [host]
+  workflow_dispatch:
+    inputs:
+      deploy_worker:
+        description: Also deploy the image Worker
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer push waits for the running one to finish.
+concurrency:
+  group: cloudflare-deploy
+  cancel-in-progress: false
+
+env:
+  WRANGLER_VERSION: "4.145.0"  # keep in step with ProjectCode/worker/package.json
+
+jobs:
+  pages:
+    name: Dashboard -> Cloudflare Pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Collect the web files into dist/
+        # Only these files are published -- never catalog_output/, the image
+        # folder, deploy/, worker/ or .env.
+        run: |
+          mkdir dist
+          cd ProjectCode
+          cp index.html admin.html privacy.html reset-password.html \
+             config.js auth.js dashboard.js admin.js reset.js \
+             dashboard.css ../dist/
+          ls -la ../dist
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
+          command: pages deploy dist --project-name=water-sample-dashboard --branch=host
+
+  changes:
+    name: Did the Worker change?
+    runs-on: ubuntu-latest
+    outputs:
+      worker: ${{ steps.diff.outputs.worker }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          DISPATCH_WORKER: ${{ inputs.deploy_worker }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            worker="$DISPATCH_WORKER"
+          elif [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
+               || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            worker=true  # first push of the branch, or rewritten history: deploy to be safe
+          elif git diff --quiet "$BEFORE" "$AFTER" -- ProjectCode/worker; then
+            worker=false
+          else
+            worker=true
+          fi
+          echo "worker=$worker" >> "$GITHUB_OUTPUT"
+          echo "Deploy the Worker: $worker"
+
+  worker:
+    name: Image Worker -> Cloudflare Workers
+    needs: changes
+    if: needs.changes.outputs.worker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Deploy the Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
+          workingDirectory: ProjectCode/worker
+          command: deploy

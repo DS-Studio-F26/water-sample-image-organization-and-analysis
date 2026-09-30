@@ -1,4 +1,9 @@
 """
+LEGACY: the dashboard no longer reads these files. Since the Plan A hosting
+move it loads folders and images from Supabase (deploy/import_to_supabase.py)
+and the images themselves from Cloudflare R2. Kept for reference and for
+offline use of the per-folder JSON.
+
 Pre-process the image manifest into per-folder JSON files for the dashboard.
 
 Writes one small JSON file per selected folder into catalog_output/folder_images/,
@@ -28,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from catalog_images import (
     EXCLUDED_FOLDER_PATTERN,
     IMAGE_EXTENSIONS,
+    SYSTEM_FOLDER_NAMES,
     image_id_for,
     parse_folder_name,
     select_folders_preferring_pp,
@@ -87,7 +93,9 @@ def main():
     # Re-derive which folders are in the catalog the same way catalog_images.py
     # does, so this script can never disagree with it about which folders (raw
     # vs -pp) are actually part of the dataset.
-    sample_folders = [p for p in root.iterdir() if p.is_dir() and not EXCLUDED_FOLDER_PATTERN.search(p.name)]
+    sample_folders = [p for p in root.iterdir()
+                      if p.is_dir() and p.name not in SYSTEM_FOLDER_NAMES
+                      and not EXCLUDED_FOLDER_PATTERN.search(p.name)]
     folder_parsed = {p.name: parse_folder_name(p.name) for p in sample_folders}
     selected_names, _dropped_names = select_folders_preferring_pp(folder_parsed)
 
@@ -99,12 +107,13 @@ def main():
             continue
 
         images = []
-        for img_path in sorted(folder.iterdir()):
+        for img_path in sorted(folder.iterdir(), key=lambda p: p.name):
             if not (img_path.is_file() and img_path.suffix.lower() in IMAGE_EXTENSIONS
                     and not img_path.name.startswith("._")):
                 continue
 
-            rel_path = str(img_path.relative_to(root))
+            # Forward slash on every OS, matching catalog_images.py's image_id hash.
+            rel_path = img_path.relative_to(root).as_posix()
             image_id = image_id_for(rel_path)
             meta = manifest_by_id.get(image_id)
 

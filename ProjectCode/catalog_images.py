@@ -60,6 +60,10 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 # both sides, not something intentionally kept.
 EXCLUDED_FOLDER_PATTERN = re.compile(r"IMPORT TEST", re.IGNORECASE)
 
+# Not sample folders at all: unzipping the dataset on Windows leaves a
+# "__MACOSX" folder of "._" resource-fork files next to the real data.
+SYSTEM_FOLDER_NAMES = {"__MACOSX"}
+
 DATE_RE = re.compile(r"(?:CR)?(\d{1,2}\.\d{1,2}\.\d{2}(?:\d{2})?)")
 DILUTION_RE = re.compile(r"no dilution|(\d+(?:\.\d+)?)\s*[Dd]ilution")
 # \d* before the trailing boundary catches numbered pp variants (-pp1, -pp2)
@@ -318,7 +322,12 @@ def main():
     out_dir: Path = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    sample_folders = sorted(p for p in root.iterdir() if p.is_dir())
+    # Sort by name, not Path: Windows compares paths case-insensitively, which
+    # would reorder the manifest's rows compared with a macOS run.
+    sample_folders = sorted(
+        (p for p in root.iterdir() if p.is_dir() and p.name not in SYSTEM_FOLDER_NAMES),
+        key=lambda p: p.name,
+    )
 
     excluded = [f for f in sample_folders if EXCLUDED_FOLDER_PATTERN.search(f.name)]
     for f in excluded:
@@ -362,15 +371,18 @@ def main():
         parsed = folder_parsed[folder_name]
 
         image_files = sorted(
-            p for p in folder.iterdir()
-            if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS and not p.name.startswith("._")
+            (p for p in folder.iterdir()
+             if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS and not p.name.startswith("._")),
+            key=lambda p: p.name,
         )
 
         widths, heights = [], []
         unreadable_count = 0
 
         for img_path in image_files:
-            rel_path = str(img_path.relative_to(root))
+            # as_posix() keeps "folder/file" with a forward slash on every OS, so
+            # image_id (a hash of this path) is the same on Windows and macOS.
+            rel_path = img_path.relative_to(root).as_posix()
             info = read_image_info(img_path)
 
             if not info["is_readable"]:
