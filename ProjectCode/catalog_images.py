@@ -49,12 +49,25 @@ from PIL import Image, UnidentifiedImageError
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
-# Folders that are known scratch/test data, not real samples.
-EXCLUDED_FOLDER_NAMES = {"Patch Pond IMPORT TEST"}
+# Folders that are known scratch/test data, not real samples. Matched by
+# pattern rather than exact name: "Patch Pond IMPORT TEST" (no date, already
+# excluded) has a byte-identical twin, "Patch Pond_10.30.2023_..._dilution-pp
+# IMPORT TEST" (125/125 files match, including the first image's hash), that
+# a per-name exact-match list would miss. Confirmed against the professor's
+# own reference file (References/WCMC_2023_parse_samples_for_DS_project.xlsx)
+# that this second one isn't a real sample either -- it's mapped identically
+# to its real counterpart there too, unflagged, so it was an oversight on
+# both sides, not something intentionally kept.
+EXCLUDED_FOLDER_PATTERN = re.compile(r"IMPORT TEST", re.IGNORECASE)
 
 DATE_RE = re.compile(r"(?:CR)?(\d{1,2}\.\d{1,2}\.\d{2}(?:\d{2})?)")
 DILUTION_RE = re.compile(r"no dilution|(\d+(?:\.\d+)?)\s*[Dd]ilution")
-PP_RE = re.compile(r"-?\s*pp\b", re.IGNORECASE)
+# \d* before the trailing boundary catches numbered pp variants (-pp1, -pp2)
+# that a plain \b after "pp" would miss -- "AI1-pp2" has no boundary between
+# "pp" and "2" (both \w), so the folder was silently read as raw. Confirmed
+# against the reference spreadsheet: PatchPond_CR5.21.22_10x_AI1-pp2 is a
+# real Patch.P (pp) sample there.
+PP_RE = re.compile(r"-?\s*pp\d*\b", re.IGNORECASE)
 # Matches TR1/TM/AI1/TRI etc. preceded by "x" (glued to the magnification,
 # e.g. "10xTR1") or by any non-alphanumeric (underscore, space, string start),
 # and not embedded in a longer word. A plain trailing \b doesn't work here:
@@ -125,6 +138,23 @@ def parse_folder_name(name: str) -> dict:
     }
 
 
+# Trailing descriptors that turned out to be collector/street names, not a
+# distinct sampling location -- confirmed against the professor's reference
+# mapping (References/WCMC_2023_parse_samples_for_DS_project.xlsx, "folder
+# names img count cmds" sheet), which maps every one of these back to the
+# same short site code as their plain parent (e.g. "CoesResHaley" -> "Coes.R",
+# same as "CoesRes"). Without this, each one gets its own root and never
+# merges with its parent site.
+ROOT_ALIASES = {
+    "coeshaley": "coes",
+    "coespat": "coes",
+    "patchbreezedr": "patch",
+    "patchbreeze": "patch",
+    "indianmelissa": "indian",
+    "indianjoe": "indian",
+}
+
+
 def compute_site_root(site_raw: str) -> str:
     """Aggressively-merged site key: splits camelCase, strips collection tags,
     water-body words, and digits. Two site_raw values sharing a root are
@@ -138,7 +168,8 @@ def compute_site_root(site_raw: str) -> str:
     s = STRIP_WORDS_RE.sub("", s)
     s = re.sub(r"\b\d+\b", "", s)
     s = re.sub(r"\s+", " ", s).strip()
-    return s if s else site_raw.lower().strip()
+    root = s if s else site_raw.lower().strip()
+    return ROOT_ALIASES.get(root.replace(" ", ""), root)
 
 
 def _camel_split(site_raw: str) -> str:
@@ -151,7 +182,24 @@ def _camel_split(site_raw: str) -> str:
     return CAMEL_RE.sub(" ", site_raw.replace("_", " "))
 
 
+# Documented correction for a folder name whose water-body word is wrong at
+# the source (confirmed against the professor's reference mapping in
+# References/WCMC_2023_parse_samples_for_DS_project.xlsx: every "CoesPond"
+# folder maps to "Coes.R", i.e. Coes Reservoir). Without this, "CoesPond"
+# would make the whole "coes" root look ambiguous (spanning pond and
+# reservoir) when in fact every real Coes image sample is Coes Reservoir --
+# "Pond" here is a misnomer, not a second physical site. Checked against the
+# glued original ("CoesPond", no separator) so it can never accidentally
+# match a genuinely distinct, properly-spaced "Coes Pond" if one ever shows
+# up -- the reference mapping has no such folder today.
+SITE_TYPE_CORRECTIONS = {"coespond": "reservoir"}
+
+
 def core_water_types_in(site_raw: str) -> set:
+    compact = site_raw.replace("_", "").lower()
+    for prefix, corrected_type in SITE_TYPE_CORRECTIONS.items():
+        if compact.startswith(prefix):
+            return {corrected_type}
     return {
         "reservoir" if m.group(1).lower() == "res" else m.group(1).lower()
         for m in CORE_WATER_TYPE_RE.finditer(_camel_split(site_raw))
@@ -272,10 +320,10 @@ def main():
 
     sample_folders = sorted(p for p in root.iterdir() if p.is_dir())
 
-    excluded = [f for f in sample_folders if f.name in EXCLUDED_FOLDER_NAMES]
+    excluded = [f for f in sample_folders if EXCLUDED_FOLDER_PATTERN.search(f.name)]
     for f in excluded:
         print(f"Excluding known test/scratch folder: {f.name}")
-    included_folders = [f for f in sample_folders if f.name not in EXCLUDED_FOLDER_NAMES]
+    included_folders = [f for f in sample_folders if not EXCLUDED_FOLDER_PATTERN.search(f.name)]
 
     folder_parsed = {f.name: parse_folder_name(f.name) for f in included_folders}
 

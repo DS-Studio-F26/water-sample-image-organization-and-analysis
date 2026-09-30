@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from catalog_images import (
-    EXCLUDED_FOLDER_NAMES,
+    EXCLUDED_FOLDER_PATTERN,
     IMAGE_EXTENSIONS,
     image_id_for,
     parse_folder_name,
@@ -87,7 +87,7 @@ def main():
     # Re-derive which folders are in the catalog the same way catalog_images.py
     # does, so this script can never disagree with it about which folders (raw
     # vs -pp) are actually part of the dataset.
-    sample_folders = [p for p in root.iterdir() if p.is_dir() and p.name not in EXCLUDED_FOLDER_NAMES]
+    sample_folders = [p for p in root.iterdir() if p.is_dir() and not EXCLUDED_FOLDER_PATTERN.search(p.name)]
     folder_parsed = {p.name: parse_folder_name(p.name) for p in sample_folders}
     selected_names, _dropped_names = select_folders_preferring_pp(folder_parsed)
 

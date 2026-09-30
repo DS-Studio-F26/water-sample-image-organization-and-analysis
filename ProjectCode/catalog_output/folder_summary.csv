@@ -72,18 +72,18 @@ Coes Reservoir_9.5.2023_10x_TM 0.5 dilution 1-pp,Coes Reservoir,coes reservoir,r
 Coes Reservoir_CR10.3.22_10xTR1 0.1 dilution-pp,Coes Reservoir,coes reservoir,reservoir,10.3.22,10x,TR1,trigger,0.1 dilution,True,,535,0,22,446,19,548
 Coes Reservoir_CR9.12.22_10xAI1-pp,Coes Reservoir,coes reservoir,reservoir,9.12.22,10x,AI1,autoimage,,True,,1279,0,22,746,22,702
 Coes Reservoir_CR9.26.22_10xTRI 0.1 dilution-pp,Coes Reservoir,coes reservoir,reservoir,9.26.22,10x,TRI,trigger,0.1 dilution,True,,86,0,30,913,29,700
-CoesPond_WCMC_CR10.16.21_TR1-pp,CoesPond_WCMC,coes pond,pond,10.16.21,10x,TR1,trigger,,True,CoesPond_WCMC_CR10.16.21_TR1,75,0,22,197,30,452
-CoesPond_WCMC_CR9.25.21_10x_TR1-PP,CoesPond_WCMC,coes pond,pond,9.25.21,10x,TR1,trigger,,True,CoesPond_WCMC_CR9.25.21_10x_TR1,1107,0,22,247,24,273
-CoesResHaley_CR5.2.22_10x_TR1-pp,CoesResHaley,coes haley reservoir,reservoir,5.2.22,10x,TR1,trigger,,True,,1540,0,15,280,22,371
-CoesResPat_CR5.2.22_10x_TR1-pp,CoesResPat,coes pat reservoir,reservoir,5.2.22,10x,TR1,trigger,,True,,1315,0,16,472,21,875
+CoesPond_WCMC_CR10.16.21_TR1-pp,CoesPond_WCMC,coes reservoir,pond,10.16.21,10x,TR1,trigger,,True,CoesPond_WCMC_CR10.16.21_TR1,75,0,22,197,30,452
+CoesPond_WCMC_CR9.25.21_10x_TR1-PP,CoesPond_WCMC,coes reservoir,pond,9.25.21,10x,TR1,trigger,,True,CoesPond_WCMC_CR9.25.21_10x_TR1,1107,0,22,247,24,273
+CoesResHaley_CR5.2.22_10x_TR1-pp,CoesResHaley,coes reservoir,reservoir,5.2.22,10x,TR1,trigger,,True,,1540,0,15,280,22,371
+CoesResPat_CR5.2.22_10x_TR1-pp,CoesResPat,coes reservoir,reservoir,5.2.22,10x,TR1,trigger,,True,,1315,0,16,472,21,875
 CoesRes_CR6.6.22_10x_TR1-pp,CoesRes,coes reservoir,reservoir,6.6.22,10x,TR1,trigger,,True,,531,0,22,513,22,756
 CoesRes_CR7.19.22_10x_TR1,CoesRes,coes reservoir,reservoir,7.19.22,10x,TR1,trigger,,False,,1968,0,19,719,19,1314
 CoesRes_CR7.5.22_10x_TR1-pp,CoesRes,coes reservoir,reservoir,7.5.22,10x,TR1,trigger,,True,,1932,0,22,396,23,650
 CoesRes_WCMC_CR10.16.21_TR1-PP,CoesRes_WCMC,coes reservoir,reservoir,10.16.21,10x,TR1,trigger,,True,CoesRes_WCMC_CR10.16.21_TR1,120,0,26,496,28,332
 CoesRes_WCMC_CR9.25.21_10x_TR1-PP,CoesRes_WCMC,coes reservoir,reservoir,9.25.21,10x,TR1,trigger,,True,CoesRes_WCMC_CR9.25.21_10x_TR1,1789,0,21,232,20,320
-Coes_6.19.21_10x_TR1,Coes,coes,,6.19.21,10x,TR1,trigger,,False,,252,0,27,323,27,375
-Coes_6.19.21_10x_TR2,Coes,coes,,6.19.21,10x,TR2,trigger,,False,,575,0,20,230,23,248
-Coes_6.3.24_10x_TR1 no dilution-pp,Coes,coes,,6.3.24,10x,TR1,trigger,no dilution,True,,348,0,23,888,23,1357
+Coes_6.19.21_10x_TR1,Coes,coes reservoir,reservoir,6.19.21,10x,TR1,trigger,,False,,252,0,27,323,27,375
+Coes_6.19.21_10x_TR2,Coes,coes reservoir,reservoir,6.19.21,10x,TR2,trigger,,False,,575,0,20,230,23,248
+Coes_6.3.24_10x_TR1 no dilution-pp,Coes,coes reservoir,reservoir,6.3.24,10x,TR1,trigger,no dilution,True,,348,0,23,888,23,1357
 Cooks Pond_10.14.2023_10x_TM 0.5 dilution -pp,Cooks Pond,cooks pond,pond,10.14.2023,10x,TM,trigger,0.5 dilution,True,,7,0,28,216,31,196
 Cooks Pond_5.15.2023_10X_TR1 no dilution-pp,Cooks Pond,cooks pond,pond,5.15.2023,10x,TR1,trigger,no dilution,True,,38,0,28,237,25,271
 Cooks Pond_5.27.23_10x_TR1 no dilution-pp,Cooks Pond,cooks pond,pond,5.27.23,10x,TR1,trigger,no dilution,True,,30,0,30,117,27,81
@@ -242,8 +242,8 @@ GreenHill_CR5.21.22_10x_AI1-pp,GreenHill,green hill pond,pond,5.21.22,10x,AI1,au
 GreenHill_CR6.6.22_10x_TR1-pp,GreenHill,green hill pond,pond,6.6.22,10x,TR1,trigger,,True,,747,0,25,253,24,223
 GreenHill_CR7.16.22_10x_AI1 0.1 dilution-pp,GreenHill,green hill pond,pond,7.16.22,10x,AI1,autoimage,0.1 dilution,True,,299,0,25,263,26,737
 GreenHill_CR9.24.22_10x_TR1-pp,GreenHill,green hill pond,pond,9.24.22,10x,TR1,trigger,,True,,652,0,23,834,25,1128
-Indian Lake Shore Joe_5.15.2023_10X_TR1 0.5 dilution-pp,Indian Lake Shore Joe,indian joe lake,lake,5.15.2023,10x,TR1,trigger,0.5 dilution,True,,110,0,27,485,25,801
-Indian Lake Shore Melissa_5.15.2023_10X_TR1 0.5 dilution-pp,Indian Lake Shore Melissa,indian melissa lake,lake,5.15.2023,10x,TR1,trigger,0.5 dilution,True,,399,0,21,299,24,449
+Indian Lake Shore Joe_5.15.2023_10X_TR1 0.5 dilution-pp,Indian Lake Shore Joe,indian lake,lake,5.15.2023,10x,TR1,trigger,0.5 dilution,True,,110,0,27,485,25,801
+Indian Lake Shore Melissa_5.15.2023_10X_TR1 0.5 dilution-pp,Indian Lake Shore Melissa,indian lake,lake,5.15.2023,10x,TR1,trigger,0.5 dilution,True,,399,0,21,299,24,449
 Indian Lake_10.14.2023_10x_TM 0.5 dilution -pp,Indian Lake,indian lake,lake,10.14.2023,10x,TM,trigger,0.5 dilution,True,,348,0,18,731,26,816
 Indian Lake_10.2.2023_10x_TM 0.5 dilution -pp,Indian Lake,indian lake,lake,10.2.2023,10x,TM,trigger,0.5 dilution,True,,811,0,19,471,26,1041
 Indian Lake_10.30.2023_10x_TM 0.5 dilution-pp,Indian Lake,indian lake,lake,10.30.2023,10x,TM,trigger,0.5 dilution,True,,222,0,23,623,22,519
@@ -297,7 +297,7 @@ Kiver Pond_5.15.2023_10X_TR1 0.5 dilution-pp,Kiver Pond,kiver pond,pond,5.15.202
 Kiver Pond_6.24.2023_10x_TM 0.5 dilution-pp,Kiver Pond,kiver pond,pond,6.24.2023,10x,TM,trigger,0.5 dilution,True,,538,0,18,337,24,452
 Kiver Pond_7.10.2023_10x_TM 0.1 dilution-pp,Kiver Pond,kiver pond,pond,7.10.2023,10x,TM,trigger,0.1 dilution,True,,597,0,24,570,18,487
 Kiver Pond_7.22.2023_10x_TM 0.1 dilution-pp,Kiver Pond,kiver pond,pond,7.22.2023,10x,TM,trigger,0.1 dilution,True,,5,0,30,67,31,141
-Kiver Pond_8.7.2023_10x_TM 0.1 dilution-pp1,Kiver Pond,kiver pond,pond,8.7.2023,10x,TM,trigger,0.1 dilution,False,,396,0,20,231,25,407
+Kiver Pond_8.7.2023_10x_TM 0.1 dilution-pp1,Kiver Pond,kiver pond,pond,8.7.2023,10x,TM,trigger,0.1 dilution,True,,396,0,20,231,25,407
 Kiver Pond_9.16.2023_10x_TM 0.1 dilution-pp,Kiver Pond,kiver pond,pond,9.16.2023,10x,TM,trigger,0.1 dilution,True,,8,0,37,76,43,206
 Kiver Pond_9.5.2023_10x_TM 0.1 dilution -pp,Kiver Pond,kiver pond,pond,9.5.2023,10x,TM,trigger,0.1 dilution,True,,164,0,27,154,29,275
 Kiver_4.29.23_10x_TR1 0.5 dilution-pp,Kiver,kiver pond,pond,4.29.23,10x,TR1,trigger,0.5 dilution,True,,73,0,21,315,32,424
@@ -456,7 +456,7 @@ Newton_CR10.15.22_10x_AI1-pp,Newton,newton pond,pond,10.15.22,10x,AI1,autoimage,
 Newton_CR10.3.22_10x_AI1-pp,Newton,newton pond,pond,10.3.22,10x,AI1,autoimage,,True,,303,0,18,200,20,430
 Newton_CR5.2.22_10x_TR1-pp,Newton,newton pond,pond,5.2.22,10x,TR1,trigger,,True,,311,0,19,167,23,181
 Newton_CR5.21.22_10x_AI1-pp,Newton,newton pond,pond,5.21.22,10x,AI1,autoimage,,True,,607,0,18,233,25,239
-Newton_CR6.6.22_10x_TR1-pp1,Newton,newton pond,pond,6.6.22,10x,TR1,trigger,,False,,803,0,22,229,24,219
+Newton_CR6.6.22_10x_TR1-pp1,Newton,newton pond,pond,6.6.22,10x,TR1,trigger,,True,,803,0,22,229,24,219
 Newton_CR7.16.22_10x_AI1,Newton,newton pond,pond,7.16.22,10x,AI1,autoimage,,False,,167,0,15,479,28,816
 Newton_CR7.16.22_10x_AI2-pp,Newton,newton pond,pond,7.16.22,10x,AI2,autoimage,,True,,1625,0,21,169,19,170
 Newton_CR7.5.22_10x_TR1-pp,Newton,newton pond,pond,7.5.22,10x,TR1,trigger,,True,,1377,0,23,160,21,303
@@ -469,7 +469,6 @@ Newton_WCMC_CR9.25.21_10x_TR1,Newton_WCMC,newton pond,pond,9.25.21,10x,TR1,trigg
 Patch Pond_10.14.2023_10x_TM 0.5 dilution -pp,Patch Pond,patch pond,pond,10.14.2023,10x,TM,trigger,0.5 dilution,True,,90,0,23,223,27,251
 Patch Pond_10.2.2023_10x_TM 0.5 dilution -pp,Patch Pond,patch pond,pond,10.2.2023,10x,TM,trigger,0.5 dilution,True,,67,0,34,215,32,142
 Patch Pond_10.30.2023_10x_TM 0.5 dilution-pp,Patch Pond,patch pond,pond,10.30.2023,10x,TM,trigger,0.5 dilution,True,,125,0,29,213,21,187
-Patch Pond_10.30.2023_10x_TM 0.5 dilution-pp IMPORT TEST,Patch Pond,patch pond,pond,10.30.2023,10x,TM,trigger,0.5 dilution,True,,125,0,29,213,21,187
 Patch Pond_4.29.23_10x_TR1 0.5 dilution-pp,Patch Pond,patch pond,pond,4.29.23,10x,TR1,trigger,0.5 dilution,True,,34,0,27,228,26,177
 Patch Pond_5.15.2023_10X_TR1 0.5 dilution-pp,Patch Pond,patch pond,pond,5.15.2023,10x,TR1,trigger,0.5 dilution,True,,166,0,23,458,22,705
 Patch Pond_5.27.23_10x_TR1 .1 dilution-pp,Patch Pond,patch pond,pond,5.27.23,10x,TR1,trigger,1 dilution,True,,325,0,23,104,24,137
@@ -483,8 +482,8 @@ Patch Pond_9.16.2023_10x_TM 0.5 dilution-pp,Patch Pond,patch pond,pond,9.16.2023
 Patch Pond_9.5.2023_10x_TM 0.5 dilution -pp,Patch Pond,patch pond,pond,9.5.2023,10x,TM,trigger,0.5 dilution,True,,63,0,21,245,26,248
 Patch Pond_CR10.3.22_10x AI1 0.1 dilution-pp,Patch Pond,patch pond,pond,10.3.22,10x,AI1,autoimage,0.1 dilution,True,,1124,0,21,242,22,353
 Patch Pond_CR9.24.22_10x_TR1 0.1 dilution-pp,Patch Pond,patch pond,pond,9.24.22,10x,TR1,trigger,0.1 dilution,True,,42,0,30,287,29,313
-Patch Res Breeze Dr_7.10.2023_10x_TM 0.5 dilution-pp,Patch Res Breeze Dr,patch breeze dr reservoir,reservoir,7.10.2023,10x,TM,trigger,0.5 dilution,True,,180,0,27,540,26,744
-Patch Res Breeze Dr_7.22.2023_10x_TM 0.5 dilution-pp,Patch Res Breeze Dr,patch breeze dr reservoir,reservoir,7.22.2023,10x,TM,trigger,0.5 dilution,True,,259,0,26,471,25,637
+Patch Res Breeze Dr_7.10.2023_10x_TM 0.5 dilution-pp,Patch Res Breeze Dr,patch reservoir,reservoir,7.10.2023,10x,TM,trigger,0.5 dilution,True,,180,0,27,540,26,744
+Patch Res Breeze Dr_7.22.2023_10x_TM 0.5 dilution-pp,Patch Res Breeze Dr,patch reservoir,reservoir,7.22.2023,10x,TM,trigger,0.5 dilution,True,,259,0,26,471,25,637
 Patch Res_10.2.2023_10x_TM 0.5 dilution -pp,Patch Res,patch reservoir,reservoir,10.2.2023,10x,TM,trigger,0.5 dilution,True,,179,0,27,398,29,488
 Patch Res_10.30.2023_10x_TM 0.5 dilution-pp,Patch Res,patch reservoir,reservoir,10.30.2023,10x,TM,trigger,0.5 dilution,True,,106,0,29,171,28,258
 Patch Res_4.29.23_10x_TR1 no dilution-pp,Patch Res,patch reservoir,reservoir,4.29.23,10x,TR1,trigger,no dilution,True,,54,0,29,218,29,157
@@ -502,10 +501,10 @@ Patch Reservoir_6.12.2023_10x_TM no dilution-pp,Patch Reservoir,patch reservoir,
 Patch Reservoir_6.24.2023_10x_TM no dilution-pp,Patch Reservoir,patch reservoir,reservoir,6.24.2023,10x,TM,trigger,no dilution,True,,91,0,26,623,29,470
 Patch Reservoir_8.7.2023_10x_TM 0.5 dilution-pp,Patch Reservoir,patch reservoir,reservoir,8.7.2023,10x,TM,trigger,0.5 dilution,True,,900,0,27,526,25,573
 Patch Reservoir_CR9.12.22_10xAI 0.1 dilution-pp,Patch Reservoir,patch reservoir,reservoir,9.12.22,10x,AI,autoimage,0.1 dilution,True,,875,0,16,582,24,1287
-Patch reservoir Breeze_8.7.2023_10x_TM 0.5 dilution-pp,Patch reservoir Breeze,patch breeze reservoir,reservoir,8.7.2023,10x,TM,trigger,0.5 dilution,True,,854,0,24,405,29,564
+Patch reservoir Breeze_8.7.2023_10x_TM 0.5 dilution-pp,Patch reservoir Breeze,patch reservoir,reservoir,8.7.2023,10x,TM,trigger,0.5 dilution,True,,854,0,24,405,29,564
 PatchPond_CR10.15.22_10x_AI1-pp,PatchPond,patch pond,pond,10.15.22,10x,AI1,autoimage,,True,,1642,0,18,262,22,425
 PatchPond_CR5.2.22_10x_TR1-pp,PatchPond,patch pond,pond,5.2.22,10x,TR1,trigger,,True,,1404,0,17,272,24,379
-PatchPond_CR5.21.22_10x_AI1-pp2,PatchPond,patch pond,pond,5.21.22,10x,AI1,autoimage,,False,,2879,0,17,265,18,384
+PatchPond_CR5.21.22_10x_AI1-pp2,PatchPond,patch pond,pond,5.21.22,10x,AI1,autoimage,,True,,2879,0,17,265,18,384
 PatchPond_CR6.18.22_10x_TR1-pp,PatchPond,patch pond,pond,6.18.22,10x,TR1,trigger,,True,,6160,0,18,313,21,396
 PatchPond_CR6.6.22_10x_TR1 .1dilution-pp,PatchPond,patch pond,pond,6.6.22,10x,TR1,trigger,1dilution,True,,2371,0,18,357,16,325
 PatchPond_CR7.16.22_10x_AI1 0.1 dilution-pp,PatchPond,patch pond,pond,7.16.22,10x,AI1,autoimage,0.1 dilution,True,,305,0,24,168,25,210
