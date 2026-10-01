@@ -16,6 +16,7 @@ const WEB_FILES = [
   'admin.html',
   'privacy.html',
   'reset-password.html',
+  '404.html',  // with this present, Pages answers unknown paths with a real 404
   'config.js',
   'auth.js',
   'dashboard.js',
