@@ -1,65 +1,35 @@
-# Deploys the Water Sample Image Catalog to Cloudflare.
+# Deploys the image Worker (ProjectCode/worker/) to Cloudflare.
 #
-#   push to `host`   -> the dashboard to Cloudflare Pages (every push), and the
-#                       image Worker only when ProjectCode/worker/ changed
-#   Run workflow     -> the dashboard, plus the Worker if "Also deploy the
-#   (Actions tab)       image Worker" is ticked
+#   push to `host`   -> deploys the Worker, but only when ProjectCode/worker/ changed
+#   Run workflow     -> deploys the Worker now
+#   (Actions tab)
+#
+# The dashboard is NOT deployed here: the Cloudflare Pages project
+# "water-sample-dashboard" is connected to this repository and builds every
+# push to `host` itself (root directory ProjectCode, build command
+# "node build.mjs", output directory dist).
 #
 # Needs the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 # See the README section "Hosting (Plan A)".
-name: Deploy to Cloudflare
+name: Deploy image Worker
 
 on:
   push:
     branches: [host]
   workflow_dispatch:
-    inputs:
-      deploy_worker:
-        description: Also deploy the image Worker
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
 # One deploy at a time; a newer push waits for the running one to finish.
 concurrency:
-  group: cloudflare-deploy
+  group: cloudflare-worker-deploy
   cancel-in-progress: false
 
 env:
   WRANGLER_VERSION: "4.145.0"  # keep in step with ProjectCode/worker/package.json
 
 jobs:
-  pages:
-    name: Dashboard -> Cloudflare Pages
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-
-      - name: Collect the web files into dist/
-        # Only these files are published -- never catalog_output/, the image
-        # folder, deploy/, worker/ or .env.
-        run: |
-          mkdir dist
-          cd ProjectCode
-          cp index.html admin.html privacy.html reset-password.html \
-             config.js auth.js dashboard.js admin.js reset.js \
-             dashboard.css ../dist/
-          ls -la ../dist
-
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: ${{ env.WRANGLER_VERSION }}
-          command: pages deploy dist --project-name=water-sample-dashboard --branch=host
-
   changes:
     name: Did the Worker change?
     runs-on: ubuntu-latest
@@ -73,12 +43,11 @@ jobs:
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
-          DISPATCH_WORKER: ${{ inputs.deploy_worker }}
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ]; then
-            worker="$DISPATCH_WORKER"
+            worker=true  # run by hand: always deploy
           elif [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
                || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
             worker=true  # first push of the branch, or rewritten history: deploy to be safe
@@ -103,7 +72,7 @@ jobs:
           node-version: 22
 
       - name: Deploy the Worker
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

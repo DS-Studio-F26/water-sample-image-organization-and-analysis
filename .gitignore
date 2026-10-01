@@ -22,3 +22,6 @@ __pycache__/
 # Cloudflare Worker: npm packages and wrangler's local dev state
 node_modules/
 .wrangler/
+
+# Website build output (ProjectCode/build.mjs); Cloudflare Pages builds it itself
+dist/
