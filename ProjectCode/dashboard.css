@@ -778,3 +778,365 @@ tbody tr:hover {
     width: 100%;
   }
 }
+
+/* 11. Sign-in, alerts and extra pages (admin, reset password, privacy) */
+[hidden] {
+  display: none !important;
+}
+
+#dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-text a,
+.site-footer a,
+.prose a,
+.modal-footer a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.header-text a:hover,
+.site-footer a:hover,
+.prose a:hover,
+.modal-footer a:hover {
+  text-decoration: underline;
+}
+
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.auth-email {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.role-admin {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.role-labeler {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.role-viewer {
+  background-color: #f3f4f6;
+  color: #374151;
+  border-color: #e5e7eb;
+}
+
+/* Alerts (database unreachable, admin messages) */
+.alert {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  font-size: 0.875rem;
+}
+
+.alert .btn {
+  justify-self: start;
+}
+
+.alert-error {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.alert-success {
+  background-color: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.site-footer {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Sign-in modal */
+body.modal-open {
+  overflow: hidden;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: #f9fafb;
+  border-radius: 8px 8px 0 0;
+}
+
+.modal-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.modal-body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-intro {
+  font-size: 0.8rem;
+}
+
+.modal-footer {
+  padding: 0 1.5rem 1.25rem;
+  font-size: 0.75rem;
+}
+
+/* "Continue with Google": the primary, most prominent option
+   (Google's light button style: white, grey outline, colour logo) */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-family);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f1f1f;
+  background-color: #fff;
+  border: 1px solid #747775;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-google:hover {
+  background-color: #f8fafc;
+  box-shadow: var(--shadow-md);
+}
+
+.btn:focus-visible,
+.btn-google:focus-visible,
+.link-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border-color);
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.form-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.form-field input {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text-main);
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.auth-submit {
+  width: 100%;
+}
+
+.auth-message {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.auth-message-error {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.auth-message-success {
+  background-color: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+/* Admin, reset-password and privacy pages */
+.dashboard-container.narrow {
+  max-width: 760px;
+}
+
+.page-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.page-card h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.page-card > .btn {
+  justify-self: start;
+}
+
+.prose h2 {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+.prose ul {
+  display: grid;
+  gap: 0.25rem;
+  padding-left: 1.25rem;
+}
+
+.users-table tbody tr:hover {
+  cursor: default;
+}
+
+.role-cell {
+  min-width: 190px;
+}
+
+.role-select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.role-confirm {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  #dashboard-header {
+    flex-direction: column;
+  }
+
+  .auth-email {
+    max-width: 100%;
+  }
+}

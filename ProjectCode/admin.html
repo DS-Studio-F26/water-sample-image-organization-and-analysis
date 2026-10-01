@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Water Sample Image Catalog</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+  <div class="dashboard-container">
+
+    <!-- Header -->
+    <header id="dashboard-header">
+      <div class="header-text">
+        <h1>Water Sample Image Catalog — Admin</h1>
+        <p><a href="index.html">← Back to the dashboard</a></p>
+      </div>
+      <div class="auth-area" id="auth-area"></div>
+    </header>
+
+    <div class="alert" id="admin-message" role="status" hidden></div>
+
+    <!-- admin.js shows one of these, depending on who is signed in -->
+    <section class="page-card" id="admin-loading">
+      <div class="detail-loading"><div class="spinner"></div> Checking your account…</div>
+    </section>
+
+    <section class="page-card" id="admin-signed-out" hidden>
+      <h2>Sign in required</h2>
+      <p>This page is for project admins. Please sign in to continue.</p>
+      <button type="button" class="btn btn-primary" id="admin-signin-btn">Sign in</button>
+    </section>
+
+    <section class="page-card" id="admin-forbidden" hidden>
+      <h2>Not authorized</h2>
+      <p>Your account (<span id="admin-forbidden-email"></span>) has the
+        <span id="admin-forbidden-role"></span> role. Only admins can manage accounts;
+        ask an admin if you need access.</p>
+    </section>
+
+    <section id="admin-panel" hidden>
+      <div id="filter-bar">
+        <div class="filter-group">
+          <label for="user-search">Search</label>
+          <input type="text" id="user-search" placeholder="Email, name, provider, role..." autocomplete="off">
+        </div>
+        <div class="filter-group" style="flex-direction: row; align-items: center; gap: 0.75rem;">
+          <button type="button" class="btn" id="refresh-users-btn">Refresh</button>
+          <span class="text-muted" id="user-count"></span>
+        </div>
+      </div>
+
+      <section id="data-table-container">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Sign-in</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th>Last sign-in</th>
+            </tr>
+          </thead>
+          <tbody id="users-body">
+          </tbody>
+        </table>
+      </section>
+    </section>
+
+    <footer class="site-footer">
+      <a href="privacy.html">Privacy Policy</a>
+      <span aria-hidden="true">·</span>
+      <span>Clark University Data Science Studio</span>
+    </footer>
+
+  </div><!-- end .dashboard-container -->
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+    integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+    crossorigin="anonymous"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="admin.js"></script>
+</body>
+
+</html>

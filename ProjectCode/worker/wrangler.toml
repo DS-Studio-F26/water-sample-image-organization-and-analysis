@@ -1,0 +1,14 @@
+# Public, read-only image server for the Water Sample Image Catalog.
+# Serves objects from the R2 bucket; it never writes to it.
+#
+# Local test (from ProjectCode/worker):  npx wrangler dev
+#   uses a local, empty R2 simulation in .wrangler/ -- see README "Hosting (Plan A)"
+# Deploy:  npx wrangler deploy  (or push to `host`; see .github/workflows/deploy.yml)
+name = "water-sample-images"
+main = "src/index.js"
+compatibility_date = "2026-09-30"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "water-sample-images"

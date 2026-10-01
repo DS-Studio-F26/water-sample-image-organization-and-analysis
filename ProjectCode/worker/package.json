@@ -1,0 +1,12 @@
+{
+  "name": "water-sample-images-worker",
+  "private": true,
+  "description": "Read-only Cloudflare Worker that serves the water sample images from R2.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.145.0"
+  }
+}

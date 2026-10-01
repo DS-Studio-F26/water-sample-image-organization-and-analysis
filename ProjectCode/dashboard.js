@@ -1,11 +1,24 @@
 /**
  * Dashboard JavaScript for Water Sample Image Catalog
- * 100% Vanilla JS - No external libraries
+ * Vanilla JS. Data comes from Supabase (window.sb, created in auth.js; see
+ * supabase/migrations/001_init.sql) and the images from the Cloudflare Worker
+ * at APP_CONFIG.IMAGE_BASE_URL.
  */
 
-// 2. State Management
+// PostgREST returns at most 1,000 rows per request, so bigger reads are paged.
+const DB_PAGE_SIZE = 1000;
+const FOLDER_COLUMNS = 'folder_name, site_normalized, water_body_type, date, sample_date, '
+  + 'magnification, sample_code, capture_mode, dilution, is_pp, image_count, '
+  + 'min_width, max_width, min_height, max_height';
+const IMAGE_COLUMNS = 'filename, relative_path, width, height, file_size_bytes, format, label';
+const FILTER_KEYS = ['site_normalized', 'water_body_type', 'date', 'sample_code', 'capture_mode', 'dilution', 'is_pp'];
+const SORTABLE_COLUMNS = ['folder_name', 'site_normalized', 'water_body_type', 'date', 'sample_code',
+  'capture_mode', 'dilution', 'is_pp', 'image_count'];
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// 1. State Management
 const state = {
-  allData: [],       // all folder rows
+  allData: [],       // all folder rows (folders_visible)
   filteredData: [],  // after applying filters
   sortColumn: 'folder_name',
   sortDirection: 'asc',  // 'asc' or 'desc'
@@ -17,96 +30,103 @@ const state = {
     water_body_type: '',
     date: '',
     sample_code: '',
+    capture_mode: '',
     dilution: '',
     is_pp: ''  // '', 'true', 'false'
   },
   qaData: [],
-  qaExpanded: false
+  qaExpanded: false,
+  loaded: false,     // true once the catalog data has arrived
+  // Unfiltered totals straight from the SQL views; with filters active the
+  // same numbers are aggregated from the (already duplicate-free) folder rows.
+  viewStats: null,
+  viewCharts: null
 };
 
-// 1. CSV Parser
-function parseCSV(text) {
-  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-  if (lines.length === 0) return [];
-  
-  // Parse header
-  const headers = parseCSVLine(lines[0]);
-  
-  const data = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
-    const obj = {};
-    for (let j = 0; j < headers.length; j++) {
-      let val = values[j];
-      if (val === undefined) val = '';
-      
-      const header = headers[j];
-      
-      // Type conversions
-      if (['image_count', 'unreadable_count', 'min_width', 'max_width', 'min_height', 'max_height'].includes(header)) {
-        obj[header] = val ? Number(val) : null;
-      } else if (['is_pp', 'parsed_ok'].includes(header)) {
-        obj[header] = val.toLowerCase() === 'true';
-      } else {
-        obj[header] = val;
-      }
-    }
-    data.push(obj);
+// 2. Supabase queries
+
+async function fetchAllRows(buildQuery) {
+  const rows = [];
+  for (let from = 0; ; from += DB_PAGE_SIZE) {
+    const { data, error } = await buildQuery().range(from, from + DB_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < DB_PAGE_SIZE) return rows;
   }
-  return data;
 }
 
-function parseCSVLine(line) {
-  const result = [];
-  let currentVal = '';
-  let inQuotes = false;
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      if (inQuotes && line[i+1] === '"') {
-        currentVal += '"';
-        i++; // skip next quote
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      result.push(currentVal);
-      currentVal = '';
-    } else {
-      currentVal += char;
-    }
+async function fetchFolderImages(folderName) {
+  const query = (options) => sb.from('images')
+    .select(IMAGE_COLUMNS, options)
+    .eq('folder_name', folderName)
+    .order('filename');
+
+  const first = await query({ count: 'exact' }).range(0, DB_PAGE_SIZE - 1);
+  if (first.error) throw first.error;
+  const total = first.count ?? first.data.length;
+
+  // The biggest folders hold ~16K images: fetch the remaining pages 4 at a time.
+  const offsets = [];
+  for (let from = DB_PAGE_SIZE; from < total; from += DB_PAGE_SIZE) offsets.push(from);
+  const pages = [];
+  for (let i = 0; i < offsets.length; i += 4) {
+    const batch = await Promise.all(offsets.slice(i, i + 4).map(async (from) => {
+      const { data, error } = await query({}).range(from, from + DB_PAGE_SIZE - 1);
+      if (error) throw error;
+      return data;
+    }));
+    pages.push(...batch);
   }
-  result.push(currentVal);
-  return result;
+  return first.data.concat(...pages);
+}
+
+function imageUrl(relativePath, download = false) {
+  const base = window.APP_CONFIG.IMAGE_BASE_URL.replace(/\/+$/, '');
+  const path = relativePath.split('/').map(encodeURIComponent).join('/');
+  return `${base}/${path}${download ? '?download=1' : ''}`;
 }
 
 // 3. Data Loading
 async function loadData() {
   showLoading(true);
+  hideDataError();
   try {
-    const [summaryRes, qaRes] = await Promise.all([
-      fetch('catalog_output/folder_summary.csv'),
-      fetch('catalog_output/qa_log.csv')
+    if (!window.sb) {
+      throw new Error('The Supabase library did not load (blocked by the network or a browser extension?).');
+    }
+    const [folders, qa, stats, sites, months, waterBodies] = await Promise.all([
+      fetchAllRows(() => sb.from('folders_visible').select(FOLDER_COLUMNS).order('folder_name')),
+      fetchAllRows(() => sb.from('qa_log').select('level, target, detail').order('id')),
+      sb.from('dashboard_stats').select('*').single(),
+      fetchAllRows(() => sb.from('chart_site_counts').select('site_normalized, image_count')
+        .order('image_count', { ascending: false }).order('site_normalized')),
+      fetchAllRows(() => sb.from('chart_date_counts').select('month, image_count').order('month')),
+      fetchAllRows(() => sb.from('chart_water_body_counts').select('water_body_type, folder_count')
+        .order('folder_count', { ascending: false }).order('water_body_type')),
     ]);
-    
-    if (summaryRes.ok) {
-      const summaryText = await summaryRes.text();
-      state.allData = parseCSV(summaryText);
-    }
-    
-    if (qaRes.ok) {
-      const qaText = await qaRes.text();
-      state.qaData = parseCSV(qaText);
-    }
-    
+    if (stats.error) throw stats.error;
+
+    state.allData = folders;
+    state.qaData = qa;
+    state.viewStats = stats.data;
+    state.viewCharts = {
+      sites: sites.map(r => [r.site_normalized, Number(r.image_count)]),
+      months: months.map(r => [r.month.slice(0, 7), Number(r.image_count)]),
+      waterBodies: waterBodies.map(r => [r.water_body_type, Number(r.folder_count)]),
+    };
+
     populateFilters();
+    // Sign-in redirects briefly put tokens in the URL hash; wait until
+    // supabase-js has consumed them before reading filters from the hash.
+    if (window.Auth) await Auth.ready;
     loadStateFromHash(); // Restore before first render
+    state.loaded = true;
     applyFilters(false); // don't update hash yet
     renderQALog();
-    
+
   } catch (err) {
     console.error('Error loading data:', err);
+    showDataError(err);
   } finally {
     showLoading(false);
   }
@@ -119,21 +139,51 @@ function showLoading(show) {
   }
 }
 
-// Helper to parse custom M.D.YY dates
-function parseCustomDate(dateStr) {
-  if (!dateStr) return null;
-  const parts = dateStr.split('.');
-  if (parts.length === 3) {
-    const m = parseInt(parts[0], 10);
-    const d = parseInt(parts[1], 10);
-    let y = parseInt(parts[2], 10);
-    // Assume 2-digit years are 2000+
-    if (y < 100) {
-      y += 2000;
-    }
-    return new Date(y, m - 1, d);
+function showDataError(err) {
+  const banner = document.getElementById('data-error');
+  if (banner) {
+    banner.innerHTML = '';
+    const title = document.createElement('strong');
+    title.textContent = "Couldn't load the catalog data.";
+    const explain = document.createElement('p');
+    explain.textContent = "The database didn't respond. The free Supabase project pauses after about "
+      + 'a week without visits; if it is paused, the project owner can restore it from the Supabase '
+      + 'dashboard. Otherwise, check your internet connection and reload the page.';
+    const detail = document.createElement('p');
+    detail.className = 'text-muted';
+    detail.textContent = `Details: ${(err && err.message) || err}`;
+    const retry = document.createElement('button');
+    retry.className = 'btn btn-sm';
+    retry.textContent = 'Reload';
+    retry.addEventListener('click', () => window.location.reload());
+    banner.append(title, explain, detail, retry);
+    banner.hidden = false;
   }
-  return null;
+
+  const tbody = document.getElementById('table-body');
+  if (tbody) {
+    tbody.innerHTML = '';
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 10;
+    td.className = 'no-results';
+    td.textContent = 'Catalog data is unavailable right now (see the message above).';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+}
+
+function hideDataError() {
+  const banner = document.getElementById('data-error');
+  if (banner) banner.hidden = true;
+}
+
+// sample_date arrives as 'YYYY-MM-DD'; format it as M/D/YYYY without any
+// timezone conversion (new Date('2021-06-19') would be UTC midnight).
+function formatIsoDate(iso) {
+  if (!iso) return '-';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${m}/${d}/${y}`;
 }
 
 // 4. Filter Population
@@ -147,39 +197,32 @@ function populateFilters() {
     });
     return Array.from(values);
   };
-  
-  const siteNormalized = getUnique('site_normalized').sort();
-  const waterBodyTypes = getUnique('water_body_type').sort();
-  
-  const rawDates = getUnique('date');
-  const dates = rawDates.sort((a, b) => {
-    const da = parseCustomDate(a);
-    const db = parseCustomDate(b);
-    if (!da && !db) return a.localeCompare(b);
-    if (!da) return 1;
-    if (!db) return -1;
-    return da - db;
+
+  // Dates are written M.D.YY or M.D.YYYY; order them by the parsed sample_date.
+  const sortKeyForDate = {};
+  state.allData.forEach(row => {
+    if (row.date) sortKeyForDate[row.date] = row.sample_date || '';
   });
-  
-  const sampleCodes = getUnique('sample_code').sort();
-  const dilutions = getUnique('dilution').sort();
-  
-  populateDropdown('filter-site_normalized', siteNormalized);
-  populateDropdown('filter-water_body_type', waterBodyTypes);
+  const dates = getUnique('date').sort((a, b) =>
+    (sortKeyForDate[a] || '9999').localeCompare(sortKeyForDate[b] || '9999') || a.localeCompare(b));
+
+  populateDropdown('filter-site_normalized', getUnique('site_normalized').sort());
+  populateDropdown('filter-water_body_type', getUnique('water_body_type').sort());
   populateDropdown('filter-date', dates);
-  populateDropdown('filter-sample_code', sampleCodes);
-  populateDropdown('filter-dilution', dilutions);
+  populateDropdown('filter-sample_code', getUnique('sample_code').sort());
+  populateDropdown('filter-capture_mode', getUnique('capture_mode').sort());
+  populateDropdown('filter-dilution', getUnique('dilution').sort());
 }
 
 function populateDropdown(id, values) {
   const select = document.getElementById(id);
   if (!select) return;
-  
+
   // Clear existing options except the first (All)
   while (select.options.length > 1) {
     select.remove(1);
   }
-  
+
   values.forEach(val => {
     const option = document.createElement('option');
     option.value = val;
@@ -189,10 +232,14 @@ function populateDropdown(id, values) {
 }
 
 // 5. Filtering
+function hasActiveFilters() {
+  return Object.values(state.filters).some(v => v !== '');
+}
+
 function applyFilters(updateHash = true) {
   const f = state.filters;
   const searchLower = f.search.toLowerCase();
-  
+
   state.filteredData = state.allData.filter(row => {
     if (searchLower && !(row.folder_name && row.folder_name.toLowerCase().includes(searchLower))) {
       return false;
@@ -201,25 +248,26 @@ function applyFilters(updateHash = true) {
     if (f.water_body_type && row.water_body_type !== f.water_body_type) return false;
     if (f.date && row.date !== f.date) return false;
     if (f.sample_code && row.sample_code !== f.sample_code) return false;
+    if (f.capture_mode && row.capture_mode !== f.capture_mode) return false;
     if (f.dilution && row.dilution !== f.dilution) return false;
-    
+
     if (f.is_pp !== '') {
       const isPPFilter = f.is_pp === 'true';
       if (row.is_pp !== isPPFilter) return false;
     }
-    
+
     return true;
   });
-  
+
   // Reset to page 1 on new filter
   state.currentPage = 1;
-  
+
   // Update UI components
   updateFilterBadge();
   performSort(); // Sorts and renders table & pagination
   renderStats();
   renderCharts();
-  
+
   if (updateHash) {
     saveStateToHash();
   }
@@ -252,36 +300,29 @@ function sortData(column) {
 }
 
 function performSort() {
-  const col = state.sortColumn;
+  // The date column sorts by the parsed sample_date (YYYY-MM-DD sorts as text).
+  const col = state.sortColumn === 'date' ? 'sample_date' : state.sortColumn;
   const dir = state.sortDirection === 'asc' ? 1 : -1;
-  
+
   state.filteredData.sort((a, b) => {
     let valA = a[col];
     let valB = b[col];
-    
+
     // Handle null/undefined
     if (valA == null) valA = '';
     if (valB == null) valB = '';
-    
-    if (col === 'date') {
-      const dateA = parseCustomDate(valA);
-      const dateB = parseCustomDate(valB);
-      if (dateA && dateB) {
-        return (dateA - dateB) * dir;
-      }
-    }
-    
+
     if (typeof valA === 'number' && typeof valB === 'number') {
       return (valA - valB) * dir;
     }
-    
+
     const strA = String(valA).toLowerCase();
     const strB = String(valB).toLowerCase();
     if (strA < strB) return -1 * dir;
     if (strA > strB) return 1 * dir;
     return 0;
   });
-  
+
   updateSortHeaders();
   renderTable();
   renderPagination();
@@ -301,10 +342,10 @@ function renderTable() {
   const tbody = document.getElementById('table-body');
   if (!tbody) return;
   tbody.innerHTML = '';
-  
+
   const start = (state.currentPage - 1) * state.pageSize;
   const end = Math.min(start + state.pageSize, state.filteredData.length);
-  
+
   if (state.filteredData.length === 0) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -315,44 +356,29 @@ function renderTable() {
     tbody.appendChild(tr);
     return;
   }
-  
+
+  const addCell = (tr, text, className) => {
+    const td = document.createElement('td');
+    td.textContent = text;
+    if (className) td.className = className;
+    tr.appendChild(td);
+    return td;
+  };
+
   for (let i = start; i < end; i++) {
     const row = state.filteredData[i];
     const tr = document.createElement('tr');
     tr.onclick = () => openDetailPanel(row);
-    
+
     // Folder Name
-    const tdName = document.createElement('td');
-    tdName.className = 'col-folder';
-    tdName.textContent = truncateStr(row.folder_name, 35);
-    tdName.title = row.folder_name || '';
-    tr.appendChild(tdName);
-    
-    // Site
-    const tdSite = document.createElement('td');
-    tdSite.textContent = row.site_normalized || '-';
-    tr.appendChild(tdSite);
-    
-    // Water Body Type
-    const tdType = document.createElement('td');
-    tdType.textContent = row.water_body_type || '-';
-    tr.appendChild(tdType);
-    
-    // Date
-    const tdDate = document.createElement('td');
-    tdDate.textContent = row.date || '-';
-    tr.appendChild(tdDate);
-    
-    // Sample Code
-    const tdSample = document.createElement('td');
-    tdSample.textContent = row.sample_code || '-';
-    tr.appendChild(tdSample);
-    
-    // Dilution
-    const tdDilution = document.createElement('td');
-    tdDilution.textContent = row.dilution || '-';
-    tr.appendChild(tdDilution);
-    
+    addCell(tr, truncateStr(row.folder_name, 35), 'col-folder').title = row.folder_name || '';
+    addCell(tr, row.site_normalized || '-');
+    addCell(tr, row.water_body_type || '-');
+    addCell(tr, row.date || '-');
+    addCell(tr, row.sample_code || '-');
+    addCell(tr, row.capture_mode || '-');
+    addCell(tr, row.dilution || '-');
+
     // PP/Raw Badge
     const tdBadge = document.createElement('td');
     const badge = document.createElement('span');
@@ -360,36 +386,21 @@ function renderTable() {
     badge.textContent = row.is_pp ? 'PP' : 'Raw';
     tdBadge.appendChild(badge);
     tr.appendChild(tdBadge);
-    
+
     // Image Count
-    const tdImg = document.createElement('td');
-    tdImg.className = 'col-number';
-    tdImg.textContent = row.image_count != null ? row.image_count.toLocaleString() : '0';
-    tr.appendChild(tdImg);
-    
+    addCell(tr, row.image_count != null ? row.image_count.toLocaleString() : '0', 'col-number');
+
     // Dimensions
-    const tdDim = document.createElement('td');
+    let dims = '-';
     if (row.min_width && row.max_width) {
       if (row.min_width === row.max_width && row.min_height === row.max_height) {
-        tdDim.textContent = `${row.max_width}x${row.max_height}`;
+        dims = `${row.max_width}x${row.max_height}`;
       } else {
-        tdDim.textContent = `${row.min_width}x${row.min_height} - ${row.max_width}x${row.max_height}`;
+        dims = `${row.min_width}x${row.min_height} - ${row.max_width}x${row.max_height}`;
       }
-    } else {
-      tdDim.textContent = '-';
     }
-    tdDim.className = 'col-dim';
-    tr.appendChild(tdDim);
-    
-    // Status
-    const tdStatus = document.createElement('td');
-    tdStatus.className = 'col-status';
-    const statusDot = document.createElement('span');
-    statusDot.className = `status-dot status-${row.parsed_ok ? 'ok' : 'error'}`;
-    statusDot.title = row.parsed_ok ? 'Parsed OK' : 'Parse Error';
-    tdStatus.appendChild(statusDot);
-    tr.appendChild(tdStatus);
-    
+    addCell(tr, dims, 'col-dim');
+
     tbody.appendChild(tr);
   }
 }
@@ -405,21 +416,21 @@ function renderPagination() {
   const container = document.getElementById('pagination-container');
   const info = document.getElementById('pagination-info');
   if (!container || !info) return;
-  
+
   const total = state.filteredData.length;
   if (total === 0) {
     info.textContent = 'Showing 0 folders';
     container.innerHTML = '';
     return;
   }
-  
+
   const start = (state.currentPage - 1) * state.pageSize + 1;
   const end = Math.min(start + state.pageSize - 1, total);
   info.textContent = `Showing ${start}–${end} of ${total} folders`;
-  
+
   const totalPages = Math.ceil(total / state.pageSize);
   container.innerHTML = '';
-  
+
   // Prev button
   const btnPrev = document.createElement('button');
   btnPrev.textContent = '« Prev';
@@ -433,7 +444,7 @@ function renderPagination() {
     }
   };
   container.appendChild(btnPrev);
-  
+
   // Page numbers (max 7)
   let pagesToShow = [];
   if (totalPages <= 7) {
@@ -441,19 +452,19 @@ function renderPagination() {
   } else {
     pagesToShow = [1];
     if (state.currentPage > 3) pagesToShow.push('...');
-    
+
     let midStart = Math.max(2, state.currentPage - 1);
     let midEnd = Math.min(totalPages - 1, state.currentPage + 1);
-    
+
     if (state.currentPage === 1) midEnd = 3;
     if (state.currentPage === totalPages) midStart = totalPages - 2;
-    
+
     for (let i = midStart; i <= midEnd; i++) pagesToShow.push(i);
-    
+
     if (state.currentPage < totalPages - 2) pagesToShow.push('...');
     pagesToShow.push(totalPages);
   }
-  
+
   pagesToShow.forEach(p => {
     if (p === '...') {
       const span = document.createElement('span');
@@ -473,7 +484,7 @@ function renderPagination() {
       container.appendChild(btn);
     }
   });
-  
+
   // Next button
   const btnNext = document.createElement('button');
   btnNext.textContent = 'Next »';
@@ -490,46 +501,76 @@ function renderPagination() {
 }
 
 // 9. Stats Cards
-function renderStats() {
-  const data = state.filteredData;
-  
-  const totalFolders = data.length;
-  const totalImages = data.reduce((sum, row) => sum + (row.image_count || 0), 0);
-  
+function computeStats(rows) {
   const sites = new Set();
-  let earliest = null;
-  let latest = null;
-  let ppCount = 0;
-  
-  data.forEach(row => {
+  let firstDate = null;
+  let lastDate = null;
+  let ppFolders = 0;
+  let totalImages = 0;
+
+  rows.forEach(row => {
+    totalImages += row.image_count || 0;
     if (row.site_normalized) sites.add(row.site_normalized);
-    if (row.is_pp) ppCount++;
-    
-    const d = parseCustomDate(row.date);
-    if (d) {
-      if (!earliest || d < earliest) earliest = d;
-      if (!latest || d > latest) latest = d;
+    if (row.is_pp) ppFolders++;
+    if (row.sample_date) {
+      if (!firstDate || row.sample_date < firstDate) firstDate = row.sample_date;
+      if (!lastDate || row.sample_date > lastDate) lastDate = row.sample_date;
     }
   });
-  
-  const rawCount = totalFolders - ppCount;
-  
-  const formatDate = d => d ? `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}` : '-';
-  const dateRange = (earliest && latest) ? `${formatDate(earliest)} - ${formatDate(latest)}` : '-';
-  
+
+  return {
+    total_folders: rows.length,
+    total_images: totalImages,
+    unique_sites: sites.size,
+    first_date: firstDate,
+    last_date: lastDate,
+    pp_folders: ppFolders,
+    raw_folders: rows.length - ppFolders
+  };
+}
+
+function renderStats() {
+  const s = (!hasActiveFilters() && state.viewStats) ? state.viewStats : computeStats(state.filteredData);
+  const dateRange = (s.first_date && s.last_date)
+    ? `${formatIsoDate(s.first_date)} - ${formatIsoDate(s.last_date)}`
+    : '-';
+
   const setText = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
-  
-  setText('stat-folders', totalFolders.toLocaleString());
-  setText('stat-images', totalImages.toLocaleString());
-  setText('stat-sites', sites.size.toLocaleString());
+
+  setText('stat-folders', Number(s.total_folders).toLocaleString());
+  setText('stat-images', Number(s.total_images).toLocaleString());
+  setText('stat-sites', Number(s.unique_sites).toLocaleString());
   setText('stat-dates', dateRange);
-  setText('stat-pp', `${ppCount} PP / ${rawCount} Raw`);
+  setText('stat-pp', `${s.pp_folders} PP / ${s.raw_folders} Raw`);
 }
 
 // 10. Charts
+
+// The same shapes as the chart_* views: [label, value] pairs.
+function aggregateCharts(rows) {
+  const sites = {};
+  const months = {};
+  const waterBodies = {};
+  rows.forEach(r => {
+    const site = r.site_normalized || 'Unknown';
+    sites[site] = (sites[site] || 0) + (r.image_count || 0);
+    if (r.sample_date) {
+      const month = r.sample_date.slice(0, 7);
+      months[month] = (months[month] || 0) + (r.image_count || 0);
+    }
+    const body = r.water_body_type || 'Unknown';
+    waterBodies[body] = (waterBodies[body] || 0) + 1;
+  });
+  const byValueThenLabel = (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]);
+  return {
+    sites: Object.entries(sites).sort(byValueThenLabel),
+    months: Object.entries(months).sort((a, b) => a[0].localeCompare(b[0])),
+    waterBodies: Object.entries(waterBodies).sort(byValueThenLabel)
+  };
+}
 
 /**
  * Resize a canvas to match its container's CSS dimensions,
@@ -558,26 +599,21 @@ function renderCharts() {
   const canvasTimeline = document.getElementById('chart-timeline');
   const canvasType = document.getElementById('chart-type');
 
-  if (canvasSite) renderSiteChart(canvasSite, state.filteredData);
-  if (canvasTimeline) renderTimelineChart(canvasTimeline, state.filteredData);
-  if (canvasType) renderBodyTypeChart(canvasType, state.filteredData);
+  const data = (!hasActiveFilters() && state.viewCharts)
+    ? state.viewCharts
+    : aggregateCharts(state.filteredData);
+
+  if (canvasSite) renderSiteChart(canvasSite, data.sites);
+  if (canvasTimeline) renderTimelineChart(canvasTimeline, data.months);
+  if (canvasType) renderBodyTypeChart(canvasType, data.waterBodies);
 }
 
-function renderSiteChart(canvas, data) {
+function renderSiteChart(canvas, entries) {
   const { w, h } = fitCanvasToContainer(canvas);
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, w, h);
 
-  if (data.length === 0) return drawNoData(ctx, w, h);
-
-  // Aggregate image counts by site
-  const map = {};
-  data.forEach(r => {
-    const site = r.site_normalized || 'Unknown';
-    map[site] = (map[site] || 0) + (r.image_count || 0);
-  });
-
-  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  const sorted = entries.slice(0, 15);
   if (sorted.length === 0) return drawNoData(ctx, w, h);
 
   const max = Math.max(...sorted.map(x => x[1]));
@@ -591,7 +627,6 @@ function renderSiteChart(canvas, data) {
 
   const step = graphH / sorted.length;
   const barH = step * 0.75;
-  const gap = step * 0.25;
 
   // Clip to the full chart area (labels + bars + values)
   ctx.save();
@@ -615,7 +650,7 @@ function renderSiteChart(canvas, data) {
     ctx.fillText(label, margin.left - 8, y + barH / 2);
 
     // Bar — clamped to graphW
-    const barW = Math.min((count / max) * graphW, graphW);
+    const barW = max > 0 ? Math.min((count / max) * graphW, graphW) : 0;
     ctx.fillStyle = '#4a90e2';
     ctx.fillRect(margin.left, y, Math.max(2, barW), barH);
 
@@ -629,33 +664,20 @@ function renderSiteChart(canvas, data) {
   ctx.restore();
 }
 
-function renderTimelineChart(canvas, data) {
+function renderTimelineChart(canvas, months) {
   const { w, h } = fitCanvasToContainer(canvas);
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, w, h);
 
-  if (data.length === 0) return drawNoData(ctx, w, h);
-
-  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  const map = {};
-  data.forEach(r => {
-    const parsed = parseCustomDate(r.date);
-    if (parsed) {
-      const key = `${parsed.getFullYear()}-${String(parsed.getMonth()).padStart(2,'0')}`; // sortable key
-      const label = `${monthNames[parsed.getMonth()]} ${parsed.getFullYear()}`;
-      if (!map[key]) map[key] = { label, count: 0 };
-      map[key].count += (r.image_count || 0);
-    }
+  // months: [['2022-05', count], ...] in date order
+  const sorted = months.map(([key, count]) => {
+    const [y, m] = key.split('-').map(Number);
+    return [`${MONTH_NAMES[m - 1]} ${y}`, count];
   });
-
-  const sorted = Object.entries(map)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([, v]) => [v.label, v.count]);
 
   if (sorted.length === 0) return drawNoData(ctx, w, h);
 
-  const max = Math.max(...sorted.map(x => x[1]));
+  const max = Math.max(...sorted.map(x => x[1])) || 1;
 
   // Generous bottom margin for rotated labels
   const margin = { left: 55, right: 15, top: 15, bottom: 80 };
@@ -717,21 +739,15 @@ function renderTimelineChart(canvas, data) {
   ctx.stroke();
 }
 
-function renderBodyTypeChart(canvas, data) {
+function renderBodyTypeChart(canvas, entries) {
   const { w, h } = fitCanvasToContainer(canvas);
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, w, h);
 
-  if (data.length === 0) return drawNoData(ctx, w, h);
-
-  const map = {};
-  data.forEach(r => {
-    const t = r.water_body_type || 'Unknown';
-    map[t] = (map[t] || 0) + 1;
-  });
-
-  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
-  if (sorted.length === 0) return drawNoData(ctx, w, h);
+  // entries: [['pond', folderCount], ...], largest first
+  const sorted = entries;
+  const total = sorted.reduce((sum, item) => sum + item[1], 0);
+  if (sorted.length === 0 || total === 0) return drawNoData(ctx, w, h);
 
   const colors = ['#4a90e2', '#50e3c2', '#b8e986', '#f8e71c', '#f5a623', '#d0021b', '#bd10e0', '#9013fe'];
 
@@ -743,7 +759,6 @@ function renderBodyTypeChart(canvas, data) {
   const cy = h / 2;
   const radius = Math.max(30, Math.min(availW / 2, (h - padding * 2) / 2));
 
-  const total = data.length;
   let startAngle = -Math.PI / 2;
 
   // Clip to canvas
@@ -816,68 +831,62 @@ function drawNoData(ctx, w, h) {
 
 // 11. QA Log
 function renderQALog() {
-  const container = document.getElementById('qa-log-container');
   const tbody = document.getElementById('qa-table-body');
   const toggleBtn = document.getElementById('qa-toggle-btn');
-  
-  if (!container || !tbody || !toggleBtn) return;
-  
+  const content = document.getElementById('qa-log-content');
+
+  if (!tbody || !toggleBtn) return;
+
   tbody.innerHTML = '';
-  
+
   if (state.qaData.length === 0) {
-    container.style.display = 'none';
-    return;
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.className = 'no-results';
+    td.textContent = 'No QA entries';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
   }
-  
+
   state.qaData.forEach(row => {
     const tr = document.createElement('tr');
-    tr.className = `qa-${(row.level || 'info').toLowerCase()}`;
-    
+    tr.className = `qa-${(row.level || 'info').toLowerCase().replace(/[^a-z]/g, '')}`;
+
     const tdLevel = document.createElement('td');
     tdLevel.textContent = row.level || 'INFO';
-    
+
     const tdTarget = document.createElement('td');
     tdTarget.textContent = row.target || '-';
-    
+
     const tdDetail = document.createElement('td');
     tdDetail.textContent = row.detail || '-';
-    
+
     tr.appendChild(tdLevel);
     tr.appendChild(tdTarget);
     tr.appendChild(tdDetail);
     tbody.appendChild(tr);
   });
-  
+
+  const count = state.qaData.length;
+  const label = () => `${state.qaExpanded ? 'Hide' : 'Show'} QA Log (${count} ${count === 1 ? 'entry' : 'entries'})`;
+
   toggleBtn.onclick = () => {
     state.qaExpanded = !state.qaExpanded;
-    const content = document.getElementById('qa-log-content');
     if (content) {
       content.style.display = state.qaExpanded ? 'block' : 'none';
     }
-    toggleBtn.textContent = state.qaExpanded ? 'Hide QA Log' : `Show QA Log (${state.qaData.length} issues)`;
+    toggleBtn.textContent = label();
   };
-  
+
   // initial setup
-  toggleBtn.textContent = `Show QA Log (${state.qaData.length} issues)`;
+  toggleBtn.textContent = label();
 }
 
 // 12. Detail Panel
 
-// Cache for the folder-name → hash-key index
-let folderIndex = null;
-
-async function loadFolderIndex() {
-  if (folderIndex) return folderIndex;
-  try {
-    const res = await fetch('catalog_output/folder_images/_index.json');
-    if (res.ok) {
-      folderIndex = await res.json();
-    }
-  } catch (e) {
-    console.warn('Could not load folder image index:', e);
-  }
-  return folderIndex || {};
-}
+// Increments on every open, so a slow load for a previous folder is ignored.
+let detailRequestId = 0;
 
 function formatBytes(bytes) {
   if (bytes == null) return '-';
@@ -899,19 +908,19 @@ async function openDetailPanel(row) {
     ['Date', row.date],
     ['Magnification', row.magnification],
     ['Sample Code', row.sample_code],
+    ['Capture Mode', row.capture_mode],
     ['Dilution', row.dilution],
     ['Type', row.is_pp ? 'Post-Processed (PP)' : 'Raw'],
     ['Image Count', row.image_count != null ? row.image_count.toLocaleString() : '-'],
     ['Dimensions', (row.min_width && row.max_width)
       ? `${row.min_width}×${row.min_height} – ${row.max_width}×${row.max_height}`
       : '-'],
-    ['Parse Status', row.parsed_ok ? '✓ OK' : '✗ Error'],
   ];
 
   let html = `<h3 class="detail-folder-title" title="${escapeHTML(row.folder_name)}">${escapeHTML(row.folder_name)}</h3>`;
   html += '<table class="detail-table"><tbody>';
   metaFields.forEach(([label, val]) => {
-    html += `<tr><th>${label}</th><td>${val || '-'}</td></tr>`;
+    html += `<tr><th>${label}</th><td>${escapeHTML(val) || '-'}</td></tr>`;
   });
   html += '</tbody></table>';
 
@@ -928,23 +937,16 @@ async function openDetailPanel(row) {
   overlay.classList.add('open');
 
   // --- Load image data ---
-  const index = await loadFolderIndex();
-  const entry = index[row.folder_name];
-  const container = document.getElementById('detail-images-container');
-  if (!container) return;
-
-  if (!entry) {
-    container.innerHTML = '<p class="text-muted">No image data available. Run <code>python prepare_image_data.py</code> to generate.</p>';
-    return;
-  }
-
+  const requestId = ++detailRequestId;
   try {
-    const res = await fetch(`catalog_output/folder_images/${entry.key}.json`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const images = await res.json();
+    const images = await fetchFolderImages(row.folder_name);
+    const container = document.getElementById('detail-images-container');
+    if (requestId !== detailRequestId || !container) return;
     renderImageListing(container, images, row);
   } catch (e) {
-    container.innerHTML = `<p class="text-muted">Failed to load image data: ${e.message}</p>`;
+    const container = document.getElementById('detail-images-container');
+    if (requestId !== detailRequestId || !container) return;
+    container.innerHTML = `<p class="text-muted">Failed to load image data: ${escapeHTML(e.message || String(e))}</p>`;
   }
 }
 
@@ -953,6 +955,9 @@ function renderImageListing(container, images, folderRow) {
     container.innerHTML = '<p class="text-muted">No images found in this folder.</p>';
     return;
   }
+
+  // Limit to 200 rows for performance, show "and X more" if truncated
+  const displayLimit = 200;
 
   // State for image listing
   let imageSort = { col: 'filename', dir: 'asc' };
@@ -988,9 +993,9 @@ function renderImageListing(container, images, folderRow) {
     html += `<span class="img-count">${filtered.length} of ${images.length} images (${formatBytes(totalSize)})</span>`;
     html += '</div>';
 
-    // Download All link (zip not available, but we provide folder path)
+    // Download All: one file at a time from the image server
     html += '<div class="img-actions">';
-    html += `<button class="btn btn-primary btn-sm" id="detail-download-all">⬇ Download All Visible (${filtered.length})</button>`;
+    html += `<button class="btn btn-primary btn-sm" id="detail-download-all">⬇ Download All Visible (${Math.min(filtered.length, displayLimit)})</button>`;
     html += '</div>';
 
     // Image table
@@ -1016,23 +1021,20 @@ function renderImageListing(container, images, folderRow) {
     html += '<th class="img-th">Action</th>';
     html += '</tr></thead><tbody>';
 
-    // Limit to 200 rows for performance, show "and X more" if truncated
-    const displayLimit = 200;
     const displayImages = filtered.slice(0, displayLimit);
 
     displayImages.forEach(img => {
-      const imgPath = `../WCMC_raw_images_2023_and_others/${img.relative_path}`;
-      const dims = (img.width && img.height) ? `${img.width}` : '-';
-      const hDims = (img.width && img.height) ? `${img.height}` : '-';
+      const viewUrl = imageUrl(img.relative_path);
+      const downloadUrl = imageUrl(img.relative_path, true);
       html += '<tr>';
       html += `<td class="img-filename" title="${escapeHTML(img.filename)}">${escapeHTML(truncateStr(img.filename, 30))}</td>`;
-      html += `<td class="img-num">${dims}</td>`;
-      html += `<td class="img-num">${hDims}</td>`;
+      html += `<td class="img-num">${img.width != null ? img.width : '-'}</td>`;
+      html += `<td class="img-num">${img.height != null ? img.height : '-'}</td>`;
       html += `<td class="img-num">${formatBytes(img.file_size_bytes)}</td>`;
-      html += `<td>${img.format || '-'}</td>`;
+      html += `<td>${escapeHTML(img.format) || '-'}</td>`;
       html += `<td>${img.label ? `<span class="badge pp-badge">${escapeHTML(img.label)}</span>` : '<span class="text-muted">—</span>'}</td>`;
-      html += `<td><a href="${encodeURI(imgPath)}" download="${escapeHTML(img.filename)}" class="btn-download" title="Download">⬇</a>`;
-      html += ` <a href="${encodeURI(imgPath)}" target="_blank" class="btn-view" title="View">👁</a></td>`;
+      html += `<td><a href="${escapeHTML(downloadUrl)}" class="btn-download" title="Download">⬇</a>`;
+      html += ` <a href="${escapeHTML(viewUrl)}" target="_blank" rel="noopener" class="btn-view" title="View">👁</a></td>`;
       html += '</tr>';
     });
 
@@ -1080,7 +1082,8 @@ function renderImageListing(container, images, folderRow) {
       });
     });
 
-    // Download All — triggers sequential download of visible images
+    // Download All — the image server answers ?download=1 with
+    // Content-Disposition: attachment, so each link saves instead of navigating.
     const downloadAllBtn = document.getElementById('detail-download-all');
     if (downloadAllBtn) {
       downloadAllBtn.addEventListener('click', () => {
@@ -1091,13 +1094,12 @@ function renderImageListing(container, images, folderRow) {
         toDownload.forEach((img, i) => {
           setTimeout(() => {
             const a = document.createElement('a');
-            a.href = encodeURI(`../WCMC_raw_images_2023_and_others/${img.relative_path}`);
-            a.download = img.filename;
+            a.href = imageUrl(img.relative_path, true);
             a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-          }, i * 100); // stagger downloads to avoid browser blocking
+          }, i * 250); // stagger downloads to avoid browser blocking
         });
       });
     }
@@ -1107,7 +1109,7 @@ function renderImageListing(container, images, folderRow) {
 }
 
 function escapeHTML(str) {
-  if (!str) return '';
+  if (str == null || str === '') return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -1130,16 +1132,16 @@ function saveStateToHash() {
     sc: state.sortColumn,
     sd: state.sortDirection
   };
-  
+
   Object.keys(state.filters).forEach(k => {
     if (state.filters[k]) {
       hashObj[`f_${k}`] = state.filters[k];
     }
   });
-  
+
   const params = new URLSearchParams(hashObj);
   const newHash = '#' + params.toString();
-  
+
   if (window.location.hash !== newHash) {
     history.replaceState(null, null, newHash);
   }
@@ -1147,21 +1149,23 @@ function saveStateToHash() {
 
 function loadStateFromHash() {
   if (!window.location.hash) return;
-  
+
   try {
     const params = new URLSearchParams(window.location.hash.substring(1));
-    
+
     if (params.has('p')) state.currentPage = parseInt(params.get('p'), 10) || 1;
-    if (params.has('sz')) state.pageSize = parseInt(params.get('sz'), 10) || 25;
-    if (params.has('sc')) state.sortColumn = params.get('sc');
-    if (params.has('sd')) state.sortDirection = params.get('sd');
-    
+    if (params.has('sz') && [10, 25, 50, 100].includes(parseInt(params.get('sz'), 10))) {
+      state.pageSize = parseInt(params.get('sz'), 10);
+    }
+    if (SORTABLE_COLUMNS.includes(params.get('sc'))) state.sortColumn = params.get('sc');
+    if (['asc', 'desc'].includes(params.get('sd'))) state.sortDirection = params.get('sd');
+
     // Load filters
     Object.keys(state.filters).forEach(k => {
       const pKey = `f_${k}`;
       if (params.has(pKey)) {
         state.filters[k] = params.get(pKey);
-        
+
         // Update DOM elements
         if (k === 'search') {
           const input = document.getElementById('search-input');
@@ -1172,11 +1176,11 @@ function loadStateFromHash() {
         }
       }
     });
-    
+
     // update page size selector
     const szSelect = document.getElementById('page-size');
     if (szSelect) szSelect.value = state.pageSize;
-    
+
   } catch (err) {
     console.error('Error parsing hash state:', err);
   }
@@ -1196,9 +1200,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }, 300);
     });
   }
-  
+
   // Setup select filters
-  ['site_normalized', 'water_body_type', 'date', 'sample_code', 'dilution', 'is_pp'].forEach(k => {
+  FILTER_KEYS.forEach(k => {
     const select = document.getElementById(`filter-${k}`);
     if (select) {
       select.addEventListener('change', (e) => {
@@ -1207,22 +1211,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   });
-  
+
   // Clear filters
   const clearBtn = document.getElementById('clear-filters-btn');
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
       // Reset filter state
       Object.keys(state.filters).forEach(k => state.filters[k] = '');
-      
+
       // Reset DOM
       if (searchInput) searchInput.value = '';
       document.querySelectorAll('.filter-select').forEach(sel => sel.value = '');
-      
+
       applyFilters();
     });
   }
-  
+
   // Page size
   const szSelect = document.getElementById('page-size');
   if (szSelect) {
@@ -1234,28 +1238,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderPagination();
     });
   }
-  
+
   // Sort headers
   document.querySelectorAll('th[data-sortable]').forEach(th => {
     th.addEventListener('click', () => {
       sortData(th.dataset.col);
     });
   });
-  
+
   // Detail panel close
   const closeBtn = document.getElementById('detail-close');
   if (closeBtn) closeBtn.addEventListener('click', closeDetailPanel);
   const overlay = document.getElementById('detail-overlay');
   if (overlay) overlay.addEventListener('click', closeDetailPanel);
-  
+
   // Hash change
   window.addEventListener('hashchange', () => {
     // Only reload if we actually triggered browser nav (back/forward)
     // In a full app we'd compare hash precisely
+    if (!state.loaded) return;
     loadStateFromHash();
     applyFilters(false);
   });
-  
+
   // Re-render charts on resize (debounced)
   let resizeTimeout;
   window.addEventListener('resize', () => {
