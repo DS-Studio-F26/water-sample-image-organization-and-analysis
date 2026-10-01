@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Label Images — Water Sample Image Catalog</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+  <div class="dashboard-container">
+
+    <!-- Header -->
+    <header id="dashboard-header">
+      <div class="header-text">
+        <h1>Water Sample Image Catalog — Labeling</h1>
+        <p><a href="index.html">← Back to the dashboard</a></p>
+      </div>
+      <div class="auth-area" id="auth-area"></div>
+    </header>
+
+    <div class="alert" id="labeling-message" role="status" hidden></div>
+
+    <!-- labeling.js shows one of these, depending on who is signed in -->
+    <section class="page-card" id="labeling-loading">
+      <div class="detail-loading"><div class="spinner"></div> Checking your account…</div>
+    </section>
+
+    <section class="page-card" id="labeling-signed-out" hidden>
+      <h2>Sign in required</h2>
+      <p>Labeling needs an admin or labeler account. Please sign in to continue.</p>
+      <button type="button" class="btn btn-primary" id="labeling-signin-btn">Sign in</button>
+    </section>
+
+    <section class="page-card" id="labeling-forbidden" hidden>
+      <h2>Not authorized</h2>
+      <p>Your account (<span id="labeling-forbidden-email"></span>) has the
+        <span id="labeling-forbidden-role"></span> role. Only admins and labelers can label images;
+        ask an admin if you need access.</p>
+    </section>
+
+    <section id="labeling-panel" hidden>
+
+      <!-- Progress overview -->
+      <section class="page-card" id="progress-card">
+        <h2>Overall progress</h2>
+        <div class="progress-summary">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div>
+          </div>
+          <span class="progress-pct" id="progress-pct">0%</span>
+        </div>
+        <div class="progress-stats text-muted" id="progress-stats">Loading…</div>
+        <div class="label-breakdown" id="label-breakdown"></div>
+      </section>
+
+      <!-- Folder picker -->
+      <section class="page-card" id="folder-picker-card">
+        <h2>Choose a folder</h2>
+        <div class="folder-picker-row">
+          <select id="folder-select">
+            <option value="">Select a folder…</option>
+          </select>
+          <label class="checkbox-label">
+            <input type="checkbox" id="hide-complete-checkbox">
+            Hide fully-labeled folders
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="least-labeled-first-checkbox" checked>
+            Sort by least labeled first
+          </label>
+        </div>
+      </section>
+
+      <!-- Labeling workspace -->
+      <section class="page-card" id="workspace-card" hidden>
+        <div class="workspace-header">
+          <h2 id="workspace-folder-name">Folder</h2>
+          <span class="text-muted" id="workspace-folder-progress"></span>
+        </div>
+
+        <div class="workspace-toolbar">
+          <div class="workspace-filter">
+            <label for="image-filter-select">Show</label>
+            <select id="image-filter-select">
+              <option value="all">All images</option>
+              <option value="unlabeled">Unlabeled only</option>
+              <option value="labeled">Labeled only</option>
+            </select>
+          </div>
+          <div class="workspace-select-actions">
+            <button type="button" class="btn btn-sm" id="select-page-btn">Select all on page</button>
+            <button type="button" class="btn btn-sm" id="clear-selection-btn">Clear selection</button>
+            <span class="text-muted" id="selection-count">0 selected</span>
+          </div>
+        </div>
+
+        <div class="label-toolbar" id="label-toolbar">
+          <!-- label buttons injected by labeling.js -->
+        </div>
+        <div class="label-toolbar-hint text-muted">
+          Click images to select them, then click a label above (or press its number key) to apply it to every
+          selected image at once.
+        </div>
+
+        <div id="image-grid-loading" class="detail-loading" hidden><div class="spinner"></div> Loading images…</div>
+        <div class="image-grid" id="image-grid"></div>
+
+        <section id="workspace-pagination">
+          <span class="page-info" id="workspace-pagination-info"></span>
+          <div id="workspace-pagination-container" style="display:flex; gap:0.25rem; align-items:center;"></div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <label for="workspace-page-size" class="text-muted" style="font-size:0.8rem;">Per page:</label>
+            <select id="workspace-page-size">
+              <option value="24">24</option>
+              <option value="48" selected>48</option>
+              <option value="96">96</option>
+            </select>
+          </div>
+        </section>
+      </section>
+
+    </section>
+
+    <footer class="site-footer">
+      <a href="privacy.html">Privacy Policy</a>
+      <span aria-hidden="true">·</span>
+      <span>Clark University Data Science Studio</span>
+    </footer>
+
+  </div><!-- end .dashboard-container -->
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+    integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+    crossorigin="anonymous"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="labeling.js"></script>
+</body>
+
+</html>

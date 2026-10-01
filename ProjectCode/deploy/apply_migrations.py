@@ -29,8 +29,10 @@ MIGRATIONS_DIR = PROJECT_DIR / "supabase" / "migrations"
 
 TABLES = ["folders", "images", "qa_log", "profiles"]
 VIEWS = ["folders_visible", "dashboard_stats", "chart_site_counts",
-         "chart_date_counts", "chart_water_body_counts"]
-ROLE_FUNCTIONS = ["is_admin()", "admin_list_users()", "set_user_role(uuid, text)"]
+         "chart_date_counts", "chart_water_body_counts",
+         "folder_labeling_progress", "labeling_stats", "label_counts"]
+ROLE_FUNCTIONS = ["is_admin()", "admin_list_users()", "set_user_role(uuid, text)",
+                   "can_label()", "my_labeling_count()", "admin_labeling_by_user()"]
 
 
 def get_db_url() -> str:
@@ -96,6 +98,12 @@ def verify(conn: psycopg.Connection) -> bool:
           not priv("select has_table_privilege('anon', 'public.profiles', 'select')"))
     check("authenticated cannot update profiles",
           not priv("select has_table_privilege('authenticated', 'public.profiles', 'update')"))
+    check("authenticated can update images.label",
+          priv("select has_column_privilege('authenticated', 'public.images', 'label', 'update')"))
+    check("authenticated cannot update images.labeled_by",
+          not priv("select has_column_privilege('authenticated', 'public.images', 'labeled_by', 'update')"))
+    check("authenticated cannot update images.width",
+          not priv("select has_column_privilege('authenticated', 'public.images', 'width', 'update')"))
     for fn in ROLE_FUNCTIONS:
         check(f"anon cannot execute {fn}",
               not priv("select has_function_privilege('anon', %s, 'execute')", f"public.{fn}"))

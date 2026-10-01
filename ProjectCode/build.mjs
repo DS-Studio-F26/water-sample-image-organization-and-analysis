@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 const WEB_FILES = [
   'index.html',
   'admin.html',
+  'labeling.html',
   'privacy.html',
   'reset-password.html',
   '404.html',  // with this present, Pages answers unknown paths with a real 404
@@ -21,6 +22,7 @@ const WEB_FILES = [
   'auth.js',
   'dashboard.js',
   'admin.js',
+  'labeling.js',
   'reset.js',
   'dashboard.css',
 ];
