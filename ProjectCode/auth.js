@@ -112,6 +112,13 @@
     area.appendChild(email);
     area.appendChild(roleBadge(role));
 
+    if ((role === 'admin' || role === 'labeler') && !/labeling\.html$/.test(window.location.pathname)) {
+      const link = document.createElement('a');
+      link.className = 'btn btn-sm';
+      link.href = 'labeling.html';
+      link.textContent = 'Label';
+      area.appendChild(link);
+    }
     if (role === 'admin' && !/admin\.html$/.test(window.location.pathname)) {
       const link = document.createElement('a');
       link.className = 'btn btn-sm';

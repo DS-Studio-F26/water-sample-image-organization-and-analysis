@@ -14,12 +14,14 @@ import { fileURLToPath } from 'node:url';
 const WEB_FILES = [
   'index.html',
   'admin.html',
+  'labeling.html',
   'privacy.html',
   'reset-password.html',
   'config.js',
   'auth.js',
   'dashboard.js',
   'admin.js',
+  'labeling.js',
   'reset.js',
   'dashboard.css',
 ];

@@ -53,7 +53,7 @@ async function renderForUser(auth) {
     return;
   }
   showSection('admin-panel');
-  await loadUsers();
+  await Promise.all([loadUsers(), loadLabelingProgress()]);
 }
 
 // 2. Loading users
@@ -206,6 +206,60 @@ function setTableMessage(text) {
   tbody.appendChild(tr);
 }
 
+// 3b. Labeling progress (admin_labeling_by_user(), supabase/migrations/002_labeling.sql)
+
+async function loadLabelingProgress() {
+  const tbody = document.getElementById('labeling-users-body');
+  tbody.innerHTML = '';
+  const loadingRow = document.createElement('tr');
+  const loadingCell = document.createElement('td');
+  loadingCell.colSpan = 4;
+  loadingCell.className = 'no-results';
+  loadingCell.textContent = 'Loading…';
+  loadingRow.appendChild(loadingCell);
+  tbody.appendChild(loadingRow);
+
+  try {
+    const { data, error } = await sb.rpc('admin_labeling_by_user');
+    if (error) throw error;
+    renderLabelingProgress(data);
+  } catch (err) {
+    tbody.innerHTML = '';
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.className = 'no-results';
+    td.textContent = "Couldn't load labeling progress.";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    showMessage(`Couldn't load labeling progress: ${describeError(err)}`, 'error');
+  }
+}
+
+function renderLabelingProgress(rows) {
+  const tbody = document.getElementById('labeling-users-body');
+  tbody.innerHTML = '';
+  const labeled = rows.filter(r => Number(r.labeled_count) > 0);
+  if (labeled.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.className = 'no-results';
+    td.textContent = 'No one has labeled any images yet.';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  labeled.forEach(row => {
+    const tr = document.createElement('tr');
+    cell(tr, row.email || '-');
+    cell(tr, roleName(row.role));
+    cell(tr, Number(row.labeled_count).toLocaleString(), 'text-right');
+    cell(tr, row.last_labeled_at ? new Date(row.last_labeled_at).toLocaleString() : '-', 'col-dim');
+    tbody.appendChild(tr);
+  });
+}
+
 // 4. Messages
 
 // Database errors carry a message and sometimes a hint, e.g.
@@ -234,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refresh-users-btn').addEventListener('click', () => {
     hideMessage();
     loadUsers();
+    loadLabelingProgress();
   });
 
   let searchTimeout;
