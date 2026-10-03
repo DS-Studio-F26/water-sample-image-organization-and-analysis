@@ -1,141 +1,222 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Label FlowCam microscope images one at a time or in bulk, with progress tracking.">
+  <meta name="theme-color" content="#eef4f2">
   <title>Label Images — Water Sample Image Catalog</title>
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/fraunces-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/caladea-400.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="labeling.css">
+  <link rel="stylesheet" href="viewer.css">
 </head>
 
 <body>
-  <div class="dashboard-container">
+  <a class="skip-link" href="#workspace">Skip to the image grid</a>
 
-    <!-- Header -->
-    <header id="dashboard-header">
-      <div class="header-text">
-        <h1>Water Sample Image Catalog — Labeling</h1>
-        <p><a href="index.html">← Back to the dashboard</a></p>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="index.html" aria-label="Water Sample Image Catalog, home">
+        <img class="brand-mark" src="favicon.svg" alt="" width="40" height="40">
+        <span class="brand-text"><span class="brand-name">Water Sample</span><span class="brand-sub">Image Catalog</span></span>
+      </a>
+      <nav class="appnav" aria-label="Primary">
+        <a href="index.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-grid"/></svg>Catalog</a>
+        <a href="labeling.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Label images</a>
+        <a href="admin.html" id="nav-admin" hidden><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg>Admin</a>
+      </nav>
+      <div class="appbar-actions">
+        <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg class="icon ti-moon" aria-hidden="true"><use href="icons.svg#i-moon"/></svg>
+          <svg class="icon ti-sun" aria-hidden="true"><use href="icons.svg#i-sun"/></svg>
+        </button>
+        <div class="auth-area" id="auth-area"></div>
       </div>
-      <div class="auth-area" id="auth-area"></div>
-    </header>
+    </div>
+  </header>
 
-    <div class="alert" id="labeling-message" role="status" hidden></div>
+  <main id="main">
+    <div class="wrap">
 
-    <!-- labeling.js shows one of these, depending on who is signed in -->
-    <section class="page-card" id="labeling-loading">
-      <div class="detail-loading"><div class="spinner"></div> Checking your account…</div>
-    </section>
+      <noscript>
+        <div class="alert alert-warn"><div class="alert-body"><strong>JavaScript is off.</strong>
+          Labeling needs JavaScript to load images and save labels.</div></div>
+      </noscript>
 
-    <section class="page-card" id="labeling-signed-out" hidden>
-      <h2>Sign in required</h2>
-      <p>Labeling needs an admin or labeler account. Please sign in to continue.</p>
-      <button type="button" class="btn btn-primary" id="labeling-signin-btn">Sign in</button>
-    </section>
-
-    <section class="page-card" id="labeling-forbidden" hidden>
-      <h2>Not authorized</h2>
-      <p>Your account (<span id="labeling-forbidden-email"></span>) has the
-        <span id="labeling-forbidden-role"></span> role. Only admins and labelers can label images;
-        ask an admin if you need access.</p>
-    </section>
-
-    <section id="labeling-panel" hidden>
-
-      <!-- Progress overview -->
-      <section class="page-card" id="progress-card">
-        <h2>Overall progress</h2>
-        <div class="progress-summary">
-          <div class="progress-bar-track">
-            <div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div>
+      <section class="banner page-head" aria-labelledby="page-title">
+        <canvas class="banner-fx" data-fx="plankton" aria-hidden="true"></canvas>
+        <div class="banner-inner">
+          <p class="eyebrow">Labeling workspace</p>
+          <h1 id="page-title">Label <em>images</em></h1>
+          <p class="lede">Pick a folder, then tag what you see: one image at a time, or many at once. Every label is saved with your account and the time, and you can undo.</p>
+          <div class="actions">
+            <button type="button" class="btn btn-light" id="help-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-keyboard"/></svg>Keyboard shortcuts <kbd>?</kbd></button>
           </div>
-          <span class="progress-pct" id="progress-pct">0%</span>
         </div>
-        <div class="progress-stats text-muted" id="progress-stats">Loading…</div>
-        <div class="label-breakdown" id="label-breakdown"></div>
+        <div class="waves" aria-hidden="true"></div>
       </section>
 
-      <!-- Folder picker -->
-      <section class="page-card" id="folder-picker-card">
-        <h2>Choose a folder</h2>
-        <div class="folder-picker-row">
-          <select id="folder-select">
-            <option value="">Select a folder…</option>
-          </select>
-          <label class="checkbox-label">
-            <input type="checkbox" id="hide-complete-checkbox">
-            Hide fully-labeled folders
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="least-labeled-first-checkbox" checked>
-            Sort by least labeled first
-          </label>
+      <div id="role-banner"></div>
+
+      <!-- Shown instead of the workspace when the database migration isn't applied yet -->
+      <section class="card setup-card" id="setup-card" hidden>
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#i-database"/></svg>
+        <div>
+          <h2>Labeling isn't switched on for this site yet</h2>
+          <p>The database is missing the labeling tables and permissions
+            (<code>supabase/migrations/002_labeling.sql</code>). Whoever holds the database password can add them with:</p>
+          <pre><code>cd ProjectCode
+python deploy/apply_migrations.py</code></pre>
+          <p class="text-muted">Want to see how it works first? The demo runs on sample data and saves nothing.</p>
+          <p><a class="btn btn-primary" href="labeling.html?demo"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sparkles"/></svg>Try the demo</a></p>
         </div>
       </section>
 
-      <!-- Labeling workspace -->
-      <section class="page-card" id="workspace-card" hidden>
-        <div class="workspace-header">
-          <h2 id="workspace-folder-name">Folder</h2>
-          <span class="text-muted" id="workspace-folder-progress"></span>
-        </div>
+      <div id="labeling-app" hidden>
 
-        <div class="workspace-toolbar">
-          <div class="workspace-filter">
-            <label for="image-filter-select">Show</label>
-            <select id="image-filter-select">
-              <option value="all">All images</option>
-              <option value="unlabeled">Unlabeled only</option>
-              <option value="labeled">Labeled only</option>
-            </select>
+        <!-- Progress overview -->
+        <section class="card progress-panel" id="progress-card" aria-labelledby="progress-title">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 120 120" class="ring" aria-hidden="true">
+              <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--primary)"/><stop offset="1" style="stop-color:var(--primary-2)"/></linearGradient></defs>
+              <circle class="ring-track" cx="60" cy="60" r="52" fill="none" stroke-width="11"/>
+              <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52" fill="none" stroke-width="11" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="ring-center"><strong id="ring-pct">0%</strong><span>labeled</span></div>
           </div>
-          <div class="workspace-select-actions">
-            <button type="button" class="btn btn-sm" id="select-page-btn">Select all on page</button>
-            <button type="button" class="btn btn-sm" id="clear-selection-btn">Clear selection</button>
-            <span class="text-muted" id="selection-count">0 selected</span>
+          <div class="progress-facts">
+            <h2 id="progress-title">Overall progress</h2>
+            <p class="progress-stats" id="progress-stats" aria-live="polite">Loading…</p>
+            <div class="mix-bar" id="mix-bar" role="img" aria-label="Share of each label so far"></div>
+            <ul class="mix-legend" id="label-breakdown" aria-label="Labels so far"></ul>
           </div>
-        </div>
-
-        <div class="label-toolbar" id="label-toolbar">
-          <!-- label buttons injected by labeling.js -->
-        </div>
-        <div class="label-toolbar-hint text-muted">
-          Click images to select them, then click a label above (or press its number key) to apply it to every
-          selected image at once.
-        </div>
-
-        <div id="image-grid-loading" class="detail-loading" hidden><div class="spinner"></div> Loading images…</div>
-        <div class="image-grid" id="image-grid"></div>
-
-        <section id="workspace-pagination">
-          <span class="page-info" id="workspace-pagination-info"></span>
-          <div id="workspace-pagination-container" style="display:flex; gap:0.25rem; align-items:center;"></div>
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <label for="workspace-page-size" class="text-muted" style="font-size:0.8rem;">Per page:</label>
-            <select id="workspace-page-size">
-              <option value="24">24</option>
-              <option value="48" selected>48</option>
-              <option value="96">96</option>
-            </select>
+          <div class="progress-actions">
+            <button type="button" class="btn btn-sm" id="export-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export labels (CSV)</button>
+            <button type="button" class="btn btn-sm btn-ghost" id="refresh-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-refresh"/></svg>Refresh</button>
           </div>
         </section>
-      </section>
 
-    </section>
+        <div class="workspace" id="workspace">
+
+          <!-- Folder rail -->
+          <aside class="card rail" aria-labelledby="rail-title">
+            <div class="rail-head">
+              <h2 id="rail-title">Folders</h2>
+              <span class="badge" id="rail-count">0</span>
+            </div>
+            <div class="search-field">
+              <svg class="icon" aria-hidden="true"><use href="icons.svg#i-search"/></svg>
+              <input type="search" id="folder-search" placeholder="Search folders or sites…" autocomplete="off" aria-label="Search folders or sites">
+            </div>
+            <div class="seg rail-seg" id="rail-filter" role="group" aria-label="Which folders to list">
+              <button type="button" data-f="todo" aria-pressed="true">To do</button>
+              <button type="button" data-f="all" aria-pressed="false">All</button>
+              <button type="button" data-f="done" aria-pressed="false">Done</button>
+            </div>
+            <label class="visually-hidden" for="folder-sort">Sort folders</label>
+            <select id="folder-sort">
+              <option value="least">Least labeled first</option>
+              <option value="most">Most images first</option>
+              <option value="name">Name (A–Z)</option>
+              <option value="date">Date (oldest first)</option>
+            </select>
+            <ul class="rail-list" id="folder-list" aria-label="Folders"></ul>
+          </aside>
+
+          <!-- Image grid -->
+          <section class="card grid-panel" id="grid-panel" aria-label="Images">
+            <div class="empty-state grid-empty" id="grid-empty">
+              <svg class="icon" aria-hidden="true"><use href="icons.svg#i-folder"/></svg>
+              <strong>Choose a folder to begin</strong>
+              <span>Pick one from the list, or jump straight to the next folder that still needs labels.</span>
+              <button type="button" class="btn btn-primary" id="start-btn">Start with the next folder</button>
+            </div>
+
+            <div id="grid-content" hidden>
+              <header class="grid-head">
+                <div class="grid-title">
+                  <p class="eyebrow">Folder</p>
+                  <h2 id="folder-title" tabindex="-1">Folder</h2>
+                  <p class="grid-sub" id="folder-sub"></p>
+                </div>
+                <div class="folder-progress">
+                  <div class="progress" aria-hidden="true"><span id="folder-bar" style="--value:0%"></span></div>
+                  <span id="folder-progress-text">0 / 0</span>
+                </div>
+              </header>
+
+              <div class="sticky-tools" id="sticky-tools">
+                <div class="toolbar" role="toolbar" aria-label="Grid controls">
+                  <div class="tool-group">
+                    <label for="view-filter">Show</label>
+                    <select id="view-filter"></select>
+                  </div>
+                  <div class="tool-group select-tools" id="select-tools">
+                    <button type="button" class="btn btn-sm" id="select-page-btn">Select page</button>
+                    <button type="button" class="btn btn-sm btn-ghost" id="clear-selection-btn">Clear</button>
+                    <span class="selection-count" id="selection-count" aria-live="polite">0 selected</span>
+                  </div>
+                  <div class="tool-group tool-end">
+                    <div class="seg" id="size-seg" role="group" aria-label="Thumbnail size">
+                      <button type="button" data-size="s" aria-pressed="false" aria-label="Small thumbnails">S</button>
+                      <button type="button" data-size="m" aria-pressed="true" aria-label="Medium thumbnails">M</button>
+                      <button type="button" data-size="l" aria-pressed="false" aria-label="Large thumbnails">L</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="labelbar" id="labelbar" role="toolbar" aria-label="Apply a label to the selected images"></div>
+              </div>
+
+              <div class="status-line">
+                <span class="save-status" id="save-status" aria-live="polite"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check-circle"/></svg>All changes saved</span>
+                <span class="status-hint" id="status-hint"></span>
+              </div>
+
+              <p class="visually-hidden" id="grid-help">Use the arrow keys to move between images. Space selects an image, Enter opens it
+                in the viewer, and the number keys apply a label to the selected images, or to the focused one when nothing is selected.</p>
+              <div class="image-grid" id="image-grid" role="group" aria-label="Images" aria-describedby="grid-help"></div>
+
+              <nav class="pager grid-pager" id="grid-pager" aria-label="Image pages">
+                <span class="page-info" id="grid-pagination-info"></span>
+                <div id="grid-pagination-container"></div>
+                <div class="page-size">
+                  <label for="grid-page-size">Per page</label>
+                  <select id="grid-page-size">
+                    <option value="24">24</option>
+                    <option value="48" selected>48</option>
+                    <option value="96">96</option>
+                  </select>
+                </div>
+              </nav>
+            </div>
+          </section>
+        </div>
+      </div>
+
+    </div>
 
     <footer class="site-footer">
       <a href="privacy.html">Privacy Policy</a>
       <span aria-hidden="true">·</span>
       <span>Clark University Data Science Studio</span>
     </footer>
-
-  </div><!-- end .dashboard-container -->
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
     integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
     crossorigin="anonymous"></script>
   <script src="config.js"></script>
+  <script src="demo.js"></script>
   <script src="auth.js"></script>
+  <script src="ui.js"></script>
+  <script src="labels.js"></script>
+  <script src="fx.js"></script>
+  <script src="viewer.js"></script>
   <script src="labeling.js"></script>
 </body>
 

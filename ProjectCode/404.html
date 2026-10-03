@@ -1,29 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#eef4f2">
   <title>Page Not Found — Water Sample Image Catalog</title>
-  <link rel="stylesheet" href="/dashboard.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/theme.js"></script>
+  <link rel="stylesheet" href="/base.css">
+  <style>
+    /* This page is served for any unknown address, so every URL here is absolute. */
+    .lost { display: grid; gap: 1rem; max-width: 40rem; padding-block: clamp(2rem, 6vw, 4.5rem) clamp(5rem, 10vw, 8rem); }
+    .lost .big { font-family: var(--font-display); font-weight: 650; font-size: clamp(5rem, 3rem + 14vw, 11rem); line-height: 0.9; letter-spacing: -0.04em; color: #fff; }
+    .lost .big span { display: inline-block; animation: bob 5s ease-in-out infinite; }
+    .lost .big span:nth-child(2) { animation-delay: -1.6s; color: #b8fff2; font-style: italic; }
+    .lost .big span:nth-child(3) { animation-delay: -3.2s; }
+    @keyframes bob { 50% { transform: translateY(-0.12em) rotate(-2deg); } }
+    .lost-cell { position: absolute; right: clamp(1rem, 8vw, 8rem); top: 50%; width: clamp(7rem, 22vw, 15rem); translate: 0 -50%; opacity: 0.9; animation: drift-cell 14s ease-in-out infinite alternate; }
+    @keyframes drift-cell { from { transform: translate(0, -0.6rem) rotate(-8deg); } to { transform: translate(-1.5rem, 0.8rem) rotate(7deg); } }
+    @media (max-width: 700px) { .lost-cell { opacity: 0.25; } }
+  </style>
 </head>
 
 <body>
-  <div class="dashboard-container narrow">
+  <a class="skip-link" href="#main">Skip to the content</a>
 
-    <header id="dashboard-header">
-      <div class="header-text">
-        <h1>Water Sample Image Catalog</h1>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="/" aria-label="Water Sample Image Catalog, home">
+        <img class="brand-mark" src="/favicon.svg" alt="" width="40" height="40">
+        <span class="brand-text"><span class="brand-name">Water Sample</span><span class="brand-sub">Image Catalog</span></span>
+      </a>
+      <div class="appbar-actions">
+        <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg class="icon ti-moon" aria-hidden="true"><use href="/icons.svg#i-moon"/></svg>
+          <svg class="icon ti-sun" aria-hidden="true"><use href="/icons.svg#i-sun"/></svg>
+        </button>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <section class="page-card">
-      <h2>Page not found</h2>
-      <p>There's nothing at this address.</p>
-      <a class="btn btn-primary" href="/">Go to the dashboard</a>
-    </section>
+  <main id="main">
+    <div class="wrap" style="margin-top:1.5rem">
+      <section class="banner" aria-labelledby="lost-title">
+        <canvas class="banner-fx" data-fx="plankton" aria-hidden="true"></canvas>
+        <svg class="lost-cell" viewBox="0 0 200 120" aria-hidden="true" focusable="false">
+          <g fill="none" stroke="#b8fff2" stroke-width="3" stroke-linecap="round">
+            <ellipse cx="100" cy="60" rx="86" ry="36" fill="rgba(184,255,242,0.14)"/>
+            <line x1="22" y1="60" x2="178" y2="60"/>
+            <line x1="52" y1="36" x2="52" y2="84" opacity=".7"/><line x1="76" y1="29" x2="76" y2="91" opacity=".7"/>
+            <line x1="100" y1="27" x2="100" y2="93" opacity=".7"/><line x1="124" y1="29" x2="124" y2="91" opacity=".7"/>
+            <line x1="148" y1="36" x2="148" y2="84" opacity=".7"/>
+          </g>
+        </svg>
+        <div class="banner-inner lost">
+          <p class="eyebrow">Off the slide</p>
+          <p class="big" aria-hidden="true"><span>4</span><span>0</span><span>4</span></p>
+          <h1 id="lost-title" style="font-size:clamp(1.6rem,1.2rem+1.6vw,2.4rem)">This sample <em>wandered off</em></h1>
+          <p class="lede">There's nothing at this address. It may have moved, or the link might have a typo.</p>
+          <p><a class="btn btn-lg btn-primary" href="/">Back to the catalog</a></p>
+        </div>
+        <div class="waves" aria-hidden="true"></div>
+      </section>
+    </div>
+  </main>
 
-  </div>
+  <script src="/fx.js"></script>
+  <script src="/ui.js"></script>
 </body>
 
 </html>

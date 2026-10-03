@@ -1,218 +1,262 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Browse, filter and label FlowCam microscope images of cyanobacteria from Worcester-area water bodies.">
+  <meta name="theme-color" content="#eef4f2">
   <title>Water Sample Image Catalog — Dashboard</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/fraunces-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/caladea-400.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="base.css">
   <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="viewer.css">
 </head>
 
 <body>
-  <div class="dashboard-container">
+  <a class="skip-link" href="#catalog">Skip to the catalog</a>
 
-    <!-- Header -->
-    <header id="dashboard-header">
-      <div class="header-text">
-        <h1>Water Sample Image Catalog</h1>
-        <p>Browse, sort, and filter the cataloged microscopy images from water sample collection events.</p>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="index.html" aria-label="Water Sample Image Catalog, home">
+        <img class="brand-mark" src="favicon.svg" alt="" width="40" height="40">
+        <span class="brand-text"><span class="brand-name">Water Sample</span><span class="brand-sub">Image Catalog</span></span>
+      </a>
+      <nav class="appnav" aria-label="Primary">
+        <a href="index.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-grid"/></svg>Catalog</a>
+        <a href="labeling.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Label images</a>
+        <a href="admin.html" id="nav-admin" hidden><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg>Admin</a>
+      </nav>
+      <div class="appbar-actions">
+        <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg class="icon ti-moon" aria-hidden="true"><use href="icons.svg#i-moon"/></svg>
+          <svg class="icon ti-sun" aria-hidden="true"><use href="icons.svg#i-sun"/></svg>
+        </button>
+        <div class="auth-area" id="auth-area"></div>
       </div>
-      <div class="auth-area" id="auth-area"></div>
-    </header>
-
-    <!-- Shown when the database can't be reached -->
-    <div class="alert alert-error" id="data-error" role="alert" hidden></div>
-
-    <!-- Stats Cards -->
-    <section class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value" id="stat-folders">—</div>
-        <div class="stat-label">Folders</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-images">—</div>
-        <div class="stat-label">Total Images</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-sites">—</div>
-        <div class="stat-label">Unique Sites</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-dates">—</div>
-        <div class="stat-label">Date Range</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-pp">—</div>
-        <div class="stat-label">PP / Raw Split</div>
-      </div>
-    </section>
-
-    <!-- Filter Bar -->
-    <section id="filter-bar">
-      <div class="filter-group">
-        <label for="search-input">Search</label>
-        <input type="text" id="search-input" placeholder="Search folder names..." autocomplete="off">
-      </div>
-      <div class="filter-group">
-        <label for="filter-site_normalized">Site</label>
-        <select id="filter-site_normalized" class="filter-select">
-          <option value="">All Sites</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label for="filter-water_body_type">Water Body</label>
-        <select id="filter-water_body_type" class="filter-select">
-          <option value="">All Types</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label for="filter-date">Date</label>
-        <select id="filter-date" class="filter-select">
-          <option value="">All Dates</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label for="filter-sample_code">Sample Code</label>
-        <select id="filter-sample_code" class="filter-select">
-          <option value="">All Codes</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label for="filter-capture_mode">Capture Mode</label>
-        <select id="filter-capture_mode" class="filter-select">
-          <option value="">All Modes</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label for="filter-dilution">Dilution</label>
-        <select id="filter-dilution" class="filter-select">
-          <option value="">All Dilutions</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label for="filter-is_pp">Processing</label>
-        <select id="filter-is_pp" class="filter-select">
-          <option value="">PP & Raw</option>
-          <option value="true">Post-Processed (PP)</option>
-          <option value="false">Raw Only</option>
-        </select>
-      </div>
-      <div class="filter-group" style="flex-direction: row; align-items: flex-end; gap: 0.5rem;">
-        <button class="btn" id="clear-filters-btn">Clear All</button>
-        <span class="filter-badge" id="filter-badge" style="display:none;">0</span>
-      </div>
-    </section>
-
-    <!-- Loading Indicator -->
-    <div id="loading-indicator" style="display:none;">
-      <div class="spinner"></div>
-      <span>Loading catalog data…</span>
     </div>
+  </header>
 
-    <!-- Data Table -->
-    <section id="data-table-container">
-      <table>
-        <thead>
-          <tr>
-            <th data-sortable data-col="folder_name" class="sortable">Folder Name</th>
-            <th data-sortable data-col="site_normalized" class="sortable">Site</th>
-            <th data-sortable data-col="water_body_type" class="sortable">Water Body</th>
-            <th data-sortable data-col="date" class="sortable">Date</th>
-            <th data-sortable data-col="sample_code" class="sortable">Sample Code</th>
-            <th data-sortable data-col="capture_mode" class="sortable">Capture Mode</th>
-            <th data-sortable data-col="dilution" class="sortable">Dilution</th>
-            <th data-sortable data-col="is_pp" class="sortable">Type</th>
-            <th data-sortable data-col="image_count" class="sortable text-right">Images</th>
-            <th>Dimensions</th>
-          </tr>
-        </thead>
-        <tbody id="table-body">
-        </tbody>
-      </table>
-    </section>
+  <main id="main">
+    <div class="wrap">
 
-    <!-- Pagination -->
-    <section id="pagination">
-      <span class="page-info" id="pagination-info">Showing 0 folders</span>
-      <div id="pagination-container" style="display:flex; gap:0.25rem; align-items:center;"></div>
-      <div style="display:flex; align-items:center; gap:0.5rem;">
-        <label for="page-size" class="text-muted" style="font-size:0.8rem;">Per page:</label>
-        <select id="page-size">
-          <option value="10">10</option>
-          <option value="25" selected>25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-      </div>
-    </section>
+      <noscript>
+        <div class="alert alert-warn"><div class="alert-body"><strong>JavaScript is off.</strong>
+          The catalog loads its data in the browser, so it needs JavaScript to work.</div></div>
+      </noscript>
 
-    <!-- Charts Section -->
-    <section id="charts-section">
-      <div class="chart-card">
-        <h3>Top Sites by Image Count</h3>
-        <div class="chart-container">
-          <canvas id="chart-site"></canvas>
+      <!-- Hero -->
+      <section class="banner hero" aria-labelledby="hero-title">
+        <canvas class="banner-fx" data-fx="plankton" aria-hidden="true"></canvas>
+        <div class="banner-inner hero-inner">
+          <p class="eyebrow">Clark University · Data Science Studio</p>
+          <h1 id="hero-title">Water Sample <em>Image Catalog</em></h1>
+          <p class="lede">Browse, filter and label microscope images of cyanobacteria and other plankton from Worcester-area ponds, lakes and reservoirs.</p>
+          <div class="hero-cta">
+            <span class="glow-wrap"><a class="btn btn-lg btn-primary" href="#catalog"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-search"/></svg>Explore the catalog</a></span>
+            <a class="btn btn-lg btn-light" href="labeling.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Start labeling</a>
+          </div>
+          <p class="hero-facts">
+            <span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-camera"/></svg>FlowCam particle imagery</span>
+            <span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-droplet"/></svg>Open to browse and download</span>
+            <span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sparkles"/></svg>Labels train the ML models</span>
+          </p>
         </div>
-      </div>
-      <div class="chart-card">
-        <h3>Images by Collection Date</h3>
-        <div class="chart-container">
-          <canvas id="chart-timeline"></canvas>
-        </div>
-      </div>
-      <div class="chart-card">
-        <h3>Water Body Type Distribution</h3>
-        <div class="chart-container">
-          <canvas id="chart-type"></canvas>
-        </div>
-      </div>
-    </section>
+        <div class="waves" aria-hidden="true"></div>
+      </section>
 
-    <!-- QA Log Section -->
-    <section id="qa-section">
-      <div class="qa-header" id="qa-log-container">
-        <h2>QA Log</h2>
-        <button class="qa-toggle-btn" id="qa-toggle-btn">Show QA Log</button>
-      </div>
-      <div class="qa-content" id="qa-log-content" style="display:none;">
-        <table>
-          <thead>
-            <tr>
-              <th>Level</th>
-              <th>Target</th>
-              <th>Detail</th>
-            </tr>
-          </thead>
-          <tbody id="qa-table-body">
-          </tbody>
-        </table>
-      </div>
-    </section>
+      <!-- Stat cards -->
+      <section class="stats-grid" aria-label="Catalog at a glance">
+        <article class="stat-card spot reveal" style="--i:0">
+          <div class="stat-top"><span class="stat-label">Folders</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-folder"/></svg></div>
+          <div class="stat-value" id="stat-folders">—</div>
+          <div class="stat-sub">sample events</div>
+        </article>
+        <article class="stat-card spot reveal" style="--i:1">
+          <div class="stat-top"><span class="stat-label">Total images</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-image"/></svg></div>
+          <div class="stat-value" id="stat-images">—</div>
+          <div class="stat-sub">particle crops</div>
+        </article>
+        <article class="stat-card spot reveal" style="--i:2">
+          <div class="stat-top"><span class="stat-label">Unique sites</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-map-pin"/></svg></div>
+          <div class="stat-value" id="stat-sites">—</div>
+          <div class="stat-sub">water bodies</div>
+        </article>
+        <article class="stat-card spot reveal" style="--i:3">
+          <div class="stat-top"><span class="stat-label">Date range</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-calendar"/></svg></div>
+          <div class="stat-value small" id="stat-dates">—</div>
+          <div class="stat-sub">first to last sample</div>
+        </article>
+        <article class="stat-card spot reveal" style="--i:4">
+          <div class="stat-top"><span class="stat-label">PP / Raw split</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-layers"/></svg></div>
+          <div class="stat-value small" id="stat-pp">—</div>
+          <div class="split-bar" id="stat-pp-bar" aria-hidden="true"><span style="flex-basis:50%"></span><span style="flex-basis:50%"></span></div>
+        </article>
+        <article class="stat-card spot reveal" id="stat-labeled-card" style="--i:5" hidden>
+          <div class="stat-top"><span class="stat-label">Labeled</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg></div>
+          <div class="stat-value" id="stat-labeled">—</div>
+          <div class="progress" aria-hidden="true"><span id="stat-labeled-bar" style="--value:0%"></span></div>
+        </article>
+      </section>
+
+      <div class="alert alert-error" id="data-error" role="alert" hidden style="margin-top:1.5rem"></div>
+
+      <!-- Filters -->
+      <section class="filters card reveal" id="catalog" aria-labelledby="filters-title">
+        <div class="filters-head">
+          <h2 id="filters-title">Find a sample</h2>
+          <div class="search-field">
+            <svg class="icon" aria-hidden="true"><use href="icons.svg#i-search"/></svg>
+            <input type="search" id="search-input" placeholder="Search folder names…" autocomplete="off" aria-label="Search folder names">
+          </div>
+          <button type="button" class="btn btn-sm" id="filters-toggle" aria-expanded="false" aria-controls="filter-grid">
+            <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Filters
+          </button>
+          <button type="button" class="btn btn-sm btn-ghost" id="clear-filters-btn">
+            <svg class="icon" aria-hidden="true"><use href="icons.svg#i-x"/></svg>Clear all
+            <span class="filter-badge" id="filter-badge" hidden>0</span>
+          </button>
+        </div>
+        <div class="filter-grid" id="filter-grid">
+          <div class="filter-group"><label for="filter-site_normalized">Site</label>
+            <select id="filter-site_normalized" class="filter-select"><option value="">All sites</option></select></div>
+          <div class="filter-group"><label for="filter-water_body_type">Water body</label>
+            <select id="filter-water_body_type" class="filter-select"><option value="">All types</option></select></div>
+          <div class="filter-group"><label for="filter-date">Date</label>
+            <select id="filter-date" class="filter-select"><option value="">All dates</option></select></div>
+          <div class="filter-group"><label for="filter-sample_code">Sample code</label>
+            <select id="filter-sample_code" class="filter-select"><option value="">All codes</option></select></div>
+          <div class="filter-group"><label for="filter-capture_mode">Capture mode</label>
+            <select id="filter-capture_mode" class="filter-select"><option value="">All modes</option></select></div>
+          <div class="filter-group"><label for="filter-dilution">Dilution</label>
+            <select id="filter-dilution" class="filter-select"><option value="">All dilutions</option></select></div>
+          <div class="filter-group"><label for="filter-is_pp">Processing</label>
+            <select id="filter-is_pp" class="filter-select">
+              <option value="">PP &amp; raw</option>
+              <option value="true">Post-processed (PP)</option>
+              <option value="false">Raw only</option>
+            </select></div>
+        </div>
+        <div class="active-filters" id="active-filters" aria-label="Active filters"></div>
+      </section>
+
+      <!-- Folder table -->
+      <section class="card table-card" aria-label="Sample folders" id="folders-card">
+        <div class="table-toolbar">
+          <p class="results-count" id="results-count" aria-live="polite">Loading folders…</p>
+          <p class="text-muted" style="font-size:0.88rem">Select a folder to preview its images</p>
+        </div>
+        <div class="table-scroll" id="data-table-container">
+          <table class="data folders-table">
+            <thead>
+              <tr>
+                <th scope="col" data-sortable data-col="folder_name"><button type="button" class="th-btn">Folder<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" data-sortable data-col="site_normalized"><button type="button" class="th-btn">Site<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" data-sortable data-col="water_body_type"><button type="button" class="th-btn">Water body<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" data-sortable data-col="date"><button type="button" class="th-btn">Date<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" data-sortable data-col="sample_code"><button type="button" class="th-btn">Code<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" data-sortable data-col="capture_mode"><button type="button" class="th-btn">Capture<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" data-sortable data-col="dilution"><button type="button" class="th-btn">Dilution<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" data-sortable data-col="is_pp"><button type="button" class="th-btn">Type<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" data-sortable data-col="image_count" class="num"><button type="button" class="th-btn">Images<svg class="icon sort-icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></button></th>
+                <th scope="col" id="th-labeled" hidden><button type="button" class="th-btn" tabindex="-1" style="cursor:default">Labeled</button></th>
+                <th scope="col"><button type="button" class="th-btn" tabindex="-1" style="cursor:default">Size range</button></th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <nav class="pager" id="pagination" aria-label="Pagination">
+        <span class="page-info" id="pagination-info">Showing 0 folders</span>
+        <div id="pagination-container"></div>
+        <div class="page-size">
+          <label for="page-size">Per page</label>
+          <select id="page-size">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </nav>
+
+      <!-- Charts -->
+      <section id="charts-section" aria-label="Charts">
+        <article class="card chart-card span-5 spot reveal">
+          <h3><svg class="icon" aria-hidden="true"><use href="icons.svg#i-bar-chart"/></svg>Top sites</h3>
+          <p class="chart-sub">Images per site, largest first</p>
+          <div class="chart" id="chart-site" role="img" aria-label="Bar chart of the sites with the most images"></div>
+        </article>
+        <article class="card chart-card span-7 spot reveal" style="--i:1">
+          <h3><svg class="icon" aria-hidden="true"><use href="icons.svg#i-calendar"/></svg>Images by collection month</h3>
+          <p class="chart-sub">How much was captured, month by month</p>
+          <div class="chart" id="chart-timeline" role="img" aria-label="Column chart of images collected per month"></div>
+        </article>
+        <article class="card chart-card spot reveal">
+          <h3><svg class="icon" aria-hidden="true"><use href="icons.svg#i-droplet"/></svg>Water body types</h3>
+          <p class="chart-sub">Number of sample folders by kind of water body</p>
+          <div class="chart donut-wrap" id="chart-type" role="img" aria-label="Donut chart of folders by water body type"></div>
+        </article>
+        <article class="card chart-card spot reveal" style="--i:1">
+          <h3><svg class="icon" aria-hidden="true"><use href="icons.svg#i-camera"/></svg>Capture mode</h3>
+          <p class="chart-sub">Images captured by autoimage versus trigger</p>
+          <div class="chart donut-wrap" id="chart-capture" role="img" aria-label="Donut chart of images by capture mode"></div>
+        </article>
+      </section>
+
+      <!-- QA log -->
+      <section id="qa-section" class="card">
+        <button type="button" class="qa-header" id="qa-toggle-btn" aria-expanded="false" aria-controls="qa-log-content">
+          <h2><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check-circle"/></svg>QA log <span class="badge" id="qa-count">0</span></h2>
+          <svg class="icon chev" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg>
+        </button>
+        <div class="qa-content" id="qa-log-content" hidden>
+          <div class="table-scroll">
+            <table class="data">
+              <thead><tr><th scope="col">Level</th><th scope="col">Target</th><th scope="col">Detail</th></tr></thead>
+              <tbody id="qa-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
 
     <footer class="site-footer">
       <a href="privacy.html">Privacy Policy</a>
       <span aria-hidden="true">·</span>
       <span>Clark University Data Science Studio</span>
     </footer>
+  </main>
 
-  </div><!-- end .dashboard-container -->
-
-  <!-- Detail Panel (slide-in from right) -->
-  <div class="panel-backdrop" id="detail-overlay"></div>
-  <aside id="detail-panel">
+  <!-- Folder detail sheet (slides in from the right) -->
+  <div class="sheet-backdrop" id="detail-overlay"></div>
+  <div id="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-title" aria-hidden="true">
     <div class="panel-header">
-      <h2>Folder Details</h2>
-      <button class="close-btn" id="detail-close" aria-label="Close detail panel">&times;</button>
+      <div>
+        <p class="eyebrow">Sample folder</p>
+        <h2 id="detail-title">Folder details</h2>
+      </div>
+      <button type="button" class="icon-btn" id="detail-close" aria-label="Close folder details (Esc)"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-x"/></svg></button>
     </div>
-    <div class="panel-content" id="detail-content">
-    </div>
-  </aside>
+    <div class="panel-content" id="detail-content"></div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
     integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
     crossorigin="anonymous"></script>
   <script src="config.js"></script>
+  <script src="demo.js"></script>
   <script src="auth.js"></script>
+  <script src="ui.js"></script>
+  <script src="labels.js"></script>
+  <script src="fx.js"></script>
+  <script src="viewer.js"></script>
   <script src="dashboard.js"></script>
 </body>
 
