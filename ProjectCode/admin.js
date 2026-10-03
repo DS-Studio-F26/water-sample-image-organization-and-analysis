@@ -1,5 +1,5 @@
 /**
- * Admin page: list every account and change roles.
+ * Admin page: list every account, change roles, and see who has labeled what.
  *
  * Everything here is convenience only. admin_list_users() and set_user_role()
  * check for the admin role inside the database, and the database refuses to
@@ -12,10 +12,12 @@ const USERS_PAGE_SIZE = 1000;  // PostgREST returns at most 1,000 rows per reque
 const adminState = {
   users: [],
   search: '',
+  roleFilter: '',
   pending: null,  // { id, role } while a role change waits for confirmation
-  saving: false
+  saving: false,
 };
 
+const h = UI.h;
 const roleName = role => role.charAt(0).toUpperCase() + role.slice(1);
 
 // 1. Which view to show
@@ -53,13 +55,13 @@ async function renderForUser(auth) {
     return;
   }
   showSection('admin-panel');
-  await Promise.all([loadUsers(), loadLabelingProgress()]);
+  await Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats()]);
 }
 
 // 2. Loading users
 
 async function loadUsers() {
-  setTableMessage('Loading accounts…');
+  setTableMessage('users-body', 5, 'Loading accounts…');
   try {
     const users = [];
     for (let from = 0; ; from += USERS_PAGE_SIZE) {
@@ -74,19 +76,30 @@ async function loadUsers() {
     adminState.pending = null;
     renderUsers();
   } catch (err) {
-    setTableMessage("Couldn't load the accounts.");
-    showMessage(`Couldn't load the accounts: ${describeError(err)}`, 'error');
+    setTableMessage('users-body', 5, "Couldn't load the accounts.");
+    showMessage(`Couldn't load the accounts: ${describeError(err)}`);
   }
 }
 
-// 3. Users table
+// 3. Summary tiles and the accounts table
+
+function renderKpis() {
+  const count = (role) => adminState.users.filter(u => u.role === role).length;
+  const set = (id, n) => UI.countUp(document.getElementById(id), n, { duration: 700 });
+  set('kpi-accounts', adminState.users.length);
+  set('kpi-admins', count('admin'));
+  set('kpi-labelers', count('labeler'));
+  set('kpi-viewers', count('viewer'));
+}
 
 function renderUsers() {
+  renderKpis();
   const tbody = document.getElementById('users-body');
   const q = adminState.search.trim().toLowerCase();
   const me = Auth.current().user;
-  const visible = adminState.users.filter(u => !q || [u.email, u.full_name, u.provider, u.role]
-    .some(v => v && v.toLowerCase().includes(q)));
+  const visible = adminState.users.filter(u =>
+    (!adminState.roleFilter || u.role === adminState.roleFilter)
+    && (!q || [u.email, u.full_name, u.provider, u.role].some(v => v && v.toLowerCase().includes(q))));
 
   const total = adminState.users.length;
   document.getElementById('user-count').textContent = visible.length === total
@@ -95,45 +108,45 @@ function renderUsers() {
 
   tbody.innerHTML = '';
   if (visible.length === 0) {
-    setTableMessage(total === 0 ? 'No accounts yet.' : 'No accounts match your search.');
+    setTableMessage('users-body', 5, total === 0 ? 'No accounts yet.' : 'No accounts match your search.');
     return;
   }
 
   visible.forEach(user => {
-    const tr = document.createElement('tr');
     const isMe = me && me.id === user.id;
-
-    const tdEmail = cell(tr, user.email || '-');
-    if (isMe) {
-      const you = document.createElement('span');
-      you.className = 'text-muted';
-      you.textContent = ' (you)';
-      tdEmail.appendChild(you);
-    }
-    cell(tr, user.full_name || '-');
-    cell(tr, user.provider || '-');
-    tr.appendChild(roleCell(user, isMe));
-    cell(tr, user.created_at ? new Date(user.created_at).toLocaleDateString() : '-', 'col-dim');
-    cell(tr, user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Never', 'col-dim');
-    tbody.appendChild(tr);
+    tbody.appendChild(h('tr', {},
+      h('td', {}, userCell(user, isMe)),
+      h('td', {}, providerChips(user.provider)),
+      roleCell(user, isMe),
+      h('td', { class: 'dim', text: user.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '-' }),
+      h('td', { class: 'dim', title: user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : '', text: user.last_sign_in_at ? UI.relativeTime(user.last_sign_in_at) : 'Never' })));
   });
 }
 
+function userCell(user, isMe) {
+  const label = user.full_name || user.email || '?';
+  return h('div', { class: 'user-cell' },
+    h('span', { class: 'avatar', 'aria-hidden': 'true', text: label.trim().charAt(0) }),
+    h('div', {},
+      h('div', { class: 'name' }, user.full_name || user.email || '-', isMe ? h('span', { class: 'badge badge-primary', style: { marginLeft: '0.5rem' }, text: 'You' }) : null),
+      h('div', { class: 'sub', text: user.full_name ? (user.email || '') : '' })));
+}
+
+function providerChips(provider) {
+  const wrap = h('div', { style: { display: 'flex', gap: '0.35rem', flexWrap: 'wrap' } });
+  const parts = (provider || '').split(',').map(p => p.trim()).filter(Boolean);
+  if (!parts.length) return document.createTextNode('-');
+  parts.forEach(p => wrap.appendChild(h('span', { class: `badge ${p === 'google' ? 'badge-sky' : 'badge-violet'}` }, UI.icon(p === 'google' ? 'user' : 'mail'), roleName(p))));
+  return wrap;
+}
+
 function roleCell(user, isMe) {
-  const td = document.createElement('td');
-  td.className = 'role-cell';
+  const td = h('td', { class: 'role-cell' });
   const pending = adminState.pending && adminState.pending.id === user.id ? adminState.pending : null;
 
-  const select = document.createElement('select');
-  select.className = 'role-select';
-  select.setAttribute('aria-label', `Role for ${user.email}`);
+  const select = h('select', { class: 'role-select', 'aria-label': `Role for ${user.email}` });
   select.disabled = adminState.saving;
-  ROLES.forEach(role => {
-    const option = document.createElement('option');
-    option.value = role;
-    option.textContent = roleName(role);
-    select.appendChild(option);
-  });
+  ROLES.forEach(role => select.appendChild(h('option', { value: role, text: roleName(role) })));
   select.value = pending ? pending.role : user.role;
   select.addEventListener('change', () => {
     adminState.pending = select.value === user.role ? null : { id: user.id, role: select.value };
@@ -142,28 +155,13 @@ function roleCell(user, isMe) {
   td.appendChild(select);
 
   if (pending) {
-    const confirmBox = document.createElement('div');
-    confirmBox.className = 'role-confirm';
-    const question = document.createElement('span');
-    question.textContent = `Change from ${roleName(user.role)} to ${roleName(pending.role)}?`
-      + (isMe && pending.role !== 'admin' ? ' You will lose access to this page.' : '');
-    const yes = document.createElement('button');
-    yes.type = 'button';
-    yes.className = 'btn btn-primary btn-sm';
-    yes.textContent = adminState.saving ? 'Saving…' : 'Confirm';
+    const yes = h('button', { type: 'button', class: 'btn btn-primary btn-sm', text: adminState.saving ? 'Saving…' : 'Confirm', onclick: () => saveRole(user, pending.role, isMe) });
     yes.disabled = adminState.saving;
-    yes.addEventListener('click', () => saveRole(user, pending.role, isMe));
-    const no = document.createElement('button');
-    no.type = 'button';
-    no.className = 'btn btn-sm';
-    no.textContent = 'Cancel';
+    const no = h('button', { type: 'button', class: 'btn btn-sm', text: 'Cancel', onclick: () => { adminState.pending = null; renderUsers(); } });
     no.disabled = adminState.saving;
-    no.addEventListener('click', () => {
-      adminState.pending = null;
-      renderUsers();
-    });
-    confirmBox.append(question, yes, no);
-    td.appendChild(confirmBox);
+    td.appendChild(h('div', { class: 'role-confirm' },
+      h('span', { text: `Change from ${roleName(user.role)} to ${roleName(pending.role)}?` + (isMe && pending.role !== 'admin' ? ' You will lose access to this page.' : '') }),
+      yes, no));
   }
   return td;
 }
@@ -176,63 +174,37 @@ async function saveRole(user, newRole, isMe) {
   adminState.pending = null;
 
   if (error) {
-    showMessage(`Couldn't change the role of ${user.email}: ${describeError(error)}`, 'error');
+    UI.toast({ message: `Couldn't change the role of ${user.email}: ${describeError(error)}`, kind: 'error', duration: 8000 });
     renderUsers();
     return;
   }
   user.role = newRole;
-  showMessage(`${user.email} is now ${roleName(newRole) === 'Admin' ? 'an' : 'a'} ${roleName(newRole)}.`, 'success');
+  UI.toast({ message: `${user.email} is now ${newRole === 'admin' ? 'an' : 'a'} ${roleName(newRole)}.`, kind: 'success' });
   renderUsers();
+  loadLabelingProgress();
   if (isMe) await Auth.refresh();  // may switch this page to "Not authorized"
 }
 
-function cell(tr, text, className) {
-  const td = document.createElement('td');
-  td.textContent = text;
-  if (className) td.className = className;
-  tr.appendChild(td);
-  return td;
-}
-
-function setTableMessage(text) {
-  const tbody = document.getElementById('users-body');
+function setTableMessage(bodyId, span, text) {
+  const tbody = document.getElementById(bodyId);
   tbody.innerHTML = '';
-  const tr = document.createElement('tr');
-  const td = document.createElement('td');
-  td.colSpan = 6;
-  td.className = 'no-results';
-  td.textContent = text;
-  tr.appendChild(td);
-  tbody.appendChild(tr);
+  tbody.appendChild(h('tr', {}, h('td', { colspan: String(span), class: 'no-results', text })));
 }
 
-// 3b. Labeling progress (admin_labeling_by_user(), supabase/migrations/002_labeling.sql)
+// 4. Labeling progress (admin_labeling_by_user(), supabase/migrations/002_labeling.sql)
 
 async function loadLabelingProgress() {
-  const tbody = document.getElementById('labeling-users-body');
-  tbody.innerHTML = '';
-  const loadingRow = document.createElement('tr');
-  const loadingCell = document.createElement('td');
-  loadingCell.colSpan = 4;
-  loadingCell.className = 'no-results';
-  loadingCell.textContent = 'Loading…';
-  loadingRow.appendChild(loadingCell);
-  tbody.appendChild(loadingRow);
-
+  setTableMessage('labeling-users-body', 5, 'Loading…');
   try {
     const { data, error } = await sb.rpc('admin_labeling_by_user');
     if (error) throw error;
     renderLabelingProgress(data);
   } catch (err) {
-    tbody.innerHTML = '';
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 4;
-    td.className = 'no-results';
-    td.textContent = "Couldn't load labeling progress.";
-    tr.appendChild(td);
-    tbody.appendChild(tr);
-    showMessage(`Couldn't load labeling progress: ${describeError(err)}`, 'error');
+    const missing = /PGRST202|schema cache|does not exist|Could not find/i.test(`${err.code} ${err.message}`);
+    setTableMessage('labeling-users-body', 5, missing
+      ? 'Labeling isn’t switched on yet: apply supabase/migrations/002_labeling.sql to start tracking progress.'
+      : "Couldn't load labeling progress.");
+    if (!missing) showMessage(`Couldn't load labeling progress: ${describeError(err)}`);
   }
 }
 
@@ -241,26 +213,60 @@ function renderLabelingProgress(rows) {
   tbody.innerHTML = '';
   const labeled = rows.filter(r => Number(r.labeled_count) > 0);
   if (labeled.length === 0) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 4;
-    td.className = 'no-results';
-    td.textContent = 'No one has labeled any images yet.';
-    tr.appendChild(td);
-    tbody.appendChild(tr);
+    setTableMessage('labeling-users-body', 5, 'No one has labeled any images yet.');
     return;
   }
+  const total = labeled.reduce((s, r) => s + Number(r.labeled_count), 0) || 1;
   labeled.forEach(row => {
-    const tr = document.createElement('tr');
-    cell(tr, row.email || '-');
-    cell(tr, roleName(row.role));
-    cell(tr, Number(row.labeled_count).toLocaleString(), 'text-right');
-    cell(tr, row.last_labeled_at ? new Date(row.last_labeled_at).toLocaleString() : '-', 'col-dim');
-    tbody.appendChild(tr);
+    const share = (Number(row.labeled_count) / total) * 100;
+    tbody.appendChild(h('tr', {},
+      h('td', {}, userCell(row, Auth.current().user && Auth.current().user.id === row.id)),
+      h('td', {}, h('span', { class: `badge role-badge role-${row.role}`, text: roleName(row.role) })),
+      h('td', { class: 'bar-cell' }, h('div', { class: 'progress', title: `${share.toFixed(1)}%` }, h('span', { style: { '--value': `${share}%` } }))),
+      h('td', { class: 'num', text: Number(row.labeled_count).toLocaleString() }),
+      h('td', { class: 'dim', title: row.last_labeled_at ? new Date(row.last_labeled_at).toLocaleString() : '', text: row.last_labeled_at ? UI.relativeTime(row.last_labeled_at) : '-' })));
   });
 }
 
-// 4. Messages
+async function loadLabelStats() {
+  const card = document.getElementById('kpi-labeled-card');
+  try {
+    const { data, error } = await sb.from('labeling_stats').select('*').single();
+    if (error) throw error;
+    card.hidden = false;
+    const pct = Number(data.pct_labeled);
+    UI.countUp(document.getElementById('kpi-labeled'), Number(data.labeled_images), { duration: 800 });
+    document.getElementById('kpi-labeled-bar').style.setProperty('--value', `${Math.max(pct, pct > 0 ? 1.5 : 0)}%`);
+    card.querySelector('.kpi-label').textContent = `Images labeled · ${pct}%`;
+  } catch (err) {
+    card.hidden = true;
+  }
+}
+
+async function exportLabels() {
+  const btn = document.getElementById('export-btn');
+  btn.disabled = true;
+  try {
+    const rows = [];
+    for (let from = 0; ; from += USERS_PAGE_SIZE) {
+      const { data, error } = await sb.from('images').select('image_id, folder_name, filename, label, labeled_date')
+        .not('label', 'is', null).order('folder_name').order('filename').range(from, from + USERS_PAGE_SIZE - 1);
+      if (error) throw error;
+      rows.push(...data);
+      if (data.length < USERS_PAGE_SIZE) break;
+    }
+    if (!rows.length) { UI.toast({ message: 'Nothing has been labeled yet, so there’s nothing to export.', kind: 'info' }); return; }
+    UI.download(`water-sample-labels-${new Date().toISOString().slice(0, 10)}.csv`,
+      UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'labeled_date']));
+    UI.toast({ message: `Exported ${rows.length.toLocaleString()} labels.`, kind: 'success' });
+  } catch (err) {
+    UI.toast({ message: `Export failed: ${describeError(err)}`, kind: 'error' });
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// 5. Messages
 
 // Database errors carry a message and sometimes a hint, e.g.
 // "Cannot remove the last admin" + "Make another user an admin first."
@@ -270,10 +276,10 @@ function describeError(err) {
   return Auth.friendlyError(message.replace(/\.?$/, '.')) + hint;
 }
 
-function showMessage(text, kind) {
+function showMessage(text) {
   const box = document.getElementById('admin-message');
-  box.textContent = text;
-  box.className = `alert alert-${kind}`;
+  box.innerHTML = '';
+  box.append(UI.icon('alert'), h('div', { class: 'alert-body', text }));
   box.hidden = false;
 }
 
@@ -281,23 +287,27 @@ function hideMessage() {
   document.getElementById('admin-message').hidden = true;
 }
 
-// 5. Initialization
+// 6. Initialization
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('admin-signin-btn').addEventListener('click', () => Auth.openSignIn('signin'));
   document.getElementById('refresh-users-btn').addEventListener('click', () => {
     hideMessage();
-    loadUsers();
-    loadLabelingProgress();
+    Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats()]);
   });
+  document.getElementById('export-btn').addEventListener('click', exportLabels);
 
-  let searchTimeout;
-  document.getElementById('user-search').addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      adminState.search = e.target.value;
-      renderUsers();
-    }, 150);
+  document.getElementById('user-search').addEventListener('input', UI.debounce((e) => {
+    adminState.search = e.target.value;
+    renderUsers();
+  }, 150));
+
+  document.getElementById('role-filter').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-role]');
+    if (!b) return;
+    adminState.roleFilter = b.dataset.role;
+    document.querySelectorAll('#role-filter button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    renderUsers();
   });
 
   // First render once the session is known, then again on every sign-in/out.

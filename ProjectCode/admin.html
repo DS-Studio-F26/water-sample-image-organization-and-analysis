@@ -1,104 +1,163 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#eef4f2">
   <title>Admin — Water Sample Image Catalog</title>
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/fraunces-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/caladea-400.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="base.css">
 </head>
 
 <body>
-  <div class="dashboard-container">
+  <a class="skip-link" href="#main">Skip to the content</a>
 
-    <!-- Header -->
-    <header id="dashboard-header">
-      <div class="header-text">
-        <h1>Water Sample Image Catalog — Admin</h1>
-        <p><a href="index.html">← Back to the dashboard</a></p>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="index.html" aria-label="Water Sample Image Catalog, home">
+        <img class="brand-mark" src="favicon.svg" alt="" width="40" height="40">
+        <span class="brand-text"><span class="brand-name">Water Sample</span><span class="brand-sub">Image Catalog</span></span>
+      </a>
+      <nav class="appnav" aria-label="Primary">
+        <a href="index.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-grid"/></svg>Catalog</a>
+        <a href="labeling.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Label images</a>
+        <a href="admin.html" id="nav-admin" hidden><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg>Admin</a>
+      </nav>
+      <div class="appbar-actions">
+        <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg class="icon ti-moon" aria-hidden="true"><use href="icons.svg#i-moon"/></svg>
+          <svg class="icon ti-sun" aria-hidden="true"><use href="icons.svg#i-sun"/></svg>
+        </button>
+        <div class="auth-area" id="auth-area"></div>
       </div>
-      <div class="auth-area" id="auth-area"></div>
-    </header>
+    </div>
+  </header>
 
-    <div class="alert" id="admin-message" role="status" hidden></div>
+  <main id="main">
+    <div class="wrap stack" style="--gap: 1.25rem">
 
-    <!-- admin.js shows one of these, depending on who is signed in -->
-    <section class="page-card" id="admin-loading">
-      <div class="detail-loading"><div class="spinner"></div> Checking your account…</div>
-    </section>
-
-    <section class="page-card" id="admin-signed-out" hidden>
-      <h2>Sign in required</h2>
-      <p>This page is for project admins. Please sign in to continue.</p>
-      <button type="button" class="btn btn-primary" id="admin-signin-btn">Sign in</button>
-    </section>
-
-    <section class="page-card" id="admin-forbidden" hidden>
-      <h2>Not authorized</h2>
-      <p>Your account (<span id="admin-forbidden-email"></span>) has the
-        <span id="admin-forbidden-role"></span> role. Only admins can manage accounts;
-        ask an admin if you need access.</p>
-    </section>
-
-    <section id="admin-panel" hidden>
-      <div id="filter-bar">
-        <div class="filter-group">
-          <label for="user-search">Search</label>
-          <input type="text" id="user-search" placeholder="Email, name, provider, role..." autocomplete="off">
+      <section class="banner page-head" aria-labelledby="page-title">
+        <canvas class="banner-fx" data-fx="plankton" aria-hidden="true"></canvas>
+        <div class="banner-inner">
+          <p class="eyebrow">Administration</p>
+          <h1 id="page-title">Admin <em>console</em></h1>
+          <p class="lede">Decide who can label images, and keep an eye on how the labeling is going.</p>
         </div>
-        <div class="filter-group" style="flex-direction: row; align-items: center; gap: 0.75rem;">
-          <button type="button" class="btn" id="refresh-users-btn">Refresh</button>
-          <span class="text-muted" id="user-count"></span>
-        </div>
-      </div>
-
-      <section id="data-table-container">
-        <table class="users-table">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Name</th>
-              <th>Sign-in</th>
-              <th>Role</th>
-              <th>Created</th>
-              <th>Last sign-in</th>
-            </tr>
-          </thead>
-          <tbody id="users-body">
-          </tbody>
-        </table>
+        <div class="waves" aria-hidden="true"></div>
       </section>
 
-      <h2 class="section-heading">Labeling progress</h2>
-      <section id="labeling-table-container">
-        <table class="users-table">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Role</th>
-              <th class="text-right">Images labeled</th>
-              <th>Last labeled</th>
-            </tr>
-          </thead>
-          <tbody id="labeling-users-body">
-          </tbody>
-        </table>
+      <div class="alert alert-error" id="admin-message" role="status" hidden></div>
+
+      <!-- admin.js shows one of these, depending on who is signed in -->
+      <section class="page-card" id="admin-loading">
+        <div class="detail-loading"><div class="spinner"></div> Checking your account…</div>
       </section>
-    </section>
+
+      <section class="page-card" id="admin-signed-out" hidden>
+        <h2>Sign in required</h2>
+        <p>This page is for project admins. Please sign in to continue.</p>
+        <button type="button" class="btn btn-primary" id="admin-signin-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-log-in"/></svg>Sign in</button>
+      </section>
+
+      <section class="page-card" id="admin-forbidden" hidden>
+        <h2>Not authorized</h2>
+        <p>Your account (<strong id="admin-forbidden-email"></strong>) has the
+          <strong id="admin-forbidden-role"></strong> role. Only admins can manage accounts;
+          ask an admin if you need access.</p>
+      </section>
+
+      <div id="admin-panel" class="stack" style="--gap: 1.25rem" hidden>
+
+        <section class="kpi-grid" aria-label="Summary">
+          <article class="kpi spot"><div class="kpi-top"><span class="kpi-label">Accounts</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg></div><div class="kpi-value" id="kpi-accounts">—</div></article>
+          <article class="kpi spot"><div class="kpi-top"><span class="kpi-label">Admins</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg></div><div class="kpi-value" id="kpi-admins">—</div></article>
+          <article class="kpi spot"><div class="kpi-top"><span class="kpi-label">Labelers</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg></div><div class="kpi-value" id="kpi-labelers">—</div></article>
+          <article class="kpi spot"><div class="kpi-top"><span class="kpi-label">Viewers</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye"/></svg></div><div class="kpi-value" id="kpi-viewers">—</div></article>
+          <article class="kpi spot" id="kpi-labeled-card" hidden>
+            <div class="kpi-top"><span class="kpi-label">Images labeled</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check-circle"/></svg></div>
+            <div class="kpi-value" id="kpi-labeled">—</div>
+            <div class="progress thin" aria-hidden="true" style="margin-top:.5rem"><span id="kpi-labeled-bar" style="--value:0%"></span></div>
+          </article>
+        </section>
+
+        <section class="card table-card" aria-labelledby="accounts-title">
+          <div class="card-head card-pad" style="margin-bottom:0">
+            <h2 id="accounts-title"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Accounts</h2>
+            <div class="admin-tools">
+              <div class="search-field">
+                <svg class="icon" aria-hidden="true"><use href="icons.svg#i-search"/></svg>
+                <input type="search" id="user-search" placeholder="Email, name, provider, role…" autocomplete="off" aria-label="Search accounts">
+              </div>
+              <div class="seg" id="role-filter" role="group" aria-label="Filter by role">
+                <button type="button" data-role="" aria-pressed="true">All</button>
+                <button type="button" data-role="admin" aria-pressed="false">Admins</button>
+                <button type="button" data-role="labeler" aria-pressed="false">Labelers</button>
+                <button type="button" data-role="viewer" aria-pressed="false">Viewers</button>
+              </div>
+              <button type="button" class="btn btn-sm" id="refresh-users-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-refresh"/></svg>Refresh</button>
+            </div>
+          </div>
+          <p class="text-muted card-pad" style="padding-top:0;padding-bottom:.6rem" id="user-count" aria-live="polite"></p>
+          <div class="table-scroll" id="data-table-container">
+            <table class="data users-table">
+              <thead>
+                <tr>
+                  <th scope="col">Account</th>
+                  <th scope="col">Sign-in</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Joined</th>
+                  <th scope="col">Last seen</th>
+                </tr>
+              </thead>
+              <tbody id="users-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card table-card" aria-labelledby="progress-title">
+          <div class="card-head card-pad" style="margin-bottom:0">
+            <h2 id="progress-title"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-bar-chart"/></svg>Labeling progress</h2>
+            <button type="button" class="btn btn-sm" id="export-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export labels (CSV)</button>
+          </div>
+          <div class="table-scroll" id="labeling-table-container">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th scope="col">Labeler</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Share of all labels</th>
+                  <th scope="col" class="num">Images labeled</th>
+                  <th scope="col">Last labeled</th>
+                </tr>
+              </thead>
+              <tbody id="labeling-users-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+    </div>
 
     <footer class="site-footer">
       <a href="privacy.html">Privacy Policy</a>
       <span aria-hidden="true">·</span>
       <span>Clark University Data Science Studio</span>
     </footer>
-
-  </div><!-- end .dashboard-container -->
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
     integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
     crossorigin="anonymous"></script>
   <script src="config.js"></script>
+  <script src="demo.js"></script>
   <script src="auth.js"></script>
+  <script src="ui.js"></script>
+  <script src="labels.js"></script>
+  <script src="fx.js"></script>
   <script src="admin.js"></script>
 </body>
 

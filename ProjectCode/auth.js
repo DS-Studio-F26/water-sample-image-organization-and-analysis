@@ -1,7 +1,7 @@
 /**
  * Supabase client and sign-in UI shared by every page.
  *
- * Load order: supabase-js (CDN), config.js, auth.js, then the page's script.
+ * Load order: supabase-js (CDN), config.js, demo.js, auth.js, then the page's script.
  *
  *   window.sb             the Supabase client (null if supabase-js didn't load)
  *   Auth.ready            promise -> { user, profile } once the session is known
@@ -11,8 +11,9 @@
  *   Auth.openSignIn(mode) open the modal: 'signin' | 'signup' | 'forgot'
  *   Auth.isRecovery()     true on a password-reset link visit
  *
- * Pages with an element #auth-area get the header controls rendered into it.
- * These checks only decide what to show; the database enforces who can do what.
+ * Pages with an element #auth-area get the account controls rendered into it,
+ * and an #nav-admin link is shown to admins. These checks only decide what to
+ * show; the database enforces who can do what.
  */
 (function () {
   // supabase-js removes tokens from the URL as it starts, so keep a copy.
@@ -91,44 +92,61 @@
     });
   }
 
-  // 2. Header controls (#auth-area)
+  // 2. Header controls (#auth-area) and navigation
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function icon(name) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'icon');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    const use = document.createElementNS(SVG_NS, 'use');
+    use.setAttribute('href', `icons.svg#i-${name}`);
+    svg.appendChild(use);
+    return svg;
+  }
+
+  function updateNav() {
+    const admin = document.getElementById('nav-admin');
+    if (admin) admin.hidden = !(current.user && current.profile && current.profile.role === 'admin');
+  }
 
   function renderAuthArea() {
+    updateNav();
     const area = document.getElementById('auth-area');
     if (!area) return;
     area.innerHTML = '';
 
     if (!sb || !known) return;
     if (!current.user) {
-      area.appendChild(button('Sign in', 'btn btn-primary btn-sm', () => openModal('signin')));
+      area.appendChild(button('Sign in', 'btn btn-primary btn-sm', () => openModal('signin'), 'log-in'));
       return;
     }
 
     const role = (current.profile && current.profile.role) || 'viewer';
+    const name = (current.profile && current.profile.full_name) || current.user.email || '?';
+
+    const chip = document.createElement('div');
+    chip.className = 'user-chip';
+    chip.title = current.user.email;
+    const avatar = document.createElement('span');
+    avatar.className = 'avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.textContent = name.trim().charAt(0);
     const email = document.createElement('span');
     email.className = 'auth-email';
     email.textContent = current.user.email;
-    email.title = current.user.email;
-    area.appendChild(email);
-    area.appendChild(roleBadge(role));
+    chip.append(avatar, email, roleBadge(role));
+    area.appendChild(chip);
 
-    if ((role === 'admin' || role === 'labeler') && !/labeling\.html$/.test(window.location.pathname)) {
-      const link = document.createElement('a');
-      link.className = 'btn btn-sm';
-      link.href = 'labeling.html';
-      link.textContent = 'Label';
-      area.appendChild(link);
-    }
-    if (role === 'admin' && !/admin\.html$/.test(window.location.pathname)) {
-      const link = document.createElement('a');
-      link.className = 'btn btn-sm';
-      link.href = 'admin.html';
-      link.textContent = 'Admin';
-      area.appendChild(link);
-    }
-    area.appendChild(button('Sign out', 'btn btn-sm', async () => {
-      await sb.auth.signOut();
-    }));
+    const out = document.createElement('button');
+    out.type = 'button';
+    out.className = 'icon-btn plain';
+    out.setAttribute('aria-label', 'Sign out');
+    out.title = 'Sign out';
+    out.appendChild(icon('log-out'));
+    out.addEventListener('click', async () => { await sb.auth.signOut(); });
+    area.appendChild(out);
   }
 
   function roleBadge(role) {
@@ -138,11 +156,12 @@
     return badge;
   }
 
-  function button(label, className, onClick) {
+  function button(label, className, onClick, iconName) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = className;
-    b.textContent = label;
+    if (iconName) b.appendChild(icon(iconName));
+    b.appendChild(document.createTextNode(label));
     b.addEventListener('click', onClick);
     return b;
   }
@@ -156,8 +175,10 @@
     + '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>'
     + '</svg>';
 
+  const EYE = '<svg class="icon" aria-hidden="true" focusable="false"><use href="icons.svg#i-eye"/></svg>';
+
   const MODES = {
-    signin: { title: 'Sign in', submit: 'Sign in with email', google: true, password: true, confirm: false },
+    signin: { title: 'Welcome back', submit: 'Sign in with email', google: true, password: true, confirm: false },
     signup: { title: 'Create an account', submit: 'Create account', google: true, password: true, confirm: true },
     forgot: { title: 'Reset your password', submit: 'Send reset link', google: false, password: false, confirm: false },
   };
@@ -174,12 +195,12 @@
     modal.innerHTML = `
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
         <div class="modal-header">
-          <h2 id="auth-modal-title">Sign in</h2>
+          <h2 id="auth-modal-title">Welcome back</h2>
           <button type="button" class="close-btn" data-action="close" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body">
-          <p class="modal-intro text-muted">You only need an account for the admin page.
-            Browsing, viewing and downloading images work without signing in.</p>
+          <p class="modal-intro">Browsing and downloading images never needs an account. Sign in to label
+            images: new accounts start as viewers, and an admin can make you a labeler.</p>
           <button type="button" class="btn-google" data-action="google">${GOOGLE_LOGO}<span>Continue with Google</span></button>
           <div class="auth-divider"><span>or use email</span></div>
           <form class="auth-form" novalidate>
@@ -189,14 +210,17 @@
             </div>
             <div class="form-field" data-field="password">
               <label for="auth-password">Password</label>
-              <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="6">
+              <div class="pw-field">
+                <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="6">
+                <button type="button" class="icon-btn sm plain" data-action="toggle-pw" aria-label="Show password" aria-pressed="false">${EYE}</button>
+              </div>
             </div>
             <div class="form-field" data-field="confirm">
               <label for="auth-confirm">Confirm password</label>
               <input id="auth-confirm" name="confirm" type="password" autocomplete="new-password" minlength="6">
             </div>
             <div class="auth-message" role="alert" hidden></div>
-            <button type="submit" class="btn auth-submit">Sign in with email</button>
+            <button type="submit" class="btn btn-primary auth-submit">Sign in with email</button>
           </form>
           <div class="auth-links">
             <button type="button" class="link-btn" data-mode="signup">Create an account</button>
@@ -204,17 +228,27 @@
             <button type="button" class="link-btn" data-mode="signin">Back to sign in</button>
           </div>
         </div>
-        <div class="modal-footer text-muted">
+        <div class="modal-footer">
           By signing in you agree to the <a href="privacy.html">Privacy Policy</a>.
         </div>
       </div>`;
     document.body.appendChild(modal);
 
+    modal.addEventListener('mousedown', (e) => { if (e.target === modal) closeModal(); });
     modal.addEventListener('click', (e) => {
-      if (e.target === modal || e.target.closest('[data-action="close"]')) closeModal();
+      if (e.target.closest('[data-action="close"]')) closeModal();
       const modeLink = e.target.closest('[data-mode]');
       if (modeLink) setMode(modeLink.dataset.mode);
       if (e.target.closest('[data-action="google"]')) signInWithGoogle();
+      const pwToggle = e.target.closest('[data-action="toggle-pw"]');
+      if (pwToggle) {
+        const input = modal.querySelector('#auth-password');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        pwToggle.setAttribute('aria-pressed', String(show));
+        pwToggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        pwToggle.querySelector('use').setAttribute('href', `icons.svg#i-${show ? 'eye-off' : 'eye'}`);
+      }
     });
     modal.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
@@ -299,6 +333,9 @@
     if (error) {  // on success the browser is already navigating to Google
       setBusy(false);
       showMessage(friendlyError(error.message));
+    } else if (window.APP_DEMO) {
+      setBusy(false);
+      closeModal();
     }
   }
 

@@ -7,25 +7,43 @@
 //
 // Run it locally from ProjectCode/ to preview exactly what gets published:
 //   node build.mjs
-import { copyFileSync, mkdirSync, rmSync } from 'node:fs';
+import { copyFileSync, cpSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const WEB_FILES = [
+  // pages
   'index.html',
-  'admin.html',
   'labeling.html',
+  'admin.html',
   'privacy.html',
   'reset-password.html',
   '404.html',  // with this present, Pages answers unknown paths with a real 404
-  'config.js',
-  'auth.js',
-  'dashboard.js',
-  'admin.js',
-  'labeling.js',
-  'reset.js',
+  // styles
+  'base.css',
   'dashboard.css',
+  'labeling.css',
+  'viewer.css',
+  // scripts
+  'config.js',
+  'theme.js',
+  'demo.js',
+  'auth.js',
+  'ui.js',
+  'labels.js',
+  'fx.js',
+  'viewer.js',
+  'dashboard.js',
+  'labeling.js',
+  'admin.js',
+  'reset.js',
+  // images
+  'icons.svg',
+  'favicon.svg',
 ];
+
+// Whole folders (the self-hosted fonts and their licence note)
+const WEB_DIRS = ['fonts'];
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, 'dist');
@@ -35,4 +53,7 @@ mkdirSync(out);
 for (const file of WEB_FILES) {
   copyFileSync(join(here, file), join(out, file));  // throws if a file is missing
 }
-console.log(`Built ${out} with ${WEB_FILES.length} files: ${WEB_FILES.join(', ')}`);
+for (const dir of WEB_DIRS) {
+  cpSync(join(here, dir), join(out, dir), { recursive: true });  // throws if the folder is missing
+}
+console.log(`Built ${out} with ${WEB_FILES.length} files and ${WEB_DIRS.length} folder(s): ${WEB_FILES.join(', ')}, ${WEB_DIRS.map(d => d + '/').join(', ')}`);

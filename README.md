@@ -32,8 +32,9 @@ gunzip -k ProjectCode/catalog_output/image_manifest.csv.gz
 
 The catalog is online at **https://water-sample-dashboard.pages.dev**. Anyone can
 browse, filter, view and download the images without an account. Signing in
-(Google, or email and password) is only needed for the admin page. Everything
-runs on free tiers: Cloudflare Pages, Workers and R2, plus Supabase.
+(Google, or email and password) is needed to label images (labeler role) and for
+the admin page (admin role). Everything runs on free tiers: Cloudflare Pages,
+Workers and R2, plus Supabase.
 
 ### Architecture
 
@@ -57,9 +58,11 @@ flowchart LR
     browser -->|"view and download images"| worker
 ```
 
-- **Dashboard** (`ProjectCode/index.html`, `dashboard.js`, `dashboard.css`, plus
-  `auth.js`, `admin.html`/`admin.js`, `reset-password.html`/`reset.js`,
-  `privacy.html`, `404.html`): a static site on Cloudflare Pages. It reads
+- **Dashboard** (`ProjectCode/index.html`, `labeling.html`, `admin.html`,
+  `reset-password.html`, `privacy.html`, `404.html`, their scripts and the shared
+  `base.css`, `theme.js`, `ui.js`, `viewer.js`, ... -- see
+  [Look and feel](#look-and-feel) and `ProjectCode/build.mjs` for the full list):
+  a static site on Cloudflare Pages. It reads
   folders, stats, charts and image lists straight from Supabase with the public
   key in `ProjectCode/config.js`. Stats and charts come from database views and
   per-folder totals, so the browser never downloads the 500K-row images table;
@@ -69,23 +72,67 @@ flowchart LR
   Worker in `ProjectCode/worker/` serves them read-only at
   `https://water-sample-images.watersampleimageorganization.workers.dev/<key>`;
   adding `?download=1` makes the browser save the file.
-- **Database** (`ProjectCode/supabase/migrations/001_init.sql`): tables
-  `folders`, `images`, `qa_log` and `profiles`; the views behind the stats and
-  charts; and the role functions. Security lives in the database (Row-Level
-  Security and SQL functions), not in the page:
+- **Database** (`ProjectCode/supabase/migrations/`): `001_init.sql` creates the
+  tables `folders`, `images`, `qa_log` and `profiles`, the views behind the stats
+  and charts, and the role functions; `002_labeling.sql` adds image labeling (see
+  [Labeling](#labeling)). Security lives in the database (Row-Level Security and
+  SQL functions), not in the page:
   - anyone can read folders, images and the QA log, and nobody can change them
-    through the website;
+    through the website, except that labelers and admins can set the `label`
+    column of an image (and nothing else);
   - every account starts as `viewer`; `watersampleimageorganization@gmail.com`
     becomes `admin` on its first confirmed sign-in;
   - only admins can list accounts or change roles (admin page), and the last
     admin can never be demoted or deleted;
-  - the `labeler` role and the `images.label` column are reserved for future
-    labeling and don't do anything yet.
+  - labeling is switched on by applying `002_labeling.sql`: until then the
+    labeling page shows a setup notice instead of the workspace.
 - **Duplicates**: `catalog_images.py` already leaves out raw folders that have a
   `-pp` twin, so the hosted data has no duplicates to hide. Folders with no
   images are hidden.
 - `ProjectCode/prepare_image_data.py` is **LEGACY**: it built per-folder JSON
   files for the old local-only dashboard, which now reads from Supabase instead.
+
+### Labeling
+
+`labeling.html` is the labeling workspace. Anyone can browse it; accounts with the
+`labeler` or `admin` role can label.
+
+- Pick a folder from the searchable list on the left (it shows each folder's
+  progress and sorts the least-labeled first), then click image tiles to select them
+  (Shift-click for a range) and press a label button or its number key to label every
+  selected image at once.
+- Every tile also has its own label menu, and Enter or the expand button opens the
+  viewer (zoom, pan, filmstrip, "label and move on") for careful one-by-one work.
+- Changes appear instantly and save in the background; if a save fails the images
+  are put back and a message says so. **Undo** (Z) works across everything.
+- `labeled_by` and `labeled_date` are stamped by a database trigger from the signed-in
+  user and the current time; the browser can write nothing but `label`.
+- Progress shows as an overall ring, a per-label mix, per-folder bars (also on the
+  dashboard) and, for admins, a per-labeler table on the admin page. **Export labels
+  (CSV)** downloads image id, folder, filename, label and time.
+- Keyboard: arrows move, Space selects, Enter opens the viewer, `1`-`6` label, `0`
+  clears, `L` opens a tile's label menu, `Z` undoes, `?` lists every shortcut.
+
+Not set up yet, or want to show it off? Add `?demo` to any page's address
+(`labeling.html?demo`). Demo mode runs the whole site on sample data and generated
+images with no network and no database, and nothing is saved anywhere (switch between admin, labeler, viewer and signed-out from the
+pill at the bottom; `?demo=0` turns it off).
+
+### Look and feel
+
+The pages share one design system: `base.css` (light and dark themes as CSS
+variables, typography, buttons, forms, cards, toasts, dialogs), plus
+`dashboard.css`, `labeling.css` and `viewer.css` for the individual screens.
+
+- **Light / dark mode** follows the operating system until the visitor picks one
+  with the sun/moon button; `theme.js` applies it before the first paint so there is
+  no flash. All colours are variables, and the palette passes WCAG AA contrast in
+  both themes.
+- **Fonts** are self-hosted in `ProjectCode/fonts/` (Fraunces for headings and a
+  Cambria-compatible face for text, so no third-party font service is contacted).
+  Cambria is used where installed.
+- Icons live in one sprite (`icons.svg`); effects (drifting plankton, waves,
+  confetti) in `fx.js`. Motion respects "reduce motion".
 
 ### Where secrets live
 
@@ -131,7 +178,8 @@ Copy-Item .env.example .env   # then fill in the real values
    `catalog_output/image_manifest.csv.gz`. Nothing needs redeploying: the
    dashboard reads the live data.
 
-If `supabase/migrations/001_init.sql` changes, apply it with
+Whenever a file in `supabase/migrations/` is new or changes (the first time that
+includes `002_labeling.sql`), apply them all with
 `python deploy/apply_migrations.py`. It is safe to re-run and checks the result.
 
 ### Deploys
@@ -210,4 +258,8 @@ for a limited time only.
 - **Some filter values are spelled inconsistently** in the source folder names
   (for example `0.1 Dilution` and `0.1 dilution`, or `1dilution` and
   `1 dilution`), so they appear as separate options.
-- **Labeling** isn't built yet (the `labeler` role grants nothing).
+- **The label categories are a placeholder** (cyanobacteria, diatom, other
+  organism, debris, blank, unsure). Edit `ProjectCode/labels.js` once the team and
+  Prof. Ahlgren settle on the real taxonomy.
+- **Bulk labeling is chunked**: selections are saved 200 images per request, so a
+  selection of thousands takes a moment to finish saving.

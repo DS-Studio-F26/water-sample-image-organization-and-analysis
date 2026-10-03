@@ -1,71 +1,111 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#eef4f2">
   <title>Privacy Policy — Water Sample Image Catalog</title>
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/fraunces-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/caladea-400.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="base.css">
 </head>
 
 <body>
-  <div class="dashboard-container narrow">
+  <a class="skip-link" href="#main">Skip to the content</a>
 
-    <header id="dashboard-header">
-      <div class="header-text">
-        <h1>Privacy Policy</h1>
-        <p><a href="index.html">← Back to the Water Sample Image Catalog</a></p>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="index.html" aria-label="Water Sample Image Catalog, home">
+        <img class="brand-mark" src="favicon.svg" alt="" width="40" height="40">
+        <span class="brand-text"><span class="brand-name">Water Sample</span><span class="brand-sub">Image Catalog</span></span>
+      </a>
+      <nav class="appnav" aria-label="Primary">
+        <a href="index.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-grid"/></svg>Catalog</a>
+        <a href="labeling.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Label images</a>
+      </nav>
+      <div class="appbar-actions">
+        <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg class="icon ti-moon" aria-hidden="true"><use href="icons.svg#i-moon"/></svg>
+          <svg class="icon ti-sun" aria-hidden="true"><use href="icons.svg#i-sun"/></svg>
+        </button>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <article class="page-card prose">
-      <p class="text-muted">Last updated: September 30, 2026</p>
+  <main id="main">
+    <div class="wrap narrow stack" style="--gap: 1.25rem">
 
-      <p>The Water Sample Image Catalog is a student project of the Clark University Data Science
-        Studio. Anyone can browse, view and download the images without an account. An account is
-        only needed to sign in to the project's admin tools.</p>
+      <section class="banner page-head" aria-labelledby="page-title">
+        <div class="banner-inner">
+          <p class="eyebrow">Your data, plainly</p>
+          <h1 id="page-title">Privacy <em>policy</em></h1>
+          <p class="lede">Last updated: October 3, 2026</p>
+        </div>
+        <div class="waves" aria-hidden="true"></div>
+      </section>
 
-      <h2>What we collect</h2>
-      <p>Only if you create an account or sign in:</p>
-      <ul>
-        <li>your <strong>email address</strong>;</li>
-        <li>if you sign in with Google, your <strong>name</strong> and <strong>profile picture</strong>
-          as provided by Google;</li>
-        <li>your <strong>role</strong> on this site (admin, labeler or viewer), and when your account
-          was created and last signed in;</li>
-        <li>if you use email and password, your password, which is stored only in hashed form.</li>
-      </ul>
-      <p>We don't collect anything about visitors who don't sign in.</p>
+      <article class="page-card prose">
+        <p>The Water Sample Image Catalog is a student project of the Clark University Data Science
+          Studio. Anyone can browse, view and download the images without an account. An account is
+          only needed to label images or to use the project's admin tools.</p>
 
-      <h2>Why we collect it</h2>
-      <p>To let you sign in, and to decide what each account is allowed to do on the site.</p>
+        <h2>What we collect</h2>
+        <p>Only if you create an account or sign in:</p>
+        <ul>
+          <li>your <strong>email address</strong>;</li>
+          <li>if you sign in with Google, your <strong>name</strong> and <strong>profile picture</strong>
+            as provided by Google;</li>
+          <li>your <strong>role</strong> on this site (admin, labeler or viewer), and when your account
+            was created and last signed in;</li>
+          <li>if you use email and password, your password, which is stored only in hashed form;</li>
+          <li>if you are a labeler, <strong>the labels you apply</strong>: each one is stored with your
+            account ID and the time you applied it, so the team can see how the labeling is going.</li>
+        </ul>
+        <p>We don't collect anything about visitors who don't sign in.</p>
 
-      <h2>Where it is stored</h2>
-      <p>Account data is stored by <a href="https://supabase.com" rel="noopener">Supabase</a>, which
-        provides this site's database and sign-in service. Signing in keeps a session token in your
-        browser's local storage until you sign out. The site and images are served by
-        <a href="https://www.cloudflare.com" rel="noopener">Cloudflare</a>. Like any web host,
-        Supabase and Cloudflare may keep standard technical logs, such as IP addresses, to operate
-        and secure their services.</p>
+        <h2>On your device</h2>
+        <p>Your choice of light or dark theme and a few display settings (for example thumbnail size)
+          are kept in your browser's local storage. They never leave your device. The site's fonts are
+          served from the site itself, not from a third-party font service.</p>
 
-      <h2>Sharing</h2>
-      <p>We don't sell your information or share it with anyone. It is visible only to the project's
-        admins, and only to manage accounts.</p>
+        <h2>Why we collect it</h2>
+        <p>To let you sign in, to decide what each account is allowed to do on the site, and to keep a
+          record of who labeled which images.</p>
 
-      <h2>Deleting your account</h2>
-      <p>Email us and we'll delete your account and its data.</p>
+        <h2>Where it is stored</h2>
+        <p>Account data is stored by <a href="https://supabase.com" rel="noopener">Supabase</a>, which
+          provides this site's database and sign-in service. Signing in keeps a session token in your
+          browser's local storage until you sign out. The site and images are served by
+          <a href="https://www.cloudflare.com" rel="noopener">Cloudflare</a>. Like any web host,
+          Supabase and Cloudflare may keep standard technical logs, such as IP addresses, to operate
+          and secure their services.</p>
 
-      <h2>Contact</h2>
-      <p><a href="mailto:watersampleimageorganization@gmail.com">watersampleimageorganization@gmail.com</a></p>
-    </article>
+        <h2>Sharing</h2>
+        <p>We don't sell your information or share it with anyone. Your account details are visible only
+          to the project's admins, and only to manage accounts and to see how many images each labeler has
+          labeled. Exported label files contain the images and their labels, not who applied them.</p>
+
+        <h2>Deleting your account</h2>
+        <p>Email us and we'll delete your account and its data.</p>
+
+        <h2>Contact</h2>
+        <p><a href="mailto:watersampleimageorganization@gmail.com">watersampleimageorganization@gmail.com</a></p>
+      </article>
+
+    </div>
 
     <footer class="site-footer">
-      <a href="index.html">Dashboard</a>
+      <a href="index.html">Catalog</a>
       <span aria-hidden="true">·</span>
       <span>Clark University Data Science Studio</span>
     </footer>
+  </main>
 
-  </div>
+  <script src="fx.js"></script>
+  <script src="ui.js"></script>
 </body>
 
 </html>
