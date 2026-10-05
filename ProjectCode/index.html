@@ -58,6 +58,7 @@
           <div class="hero-cta">
             <span class="glow-wrap"><a class="btn btn-lg btn-primary" href="#catalog"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-search"/></svg>Explore the catalog</a></span>
             <a class="btn btn-lg btn-light" href="labeling.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Start labeling</a>
+            <button type="button" class="btn btn-lg btn-light" id="text-size-btn" aria-haspopup="dialog"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-type"/></svg>Change Text Size</button>
           </div>
           <p class="hero-facts">
             <span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-camera"/></svg>FlowCam particle imagery</span>
@@ -69,33 +70,34 @@
       </section>
 
       <!-- Stat cards -->
+      <!-- The three middle cards open the folder table sorted their way (dashboard.js) -->
       <section class="stats-grid" aria-label="Catalog at a glance">
-        <article class="stat-card spot reveal" style="--i:0">
+        <article class="stat-card stat-static reveal" style="--i:0">
           <div class="stat-top"><span class="stat-label">Folders</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-folder"/></svg></div>
           <div class="stat-value" id="stat-folders">—</div>
           <div class="stat-sub">sample events</div>
         </article>
-        <article class="stat-card spot reveal" style="--i:1">
+        <article class="stat-card stat-link spot reveal" style="--i:1" role="button" tabindex="0" aria-controls="folders-card" data-sort="image_count" data-dir="desc" title="Show the folder table, largest folders first">
           <div class="stat-top"><span class="stat-label">Total images</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-image"/></svg></div>
           <div class="stat-value" id="stat-images">—</div>
-          <div class="stat-sub">particle crops</div>
+          <div class="stat-sub">particle crops<span class="visually-hidden">. Show the folder table, largest folders first</span></div>
         </article>
-        <article class="stat-card spot reveal" style="--i:2">
+        <article class="stat-card stat-link spot reveal" style="--i:2" role="button" tabindex="0" aria-controls="folders-card" data-sort="site_normalized" data-dir="asc" title="Show the folder table, sorted by site">
           <div class="stat-top"><span class="stat-label">Unique sites</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-map-pin"/></svg></div>
           <div class="stat-value" id="stat-sites">—</div>
-          <div class="stat-sub">water bodies</div>
+          <div class="stat-sub">water bodies<span class="visually-hidden">. Show the folder table, sorted by site</span></div>
         </article>
-        <article class="stat-card spot reveal" style="--i:3">
+        <article class="stat-card stat-link spot reveal" style="--i:3" role="button" tabindex="0" aria-controls="folders-card" data-sort="date" data-dir="asc" title="Show the folder table, oldest samples first">
           <div class="stat-top"><span class="stat-label">Date range</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-calendar"/></svg></div>
           <div class="stat-value small" id="stat-dates">—</div>
-          <div class="stat-sub">first to last sample</div>
+          <div class="stat-sub">first to last sample<span class="visually-hidden">. Show the folder table, oldest samples first</span></div>
         </article>
-        <article class="stat-card spot reveal" style="--i:4">
+        <article class="stat-card stat-static reveal" style="--i:4">
           <div class="stat-top"><span class="stat-label">PP / Raw split</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-layers"/></svg></div>
           <div class="stat-value small" id="stat-pp">—</div>
           <div class="split-bar" id="stat-pp-bar" aria-hidden="true"><span style="flex-basis:50%"></span><span style="flex-basis:50%"></span></div>
         </article>
-        <article class="stat-card spot reveal" id="stat-labeled-card" style="--i:5" hidden>
+        <article class="stat-card stat-static reveal" id="stat-labeled-card" style="--i:5" hidden>
           <div class="stat-top"><span class="stat-label">Labeled</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg></div>
           <div class="stat-value" id="stat-labeled">—</div>
           <div class="progress" aria-hidden="true"><span id="stat-labeled-bar" style="--value:0%"></span></div>
@@ -200,12 +202,12 @@
         <article class="card chart-card spot reveal">
           <h3><svg class="icon" aria-hidden="true"><use href="icons.svg#i-droplet"/></svg>Water body types</h3>
           <p class="chart-sub">Number of sample folders by kind of water body</p>
-          <div class="chart donut-wrap" id="chart-type" role="img" aria-label="Donut chart of folders by water body type"></div>
+          <div class="chart donut-wrap" id="chart-type"></div>
         </article>
         <article class="card chart-card spot reveal" style="--i:1">
           <h3><svg class="icon" aria-hidden="true"><use href="icons.svg#i-camera"/></svg>Capture mode</h3>
           <p class="chart-sub">Images captured by autoimage versus trigger</p>
-          <div class="chart donut-wrap" id="chart-capture" role="img" aria-label="Donut chart of images by capture mode"></div>
+          <div class="chart donut-wrap" id="chart-capture"></div>
         </article>
       </section>
 

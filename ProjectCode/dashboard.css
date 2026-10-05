@@ -3,7 +3,7 @@
  *
  *   1. Hero            4. Table + pager       7. Detail sheet
  *   2. Stat cards      5. Charts              8. Responsive
- *   3. Filters         6. QA log
+ *   3. Filters         6. QA log              9. Text-size dialog
  * ========================================================================== */
 
 
@@ -16,7 +16,8 @@
   max-width: 58rem;
   padding-block: clamp(2.2rem, 5vw, 4rem) clamp(6rem, 11vw, 8.5rem);
 }
-.hero h1 { font-size: clamp(2.5rem, 1.1rem + 5vw, 5rem); line-height: 1; letter-spacing: -0.025em; }
+/* Already huge, so it keeps its size when the visitor enlarges the text. */
+.hero h1 { font-size: clamp(calc(2.5 * var(--rem0)), calc(1.1 * var(--rem0) + 5vw), calc(5 * var(--rem0))); line-height: 1; letter-spacing: -0.025em; }
 .hero .lede { font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.3rem); }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.6rem; }
 .hero-facts { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin-top: 0.4rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.94); }
@@ -29,7 +30,7 @@
   position: relative;
   z-index: 3;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
   gap: 1rem;
   margin: -3.4rem clamp(0.6rem, 2.4vw, 1.8rem) 0;
 }
@@ -41,22 +42,34 @@
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-md);
-  transition: transform 0.35s var(--ease-out), box-shadow 0.35s;
+  transition: transform 0.35s var(--ease-out), box-shadow 0.35s, filter 0.35s;
 }
-.stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+/* Total images, Unique sites and Date range open the folder table (dashboard.js),
+   so they lift and glow. The other cards only inform: they do the opposite,
+   sinking and dimming. */
+.stat-link { cursor: pointer; }
+.stat-link:hover, .stat-link:focus-visible { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.stat-link:active { transform: translateY(-1px) scale(0.985); }
+.stat-static:hover {
+  transform: translateY(4px);
+  box-shadow: inset 0 2px 10px -4px rgba(0, 0, 0, 0.22), var(--shadow-sm);
+  filter: saturate(0.75) brightness(0.95);
+}
+:root[data-theme="dark"] .stat-static:hover { filter: saturate(0.7) brightness(0.8); }
 .stat-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--text-muted); }
 .stat-label { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
 .stat-icon { width: 1.3rem; height: 1.3rem; color: var(--primary); }
+/* The big numbers keep their size when the visitor enlarges the text (--rem0). */
 .stat-value {
   margin-top: 0.35rem;
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 1.2rem + 1.5vw, 2.5rem);
+  font-size: clamp(calc(1.8 * var(--rem0)), calc(1.2 * var(--rem0) + 1.5vw), calc(2.5 * var(--rem0)));
   font-weight: 650;
   line-height: 1.1;
   letter-spacing: -0.02em;
   font-variant-numeric: lining-nums tabular-nums;
 }
-.stat-value.small { font-size: clamp(1.15rem, 1rem + 0.5vw, 1.45rem); line-height: 1.35; letter-spacing: -0.01em; }
+.stat-value.small { font-size: clamp(calc(1.15 * var(--rem0)), calc(1 * var(--rem0) + 0.5vw), calc(1.45 * var(--rem0))); line-height: 1.35; letter-spacing: -0.01em; }
 .stat-sub { margin-top: 0.15rem; font-size: 0.85rem; color: var(--text-muted); }
 .split-bar { display: flex; height: 0.4rem; margin-top: 0.7rem; overflow: hidden; background: var(--surface-3); border-radius: 99px; }
 .split-bar span { display: block; height: 100%; transition: flex-basis 0.7s var(--ease-out); }
@@ -71,7 +84,7 @@
 .filters-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
 .filters-head .search-field { flex: 1 1 18rem; max-width: 36rem; }
 .filters-head h2 { font-size: 1.15rem; margin-right: 0.5rem; }
-.filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: 0.85rem; align-items: end; }
+.filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(10.5rem, 100%), 1fr)); gap: 0.85rem; align-items: end; }
 .filter-group { display: grid; gap: 0.3rem; min-width: 0; }
 .filter-group label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
 .filter-badge {
@@ -119,6 +132,10 @@
 /* 4. Table + pager --------------------------------------------------------------- */
 
 .table-card { margin-top: 1.25rem; }
+.table-card.flash { animation: card-flash 1.6s var(--ease-out); }
+@keyframes card-flash {
+  0%, 35% { box-shadow: 0 0 0 3px var(--primary), 0 0 0 9px var(--primary-soft), var(--shadow-md); }
+}
 .table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); }
 .results-count { font-size: 0.95rem; color: var(--text-2); }
 .results-count strong { font-family: var(--font-display); font-size: 1.15rem; color: var(--text); }
@@ -226,7 +243,9 @@ th[aria-sort="ascending"], th[aria-sort="descending"] { color: var(--primary-ink
 .chart-card h3 { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.2rem; font-size: 1.2rem; }
 .chart-card h3 .icon { color: var(--primary); }
 .chart-card .chart-sub { margin-bottom: 1rem; font-size: 0.88rem; color: var(--text-muted); }
-.chart { position: relative; width: 100%; min-height: 15rem; }
+/* Graphs are drawn at fixed pixel sizes, text included, so they keep their
+   size when the visitor enlarges the text; only titles and legends grow. */
+.chart { position: relative; width: 100%; min-height: calc(15 * var(--rem0)); }
 .chart svg { display: block; width: 100%; overflow: visible; }
 .chart text { font-family: var(--font-text); fill: var(--text-muted); font-size: 11.5px; }
 .chart .axis-label { fill: var(--text-2); font-size: 12.5px; font-weight: 700; }
@@ -235,6 +254,9 @@ th[aria-sort="ascending"], th[aria-sort="descending"] { color: var(--primary-ink
 .chart .bar-h { transform-box: fill-box; transform-origin: left center; animation: grow-x 0.9s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
 .chart .bar-v { transform-box: fill-box; transform-origin: center bottom; animation: grow-y 0.9s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 16ms); }
 .chart .hit { fill: transparent; cursor: default; }
+.chart g.item[data-value], .chart g.item[data-value] .hit { cursor: pointer; }
+.chart g.item.picked .axis-label { fill: var(--primary-ink); }
+:root[data-theme="dark"] .chart g.item.picked .axis-label { fill: var(--primary); }
 .chart g.item:hover .bar-h, .chart g.item:hover .bar-v { filter: brightness(1.18) saturate(1.1); }
 .chart g.item:hover .axis-label { fill: var(--text); }
 @keyframes grow-x { from { transform: scaleX(0); } }
@@ -259,9 +281,11 @@ th[aria-sort="ascending"], th[aria-sort="descending"] { color: var(--primary-ink
 .chart-tip.on { opacity: 1; }
 .chart-tip strong { display: block; font-family: var(--font-display); font-size: 0.95rem; }
 
-.donut-wrap { display: grid; grid-template-columns: minmax(10rem, 13.5rem) minmax(0, 1fr); gap: 1.6rem; align-items: center; }
+/* --rem0 keeps the donut (and the total in its middle) the same size at any text size. */
+.donut-wrap { display: grid; grid-template-columns: minmax(calc(10 * var(--rem0)), calc(13.5 * var(--rem0))) minmax(0, 1fr); gap: 1.6rem; align-items: center; }
 .donut svg { overflow: visible; }
 .donut .dseg { transform-box: view-box; transform-origin: center; animation: seg-in 0.9s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); transition: transform 0.25s var(--ease-spring), opacity 0.2s; cursor: default; }
+.donut .dseg[data-value] { cursor: pointer; }
 .donut.dim .dseg:not(.on) { opacity: 0.35; }
 .donut .dseg.on { transform: scale(1.045); }
 @keyframes seg-in { from { opacity: 0; transform: scale(0.82) rotate(-25deg); } }
@@ -273,6 +297,24 @@ th[aria-sort="ascending"], th[aria-sort="descending"] { color: var(--primary-ink
 .legend .sw { flex: none; width: 0.75rem; height: 0.75rem; background: var(--c); border-radius: 4px; }
 .legend .name { font-weight: 700; text-transform: capitalize; }
 .legend .count { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
+/* Legend entries that apply their filter when clicked (dashboard.js) */
+.legend li.pick { padding: 0; }
+.legend-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+.legend-btn[aria-pressed="true"] { background: var(--primary-soft); box-shadow: inset 0 0 0 1.5px var(--primary); }
+.legend-btn[aria-pressed="true"] .count { color: var(--text-2); }
 
 
 /* 6. QA log ----------------------------------------------------------------------- */
@@ -341,7 +383,7 @@ tr.qa-error td:first-child { color: var(--danger-ink); font-weight: 700; }
 .panel-header h2 { font-size: 1.25rem; line-height: 1.3; overflow-wrap: anywhere; }
 .panel-content { flex: 1; padding: 1.4rem 1.5rem 2rem; overflow-y: auto; overscroll-behavior: contain; }
 .detail-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.4rem; }
-.meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: 1rem 1.5rem; margin: 0 0 1.6rem; padding: 1.1rem 1.2rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-lg); }
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(10.5rem, 100%), 1fr)); gap: 1rem 1.5rem; margin: 0 0 1.6rem; padding: 1.1rem 1.2rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-lg); }
 .meta-grid dt { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--text-muted); }
 .meta-grid dd { margin: 0.1rem 0 0; font-weight: 700; overflow-wrap: anywhere; }
 .detail-images-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
@@ -351,7 +393,7 @@ tr.qa-error td:first-child { color: var(--danger-ink); font-weight: 700; }
 .img-controls .search-field { flex: 1 1 11rem; }
 .img-count { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
 
-.thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.4rem, 1fr)); gap: 0.6rem; }
+.thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(7.4rem, 100%), 1fr)); gap: 0.6rem; }
 .thumb {
   position: relative;
   aspect-ratio: 1;
@@ -415,4 +457,56 @@ tr.qa-error td:first-child { color: var(--danger-ink); font-weight: 700; }
 }
 @media (min-width: 761px) {
   #filters-toggle { display: none; }
+}
+
+/* Large text (theme.js sets data-text-big): stack the graphs as on a narrow
+   screen; the donut keeps its size. */
+:root[data-text-big] .chart-card, :root[data-text-big] .chart-card.span-5, :root[data-text-big] .chart-card.span-7 { grid-column: span 12; }
+:root[data-text-big] .donut-wrap { grid-template-columns: 1fr; justify-items: center; }
+:root[data-text-big] .donut { width: min(calc(13.5 * var(--rem0)), 100%); }
+:root[data-text-big] .donut-wrap .legend { width: 100%; }
+:root[data-text-big] .stats-grid { margin-inline: 0; }
+
+
+/* 9. Text-size dialog ------------------------------------------------------------------ */
+
+/* --ts is the size being previewed; the sample text and the Cancel/Apply
+   buttons are drawn at it (relative to 1x, hence --rem0) before it's applied. */
+.ts-dialog { --ts: 1; display: grid; gap: 1.1rem; }
+.ts-dialog > * { animation: row-in 0.45s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
+.ts-intro { font-size: 0.93rem; color: var(--text-muted); }
+.ts-control { display: flex; align-items: center; gap: 0.6rem; }
+.ts-range { display: grid; flex: 1; min-width: 0; }
+.ts-range input { width: 100%; height: 1.75rem; margin: 0; accent-color: var(--primary); cursor: pointer; }
+.ts-ticks { display: flex; justify-content: space-between; padding-inline: 0.2rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+.ts-value {
+  min-width: 4rem;
+  padding: 0.2rem 0.65rem;
+  font: 700 1rem var(--font-mono);
+  text-align: center;
+  color: var(--primary-ink);
+  background: var(--primary-soft);
+  border-radius: 99px;
+}
+:root[data-theme="dark"] .ts-value { color: var(--primary); }
+.ts-value.bump { animation: pop-in 0.3s var(--ease-spring); }
+.ts-preview {
+  max-height: 38vh;
+  overflow: auto;
+  padding: 1rem 1.15rem;
+  background: var(--surface-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r);
+}
+.ts-preview .eyebrow { font-size: calc(0.78 * var(--rem0) * var(--ts)); }
+.ts-sample-title { margin-top: 0.25em; font-family: var(--font-display); font-weight: 600; font-size: calc(1.3 * var(--rem0) * var(--ts)); line-height: 1.2; }
+.ts-sample-body { margin-top: 0.35em; font-size: calc(1.0625 * var(--rem0) * var(--ts)); color: var(--text-2); }
+.ts-preview .eyebrow, .ts-sample-title, .ts-sample-body { transition: font-size 0.25s var(--ease-out); }
+.ts-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.6rem; }
+.ts-actions .btn {
+  min-height: 2.7em;
+  padding: 0.55em 1.15em;
+  font-size: calc(0.92 * var(--rem0) * var(--ts));
+  border-radius: 0.8em;
+  transition: font-size 0.25s var(--ease-out), transform 0.18s var(--ease-out), background-color 0.2s, border-color 0.2s, box-shadow 0.25s, color 0.2s, filter 0.2s;
 }

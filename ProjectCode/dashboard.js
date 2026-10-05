@@ -644,6 +644,28 @@ function renderStats() {
   }
 }
 
+// Total images, Unique sites and Date range (the .stat-link cards) open the
+// folder table sorted by what they count, and bring it into view.
+function showSortedTable(column, direction) {
+  state.sortColumn = column;
+  state.sortDirection = direction;
+  state.currentPage = 1;
+  if (state.loaded) {  // before that, the first render applies this sort
+    saveStateToHash();
+    performSort();
+  }
+
+  const card = document.getElementById('folders-card');
+  card.scrollIntoView({ behavior: UI.reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  card.classList.remove('flash');
+  void card.offsetWidth;  // restart the highlight
+  card.classList.add('flash');
+  const header = document.querySelector(`th[data-col="${column}"] .th-btn`);
+  if (header) header.focus({ preventScroll: true });
+  const what = { image_count: 'image count, largest first', site_normalized: 'site', date: 'date, oldest first' }[column] || column;
+  UI.announce(`Folder table sorted by ${what}.`);
+}
+
 // 10. Charts (inline SVG, coloured with the theme's CSS variables, so a theme
 // switch restyles them without redrawing)
 
@@ -688,8 +710,37 @@ function renderCharts() {
   const cap = document.getElementById('chart-capture');
   if (site) renderSiteChart(site, data.sites);
   if (timeline) renderTimelineChart(timeline, data.months);
-  if (type) renderDonut(type, data.waterBodies, { index: state.catIndex && state.catIndex.water, unit: 'folders', noun: 'folders' });
-  if (cap) renderDonut(cap, captureEntries, { index: state.catIndex && state.catIndex.capture, unit: 'images', noun: 'images' });
+  if (type) renderDonut(type, data.waterBodies, { index: state.catIndex && state.catIndex.water, unit: 'folders', noun: 'folders', filterKey: 'water_body_type' });
+  if (cap) renderDonut(cap, captureEntries, { index: state.catIndex && state.catIndex.capture, unit: 'images', noun: 'images', filterKey: 'capture_mode' });
+}
+
+// A click on a graph's bar, slice or legend entry filters the catalog to it;
+// clicking the one already filtered on clears it. "Unknown" (no value) isn't
+// one of the filter's choices, so it can't be picked.
+function canPick(name) {
+  return !!name && name !== 'Unknown';
+}
+
+function pickHint(key, name) {
+  return state.filters[key] === name ? 'Click to clear this filter' : 'Click to filter to this';
+}
+
+function pickFilter(key, value) {
+  const before = state.filters[key];
+  setFilter(key, before === value ? '' : value);
+  const name = FILTER_NAMES[key];
+  UI.toast({
+    id: 'chart-filter', kind: 'info', duration: 5000,
+    message: state.filters[key] ? `Filtered to ${name}: ${displayFilterValue(key, value)}` : `Removed the ${name} filter`,
+    action: { label: 'Undo', onClick: () => setFilter(key, before) },
+  });
+}
+
+function setFilter(key, value) {
+  state.filters[key] = value;
+  const select = document.getElementById(`filter-${key}`);
+  if (select) select.value = value;
+  applyFilters();
 }
 
 const esc = UI.escapeHTML;
@@ -746,6 +797,13 @@ function bindTips(el) {
 
 function renderSiteChart(el, entries) {
   bindTips(el);
+  if (!el._pickBound) {
+    el._pickBound = true;
+    el.addEventListener('click', (e) => {
+      const item = e.target.closest && e.target.closest('g.item[data-value]');
+      if (item) pickFilter('site_normalized', item.dataset.value);
+    });
+  }
   const rows = entries.slice(0, 12);
   if (rows.length === 0) return noData(el);
   const total = entries.reduce((s, r) => s + r[1], 0) || 1;
@@ -763,7 +821,10 @@ function renderSiteChart(el, entries) {
     const y = i * rowH + 2;
     const bw = Math.max(4, (count / max) * barMax);
     const pct = ((count / total) * 100).toFixed(count / total < 0.1 ? 1 : 0);
-    g += `<g class="item" data-tip-title="${esc(titleCase(name))}" data-tip-body="${count.toLocaleString()} images · ${pct}% of the total">`
+    const pick = canPick(name);
+    const picked = pick && state.filters.site_normalized === name;
+    g += `<g class="item${picked ? ' picked' : ''}"${pick ? ` data-value="${esc(name)}"` : ''} data-tip-title="${esc(titleCase(name))}" `
+      + `data-tip-body="${count.toLocaleString()} images · ${pct}% of the total${pick ? ` · ${pickHint('site_normalized', name)}` : ''}">`
       + `<rect class="hit" x="0" y="${y}" width="${W}" height="${rowH}"/>`
       + `<text class="axis-label" x="${labelW - 10}" y="${y + rowH / 2}" dy="0.35em" text-anchor="end">${esc(truncateStr(titleCase(name), chars))}</text>`
       + `<rect class="bar-h" style="--i:${i}" x="${labelW}" y="${y + 5}" width="${bw}" height="${rowH - 10}" rx="6" fill="url(#gSite)"/>`
@@ -829,17 +890,23 @@ function renderDonut(el, entries, opts) {
   const size = 200, c = size / 2, R = 72, SW = 30;
   const C = 2 * Math.PI * R;
   const gap = entries.length > 1 ? 3 : 0;
+  const key = opts.filterKey;
+  const pickable = (name) => !!key && canPick(name);
   let cum = 0;
   let circles = '';
   entries.forEach(([name, value], i) => {
     const len = Math.max(1, (value / total) * C - gap);
     const pct = ((value / total) * 100).toFixed(value / total < 0.1 ? 1 : 0);
-    circles += `<circle class="dseg" data-i="${i}" style="--i:${i};stroke:${colorVar(opts.index, name)}" cx="${c}" cy="${c}" r="${R}" fill="none" stroke-width="${SW}" `
-      + `stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-cum * C}" data-tip-title="${esc(titleCase(name))}" data-tip-body="${value.toLocaleString()} ${opts.noun} · ${pct}%"/>`;
+    const pick = pickable(name);
+    circles += `<circle class="dseg" data-i="${i}"${pick ? ` data-value="${esc(name)}"` : ''} style="--i:${i};stroke:${colorVar(opts.index, name)}" cx="${c}" cy="${c}" r="${R}" fill="none" stroke-width="${SW}" `
+      + `stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-cum * C}" data-tip-title="${esc(titleCase(name))}" `
+      + `data-tip-body="${value.toLocaleString()} ${opts.noun} · ${pct}%${pick ? ` · ${pickHint(key, name)}` : ''}"/>`;
     cum += value / total;
   });
 
-  const donut = h('div', { class: 'donut' });
+  // Only the ring is an image: the legend's entries are buttons screen readers must reach.
+  const donut = h('div', { class: 'donut', role: 'img',
+    'aria-label': `Donut chart. ${entries.slice(0, 4).map(r => `${r[0]} ${r[1].toLocaleString()}`).join(', ')}.` });
   donut.innerHTML = `<svg viewBox="0 0 ${size} ${size}" width="100%" aria-hidden="true"><g transform="rotate(-90 ${c} ${c})">${circles}</g>`
     + `<text class="donut-center" x="${c}" y="${c}" dy="0.1em" text-anchor="middle">${compact(total)}</text>`
     + `<text class="donut-sub" x="${c}" y="${c + 20}" text-anchor="middle">${opts.unit}</text></svg>`;
@@ -847,13 +914,35 @@ function renderDonut(el, entries, opts) {
   const legend = h('ul', { class: 'legend' });
   entries.forEach(([name, value], i) => {
     const pct = ((value / total) * 100).toFixed(value / total < 0.1 ? 1 : 0);
-    const li = h('li', { 'data-i': String(i) },
+    const parts = [
       h('span', { class: 'sw', style: { '--c': colorVar(opts.index, name) } }),
       h('span', { class: 'name', text: name }),
-      h('span', { class: 'count', text: `${value.toLocaleString()} · ${pct}%` }));
-    legend.appendChild(li);
+      h('span', { class: 'count', text: `${value.toLocaleString()} · ${pct}%` })];
+    if (!pickable(name)) {
+      legend.appendChild(h('li', { 'data-i': String(i) }, parts));
+      return;
+    }
+    const on = state.filters[key] === name;
+    const btn = h('button', {
+      type: 'button', class: 'legend-btn', 'data-value': name, 'aria-pressed': String(on),
+      title: on ? 'Click to clear this filter' : `Show only ${FILTER_NAMES[key]}: ${name}`,
+      onclick: () => {
+        const hadFocus = document.activeElement === btn;
+        pickFilter(key, name);
+        // The legend was redrawn: keep keyboard focus on the same entry.
+        const again = [...el.querySelectorAll('.legend-btn')].find(b => b.dataset.value === name);
+        if (hadFocus && again) again.focus({ preventScroll: true });
+      },
+    }, parts);
+    legend.appendChild(h('li', { 'data-i': String(i), class: 'pick' }, btn));
   });
   el.append(donut, legend);
+  if (key) {
+    donut.addEventListener('click', (e) => {
+      const s = e.target.closest('.dseg[data-value]');
+      if (s) pickFilter(key, s.dataset.value);
+    });
+  }
 
   const setOn = (i) => {
     donut.classList.toggle('dim', i != null);
@@ -869,7 +958,6 @@ function renderDonut(el, entries, opts) {
     if (!s) return chartTip.hide();
     chartTip.show(s.dataset.tipTitle, s.dataset.tipBody, e.clientX, e.clientY - 4);
   });
-  el.setAttribute('aria-label', `Donut chart. ${entries.slice(0, 4).map(r => `${r[0]} ${r[1].toLocaleString()}`).join(', ')}.`);
 }
 
 // 11. QA Log
@@ -1198,8 +1286,77 @@ function loadStateFromHash() {
   }
 }
 
-// 14. Initialization
+// 14. Text size (theme.js applies and remembers it on every page)
+
+function openTextSizeDialog() {
+  const label = n => `${n.toFixed(1)}×`;
+  let pending = TextSize.get();
+
+  const range = h('input', {
+    type: 'range', min: String(TextSize.min), max: String(TextSize.max), step: '0.1',
+    value: String(pending), 'aria-label': 'Text size',
+  });
+  const readout = h('output', { class: 'ts-value' });
+  const smaller = h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Smaller text' }, UI.icon('minus'));
+  const larger = h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Larger text' }, UI.icon('plus'));
+  const cancel = h('button', { type: 'button', class: 'btn', text: 'Cancel' });
+  const apply = h('button', { type: 'button', class: 'btn btn-primary', text: 'Apply' });
+
+  const body = h('div', { class: 'ts-dialog' },
+    h('p', { class: 'ts-intro', style: { '--i': '0' },
+      text: 'Make the text on every page bigger, from 1× (the default) up to 4×. The example below shows the size before you apply it.' }),
+    h('div', { class: 'ts-control', style: { '--i': '1' } },
+      smaller,
+      h('div', { class: 'ts-range' }, range,
+        h('div', { class: 'ts-ticks', 'aria-hidden': 'true' }, ['1×', '2×', '3×', '4×'].map(t => h('span', { text: t })))),
+      larger, readout),
+    h('div', { class: 'ts-preview', style: { '--i': '2' } },
+      h('p', { class: 'eyebrow', text: 'Sample folder' }),
+      h('p', { class: 'ts-sample-title', text: 'Indian Lake, October 14, 2023' }),
+      h('p', { class: 'ts-sample-body', text: '380 FlowCam images of cyanobacteria and other plankton, ready to browse, download and label.' })),
+    h('div', { class: 'ts-actions', style: { '--i': '3' } }, cancel, apply));
+
+  function show(value, bump) {
+    pending = Math.min(TextSize.max, Math.max(TextSize.min, Math.round(value * 10) / 10));
+    range.value = String(pending);
+    range.setAttribute('aria-valuetext', `${pending.toFixed(1)} times`);
+    readout.textContent = label(pending);
+    body.style.setProperty('--ts', String(pending));
+    if (bump && !UI.reducedMotion()) {
+      readout.classList.remove('bump');
+      void readout.offsetWidth;  // restart the pop
+      readout.classList.add('bump');
+    }
+  }
+  range.addEventListener('input', () => show(Number(range.value), true));
+  smaller.addEventListener('click', () => show(pending - 0.1, true));
+  larger.addEventListener('click', () => show(pending + 0.1, true));
+  show(pending, false);
+
+  // Cancel, Esc and a click outside all close it without changing anything.
+  const dlg = UI.dialog({ title: 'Change text size', content: body, wide: true, closeButton: false, focus: range });
+  cancel.addEventListener('click', () => dlg.close());
+  apply.addEventListener('click', () => {
+    const changed = pending !== TextSize.get();
+    dlg.close();
+    TextSize.set(pending);
+    if (changed) UI.toast({ message: `Text size set to ${label(pending)}.`, kind: 'success', duration: 3000 });
+  });
+}
+
+// 15. Initialization
 document.addEventListener('DOMContentLoaded', async () => {
+  const textSizeBtn = document.getElementById('text-size-btn');
+  if (textSizeBtn) textSizeBtn.addEventListener('click', openTextSizeDialog);
+
+  document.querySelectorAll('.stat-link').forEach(card => {
+    const open = () => showSortedTable(card.dataset.sort, card.dataset.dir);
+    card.addEventListener('click', open);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    });
+  });
+
   // Setup search debounce
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
@@ -1286,8 +1443,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyFilters(false);
   });
 
-  // Re-draw charts on resize (debounced): their layout depends on the width
+  // Re-draw charts on resize (debounced) and text-size changes: their layout
+  // depends on the width
   window.addEventListener('resize', UI.debounce(() => { if (state.loaded) renderCharts(); }, 200));
+  TextSize.onChange(() => { if (state.loaded) renderCharts(); });
 
   // Go!
   await loadData();

@@ -29,7 +29,7 @@
         if (key === 'class' || key === 'className') el.className = value;
         else if (key === 'text') el.textContent = value;
         else if (key === 'dataset') Object.keys(value).forEach(function (k) { el.dataset[k] = value[k]; });
-        else if (key === 'style' && typeof value === 'object') Object.assign(el.style, value);
+        else if (key === 'style' && typeof value === 'object') setStyles(el, value);
         else if (key.slice(0, 2) === 'on' && typeof value === 'function') el.addEventListener(key.slice(2), value);
         else if (value === true) el.setAttribute(key, '');
         else el.setAttribute(key, value);
@@ -37,6 +37,14 @@
     }
     for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
     return el;
+  }
+
+  // Custom properties ('--c': ...) only take effect through setProperty.
+  function setStyles(el, styles) {
+    Object.keys(styles).forEach(function (name) {
+      if (name.slice(0, 2) === '--') el.style.setProperty(name, styles[name]);
+      else el.style[name] = styles[name];
+    });
   }
 
   function append(parent, child) {
@@ -212,10 +220,12 @@
     else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
   }
 
+  // opts: title, content, wide, onClose, closeButton (false: no x button; Esc
+  // and a click outside still close it), focus (element to focus first).
   function dialog(opts) {
     var returnTo = document.activeElement;
     var titleId = 'dlg-' + Math.random().toString(36).slice(2, 8);
-    var closeBtn = h('button', { type: 'button', class: 'close-btn', 'aria-label': 'Close' }, icon('x'));
+    var closeBtn = opts.closeButton === false ? null : h('button', { type: 'button', class: 'close-btn', 'aria-label': 'Close' }, icon('x'));
     var box = h('div', { class: 'modal' + (opts.wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId },
       h('div', { class: 'modal-header' }, h('h2', { id: titleId, text: opts.title }), closeBtn),
       h('div', { class: 'modal-body' }, opts.content));
@@ -232,12 +242,12 @@
       if (e.key === 'Escape') { e.stopPropagation(); close(); }
       else trapFocus(box, e);
     }
-    closeBtn.addEventListener('click', close);
+    if (closeBtn) closeBtn.addEventListener('click', close);
     backdrop.addEventListener('mousedown', function (e) { if (e.target === backdrop) close(); });
     document.addEventListener('keydown', onKey, true);
     document.body.appendChild(backdrop);
     document.body.classList.add('modal-open');
-    closeBtn.focus();
+    (opts.focus || closeBtn || box.querySelector(FOCUSABLE) || box).focus();
     return { close: close, el: box };
   }
 

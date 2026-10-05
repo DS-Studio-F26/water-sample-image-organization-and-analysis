@@ -1,7 +1,8 @@
 /**
  * Labeling workspace (labeling.html).
  *
- * Anyone can browse; admins and labelers can also label. Data comes from
+ * Anyone can browse; admins and labelers can also label (in demo mode, anyone
+ * can label the sample images). Data comes from
  * Supabase (window.sb, created in auth.js) and images from the Cloudflare
  * Worker. Only the `label` column is writable from the browser; labeled_by and
  * labeled_date are stamped by a database trigger (supabase/migrations/002_labeling.sql),
@@ -134,9 +135,12 @@
     const key = auth.user ? `${auth.user.id}|${role}` : 'anon';
     if (key === lastAuthKey) return;
     lastAuthKey = key;
-    state.user = auth.user;
+    // Demo mode (demo.js) is a sandbox on sample data: anyone may label there,
+    // signed in or not (as a guest), without touching their real account.
+    const demo = !!window.APP_DEMO;
+    state.user = auth.user || (demo ? Demo.guest : null);
     state.role = auth.user ? role : 'viewer';
-    state.canLabel = !!auth.user && (role === 'admin' || role === 'labeler');
+    state.canLabel = demo || (!!auth.user && (role === 'admin' || role === 'labeler'));
     renderRoleBanner();
     if (!state.booted) await boot();
     else { await refreshOverview(true); applyRoleToUi(); }

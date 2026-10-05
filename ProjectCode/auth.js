@@ -333,9 +333,6 @@
     if (error) {  // on success the browser is already navigating to Google
       setBusy(false);
       showMessage(friendlyError(error.message));
-    } else if (window.APP_DEMO) {
-      setBusy(false);
-      closeModal();
     }
   }
 

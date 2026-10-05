@@ -1,11 +1,15 @@
 /**
- * Light / dark theme. Loaded in <head> so the right theme is on <html> before
- * the first paint (no flash).
+ * Light / dark theme and text size. Loaded in <head> so both are on <html>
+ * before the first paint (no flash).
  *
  *   Theme.get()           'light' | 'dark'
  *   Theme.set(theme)      apply + remember (until the visitor picks again)
  *   Theme.toggle(button)  flip, with an expanding-circle reveal from `button`
  *   Theme.onChange(fn)    fn(theme) after every change (charts, canvas, ...)
+ *
+ *   TextSize.get()        the text scale, 1 (default) to 4
+ *   TextSize.set(scale)   apply + remember (rounded to 0.1)
+ *   TextSize.onChange(fn) fn(scale) after every change
  *
  * With no saved choice the theme follows the operating system, live.
  * Any element with [data-theme-toggle] becomes a toggle button.
@@ -100,5 +104,62 @@
     set: set,
     toggle: toggle,
     onChange: function (fn) { listeners.push(fn); },
+  };
+
+  // Text size. The scale multiplies the root font size (base.css), so every
+  // rem-sized text, gap and panel grows together and nothing overlaps; the few
+  // things that must not grow divide by it (--rem0). The breakpoints are in px,
+  // so data-text-big switches on the stacked layouts whenever the chosen size
+  // leaves less room than the side-by-side layouts need.
+  var SIZE_KEY = 'wsic-text-scale';
+  var SIZE_MIN = 1, SIZE_MAX = 4;
+  var BIG_BELOW = 1100;  // px of room, measured in 1x text
+  var sizeListeners = [];
+
+  function clampScale(value) {
+    var n = Math.round(Number(value) * 10) / 10;
+    return isFinite(n) ? Math.min(SIZE_MAX, Math.max(SIZE_MIN, n)) : SIZE_MIN;
+  }
+  function savedScale() {
+    try { return clampScale(localStorage.getItem(SIZE_KEY) || SIZE_MIN); } catch (e) { return SIZE_MIN; }
+  }
+
+  var scale = savedScale();
+
+  function fitLayout() {
+    if (scale > 1 && window.innerWidth / scale < BIG_BELOW) root.setAttribute('data-text-big', '');
+    else root.removeAttribute('data-text-big');
+  }
+
+  function applyScale(value) {
+    scale = value;
+    if (scale === 1) root.style.removeProperty('--text-scale');
+    else root.style.setProperty('--text-scale', String(scale));
+    fitLayout();
+  }
+
+  function setScale(value) {
+    var next = clampScale(value);
+    try {
+      if (next === 1) localStorage.removeItem(SIZE_KEY); else localStorage.setItem(SIZE_KEY, String(next));
+    } catch (e) { /* private mode: still works for this visit */ }
+    if (next === scale) return;
+    applyScale(next);
+    sizeListeners.forEach(function (fn) { try { fn(scale); } catch (e) { console.error(e); } });
+  }
+
+  applyScale(scale);
+  var fitFrame = null;
+  window.addEventListener('resize', function () {
+    if (fitFrame) return;
+    fitFrame = window.requestAnimationFrame(function () { fitFrame = null; fitLayout(); });
+  });
+
+  window.TextSize = {
+    min: SIZE_MIN,
+    max: SIZE_MAX,
+    get: function () { return scale; },
+    set: setScale,
+    onChange: function (fn) { sizeListeners.push(fn); },
   };
 })();
