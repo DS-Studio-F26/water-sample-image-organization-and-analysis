@@ -1,24 +1,26 @@
 /**
- * Demo mode: the whole site running on made-up data, with no network and no
- * database. Turn it on by adding ?demo to any page's address:
+ * Demo mode: the catalog and labeling running on made-up data. Turn it on by
+ * adding ?demo to any page's address, and off with ?demo=0:
  *
- *   labeling.html?demo            sign in as an admin
- *   labeling.html?demo=labeler    ...or as a labeler / viewer / signed-out visitor
- *   index.html?demo=0             turn it off again
+ *   labeling.html?demo
+ *   index.html?demo=0
  *
- * It swaps window.supabase for a small in-memory imitation (the handful of
- * calls the pages make) and generates microscope-style images as SVG, so the
- * labeling workflow can be tried -- or shown to the professor -- before the
- * real database has the labeling migration, or offline. Labels are kept in the
- * browser tab's session storage; nothing is ever sent anywhere.
+ * It swaps the data side of window.supabase for a small in-memory imitation
+ * (the handful of calls the pages make) and generates microscope-style images
+ * as SVG, so the labeling workflow can be tried -- or shown to the professor --
+ * before the real database has the labeling migration, or offline. Anyone may
+ * label the sample images, signed in or not. Labels are kept in the browser
+ * tab's session storage; nothing is ever sent anywhere.
+ *
+ * Accounts stay real: sign-in, sign-out, the header and your role all come from
+ * Supabase as usual, so entering or leaving the demo never signs you in or out.
  *
  * The 45 folders below are a real sample of the catalog's folder names.
  */
 (function () {
   'use strict';
 
-  var FLAG = 'wsic-demo', PERSONA = 'wsic-demo-persona', DATA = 'wsic-demo-data';
-  var PERSONAS = ['admin', 'labeler', 'viewer', 'anon'];
+  var FLAG = 'wsic-demo', DATA = 'wsic-demo-data';
 
   function session(key, value) {
     try {
@@ -31,14 +33,14 @@
   var params = new URLSearchParams(location.search);
   if (params.has('demo')) {
     var arg = params.get('demo');
-    if (arg === '0' || arg === 'off') { session(FLAG, null); session(PERSONA, null); session(DATA, null); }
-    else {
-      session(FLAG, '1');
-      if (PERSONAS.indexOf(arg) >= 0) session(PERSONA, arg);
-    }
+    if (arg === '0' || arg === 'off') { session(FLAG, null); session(DATA, null); }
+    else session(FLAG, '1');
   }
   if (session(FLAG) !== '1') return;
   window.APP_DEMO = true;
+
+  // The real supabase-js (null if the CDN didn't load), kept for accounts.
+  var realLib = window.supabase && window.supabase.createClient ? window.supabase : null;
 
   // ---------------------------------------------------------------------------
   // Data
@@ -200,15 +202,12 @@
 
   // --- folders, images, people ---------------------------------------------------------
 
+  // Made-up labelers; the admin page lists them alongside your real account.
   var USERS = [
-    { id: 'demo-admin', email: 'you@demo.example', full_name: 'Demo Admin', provider: 'google', role: 'admin', created_at: '2026-08-20T14:02:00Z', last_sign_in_at: new Date().toISOString() },
-    { id: 'demo-labeler-1', email: 'you@demo.example', full_name: 'Demo Labeler', provider: 'email', role: 'labeler', created_at: '2026-09-02T10:11:00Z', last_sign_in_at: new Date().toISOString() },
-    { id: 'demo-viewer', email: 'you@demo.example', full_name: 'Demo Viewer', provider: 'email', role: 'viewer', created_at: '2026-09-18T09:30:00Z', last_sign_in_at: new Date().toISOString() },
     { id: 'demo-labeler-2', email: 'avery.lin@example.com', full_name: 'Avery Lin', provider: 'google', role: 'labeler', created_at: '2026-09-04T16:45:00Z', last_sign_in_at: '2026-10-02T21:08:00Z' },
     { id: 'demo-labeler-3', email: 'sam.okafor@example.com', full_name: 'Sam Okafor', provider: 'email', role: 'labeler', created_at: '2026-09-06T12:20:00Z', last_sign_in_at: '2026-10-01T18:40:00Z' },
     { id: 'demo-viewer-2', email: 'riley.chen@example.com', full_name: 'Riley Chen', provider: 'google', role: 'viewer', created_at: '2026-09-25T08:05:00Z', last_sign_in_at: '2026-09-30T13:12:00Z' },
   ];
-  var ME = { admin: 'demo-admin', labeler: 'demo-labeler-1', viewer: 'demo-viewer' };
 
   var folders = FOLDER_DATA.map(function (d) {
     return {
@@ -330,32 +329,34 @@
       }).sort(function (a, b) { return a.folder_name.localeCompare(b.folder_name); });
     },
     images: function () { return images; },
-    profiles: function () {
-      var u = currentUser();
-      return u ? [{ id: u.id, role: u.role, email: u.email, full_name: u.full_name }] : [];
-    },
+    profiles: function () { return []; },  // only used when the real client is missing (no one is signed in then)
   };
 
   // ---------------------------------------------------------------------------
-  // Sign-in state
+  // Who is acting: your real account (auth.js), or a guest when signed out
   // ---------------------------------------------------------------------------
 
-  var persona = session(PERSONA);
-  if (PERSONAS.indexOf(persona) < 0) persona = 'admin';
-  var listeners = [];
+  var GUEST = { id: 'demo-guest', email: null };
 
-  function currentUser() {
-    if (persona === 'anon') return null;
-    var u = USERS.filter(function (x) { return x.id === ME[persona]; })[0];
-    return u ? Object.assign({}, u, { role: persona === 'admin' ? 'admin' : persona }) : null;
+  function signedIn() {
+    var a = window.Auth && window.Auth.current();
+    return a && a.user ? a : null;
   }
-  function authUser() { var u = currentUser(); return u ? { id: u.id, email: u.email } : null; }
-  function setPersona(next, quiet) {
-    persona = next;
-    session(PERSONA, next);
-    if (!quiet) listeners.forEach(function (cb) { cb(next === 'anon' ? 'SIGNED_OUT' : 'SIGNED_IN', null); });
+  function actor() { var a = signedIn(); return a ? a.user : GUEST; }
+  function realRole() { var a = signedIn(); return a ? ((a.profile && a.profile.role) || 'viewer') : null; }
+
+  // The sample people, plus your real account at the top when you're signed in.
+  function people() {
+    var a = signedIn();
+    if (!a) return USERS.slice();
+    var meta = a.user.app_metadata || {};
+    var now = new Date().toISOString();
+    return [{
+      id: a.user.id, email: a.user.email, full_name: (a.profile && a.profile.full_name) || null,
+      provider: (meta.providers || [meta.provider || 'email']).join(','), role: realRole(),
+      created_at: a.user.created_at || now, last_sign_in_at: a.user.last_sign_in_at || now,
+    }].concat(USERS);
   }
-  function canLabel() { return persona === 'admin' || persona === 'labeler'; }
 
   // ---------------------------------------------------------------------------
   // The query builder (the subset of supabase-js the pages use)
@@ -425,11 +426,10 @@
   P.runUpdate = function () {
     var q = this;
     if (q.table !== 'images') return err('Updates are not supported on ' + q.table);
-    if (!canLabel()) return err('new row violates row-level security policy for table "images"', '42501');
     if (failRate && Math.random() < failRate) return err('Simulated network failure (demo ?fail=' + failRate + ')', 'DEMO_FAIL');
     var keys = Object.keys(q.patch);
     if (keys.some(function (k) { return k !== 'label'; })) return err('permission denied for table images', '42501');
-    var me = authUser(), now = new Date().toISOString();
+    var me = actor(), now = new Date().toISOString();
     images.filter(function (r) { return q.filters.every(function (f) { return f(r); }); }).forEach(function (r) {
       var value = q.patch.label == null ? null : q.patch.label;
       if (value === r.label) return;
@@ -444,30 +444,29 @@
   };
 
   P.runRpc = function () {
-    var name = this.table, a = this.args, me = authUser();
+    var name = this.table, a = this.args, me = actor(), admin = realRole() === 'admin';
     var rows;
     if (name === 'my_labeling_count') {
-      if (!me) return err('not signed in', '42501');
       return { data: images.filter(function (x) { return x.labeled_by === me.id; }).length, error: null };
     }
-    if (name === 'can_label') return { data: canLabel(), error: null };
-    if (name === 'is_admin') return { data: persona === 'admin', error: null };
+    if (name === 'can_label') return { data: true, error: null };
+    if (name === 'is_admin') return { data: admin, error: null };
     if (name === 'admin_list_users') {
-      if (persona !== 'admin') return err('Not authorized', '42501');
-      rows = USERS.map(function (u) { return Object.assign({ avatar_url: null }, u); });
+      if (!admin) return err('Not authorized', '42501');
+      rows = people().map(function (u) { return Object.assign({ avatar_url: null }, u); });
     } else if (name === 'admin_labeling_by_user') {
-      if (persona !== 'admin') return err('Not authorized', '42501');
-      rows = USERS.map(function (u) {
+      if (!admin) return err('Not authorized', '42501');
+      var guest = { id: GUEST.id, email: null, full_name: 'Guest (not signed in)', role: 'viewer' };
+      rows = people().concat([guest]).map(function (u) {
         var mine = images.filter(function (x) { return x.labeled_by === u.id; });
         var dates = mine.map(function (x) { return x.labeled_date; }).sort();
         return { id: u.id, email: u.email, full_name: u.full_name, role: u.role, labeled_count: mine.length, last_labeled_at: dates.length ? dates[dates.length - 1] : null };
       }).sort(function (x, y) { return y.labeled_count - x.labeled_count; });
     } else if (name === 'set_user_role') {
-      if (persona !== 'admin') return err('Only admins can change roles', '42501');
+      if (!admin) return err('Only admins can change roles', '42501');
+      if (a.target === me.id) return err("Demo mode can't change your real account's role", 'DEMO');
       var target = USERS.filter(function (u) { return u.id === a.target; })[0];
       if (!target) return err('No user with id ' + a.target, 'P0002');
-      var admins = USERS.filter(function (u) { return u.role === 'admin' && u.id !== target.id; });
-      if (target.role === 'admin' && a.new_role !== 'admin' && !admins.length) return err('Cannot remove the last admin', 'P0001');
       target.role = a.new_role;
       stored.roles[target.id] = a.new_role;
       persist();
@@ -479,32 +478,41 @@
   };
 
   // ---------------------------------------------------------------------------
-  // The client auth.js talks to
+  // The client auth.js talks to: made-up data, real accounts
   // ---------------------------------------------------------------------------
 
-  var client = {
-    from: function (t) { return new Query(t); },
-    rpc: function (name, args) { return new Query(name, 'rpc', args); },
-    auth: {
-      getSession: function () { var u = authUser(); return Promise.resolve({ data: { session: u ? { user: u } : null }, error: null }); },
-      onAuthStateChange: function (cb) { listeners.push(cb); return { data: { subscription: { unsubscribe: function () {} } } }; },
-      signOut: function () { setPersona('anon'); return Promise.resolve({ error: null }); },
-      signInWithPassword: function () { setPersona(persona === 'anon' ? 'admin' : persona); return delay().then(function () { return { data: {}, error: null }; }); },
-      signInWithOAuth: function () { setPersona(persona === 'anon' ? 'admin' : persona); return Promise.resolve({ data: {}, error: null }); },
-      signUp: function () { return delay().then(function () { return { data: { session: null }, error: null }; }); },
-      resetPasswordForEmail: function () { return delay().then(function () { return { data: {}, error: null }; }); },
-      updateUser: function () { return delay().then(function () { return { data: {}, error: null }; }); },
+  // Without supabase-js (offline, or blocked) nobody can sign in, but the
+  // demo data still works.
+  function noSignIn() {
+    return Promise.resolve({ data: null, error: { message: 'Network error: the sign-in service did not load.' } });
+  }
+  var offlineAuth = {
+    getSession: function () { return Promise.resolve({ data: { session: null }, error: null }); },
+    onAuthStateChange: function () { return { data: { subscription: { unsubscribe: function () {} } } }; },
+    signOut: function () { return Promise.resolve({ error: null }); },
+    signInWithPassword: noSignIn, signInWithOAuth: noSignIn, signUp: noSignIn,
+    resetPasswordForEmail: noSignIn, updateUser: noSignIn,
+  };
+
+  window.supabase = {
+    createClient: function (url, key) {
+      var real = null;
+      try { real = realLib ? realLib.createClient(url, key) : null; } catch (e) { real = null; }
+      return {
+        // Your profile (and so your role) is read from the real database.
+        from: function (t) { return t === 'profiles' && real ? real.from(t) : new Query(t); },
+        rpc: function (name, args) { return new Query(name, 'rpc', args); },
+        auth: real ? real.auth : offlineAuth,
+      };
     },
   };
-  window.supabase = { createClient: function () { return client; } };
 
   window.Demo = {
     imageUrl: imageUrl,
-    persona: function () { return persona; },
-    setPersona: setPersona,
+    guest: GUEST,  // who labels when no one is signed in
     truth: function (relPath) { return specimen(relPath).truth; },
     reset: function () { session(DATA, null); location.reload(); },
-    exit: function () { session(FLAG, null); session(PERSONA, null); session(DATA, null); },
+    exit: function () { session(FLAG, null); session(DATA, null); },
   };
 
   // ---------------------------------------------------------------------------
@@ -517,14 +525,9 @@
     pill.setAttribute('role', 'region');
     pill.setAttribute('aria-label', 'Demo mode');
     pill.innerHTML = '<span>Demo mode · sample data, nothing is saved</span>'
-      + '<label class="visually-hidden" for="demo-persona">Viewing as</label>'
-      + '<select id="demo-persona"><option value="admin">Admin</option><option value="labeler">Labeler</option><option value="viewer">Viewer</option><option value="anon">Signed out</option></select>'
       + '<a href="#" id="demo-reset">Reset</a><a href="?demo=0" id="demo-exit">Exit</a>';
     if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) document.body.insertBefore(pill, document.body.firstChild);
     else document.body.appendChild(pill);
-    var select = pill.querySelector('select');
-    select.value = persona;
-    select.addEventListener('change', function () { setPersona(select.value); });
     pill.querySelector('#demo-reset').addEventListener('click', function (e) { e.preventDefault(); window.Demo.reset(); });
   });
 })();

@@ -67,6 +67,11 @@
   --appbar-h: 4rem;
   --ease-out: cubic-bezier(0.22, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Text size (theme.js): 1 to 4. Everything in rem grows with it; --rem0 is a
+     rem that doesn't, for the few things that keep their size. */
+  --text-scale: 1;
+  --rem0: calc(1rem / var(--text-scale));
 }
 
 /* Light: "Daylight" */
@@ -248,6 +253,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
+  font-size: calc(100% * var(--text-scale));
   -webkit-text-size-adjust: 100%;
   scroll-padding-top: calc(var(--appbar-h) + 1rem);
 }
@@ -485,6 +491,18 @@ main:focus { outline: none; }
   .brand-text { display: none; }
 }
 
+/* Large text (theme.js sets data-text-big when the chosen size leaves too
+   little room): the narrow-screen app bar, and it scrolls away instead of
+   covering a big share of the window (so sticky things below it stop leaving
+   room for it). */
+:root[data-text-big] { --appbar-h: 0rem; }
+:root[data-text-big] .appbar { position: relative; }
+:root[data-text-big] .appbar-inner { flex-wrap: wrap; row-gap: 0; padding-block: 0.4rem 0.2rem; }
+:root[data-text-big] .brand-sub { display: none; }
+:root[data-text-big] .appnav { order: 3; width: 100%; margin: 0; overflow-x: auto; padding-bottom: 0.35rem; }
+:root[data-text-big] .user-chip .auth-email { display: none; }
+:root[data-text-big] .user-chip { padding-right: 0.25rem; }
+
 
 /* 5. Buttons ---------------------------------------------------------------- */
 
@@ -566,6 +584,9 @@ a.btn { display: inline-flex; }
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;
+  /* Buttons don't inherit the font size; this is the browser's 13.33px at 1x,
+     so the icon grows with the chosen text size too. */
+  font-size: 0.8333rem;
   color: var(--text-2);
   background: var(--surface-2);
   border: 1px solid var(--border-strong);
@@ -1068,7 +1089,7 @@ body.modal-open { overflow: hidden; }
 .btn-google:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 /* Keyboard-shortcut sheet */
-.shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.4rem 2rem; }
+.shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr)); gap: 1.4rem 2rem; }
 .shortcut-group h3 { font-size: 1rem; margin-bottom: 0.6rem; color: var(--primary-ink); }
 :root[data-theme="dark"] .shortcut-group h3 { color: var(--primary); }
 .shortcut-group dl { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 0.9rem; margin: 0; align-items: center; }
@@ -1156,7 +1177,7 @@ body.modal-open { overflow: hidden; }
 
 /* 11. Admin + account bits ---------------------------------------------------- */
 
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 1rem; }
 .kpi {
   display: grid;
   gap: 0.2rem;
@@ -1247,10 +1268,8 @@ body.modal-open .demo-pill { opacity: 0; pointer-events: none; }
   /* On phones the pill becomes a thin ribbon at the very top, out of the way. */
   .demo-pill { position: relative; left: auto; bottom: auto; z-index: 55; justify-content: center; max-width: none; width: 100%; padding: 0.3rem 0.6rem; border-radius: 0; border-width: 0 0 1px; box-shadow: none; font-size: 0.78rem; }
   body.modal-open .demo-pill { opacity: 1; pointer-events: auto; }
-  .demo-pill select { min-height: 1.6rem; font-size: 0.78rem; }
 }
 .demo-pill { transition: opacity 0.2s; }
-.demo-pill select { width: auto; min-height: 1.9rem; padding: 0.15rem 1.7rem 0.15rem 0.5rem; font-size: 0.82rem; border-radius: 99px; background-color: var(--surface); }
 .demo-pill a { color: inherit; }
 
 

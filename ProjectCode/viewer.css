@@ -266,7 +266,22 @@
   }
   .viewer-side { border-left: 0; border-top: 1px solid var(--border); padding: 1rem; gap: 1rem; }
   .viewer-strip { display: none; }
-  .viewer-labels { grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); }
+  .viewer-labels { grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)); }
   .viewer-nav { width: 2.6rem; height: 2.6rem; }
   .viewer-hint { display: none; }
 }
+
+/* Large text (theme.js): the same stacked layout, so the side panel can't
+   crowd out the image. */
+:root[data-text-big] .viewer-shell {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 46%);
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: 0;
+}
+:root[data-text-big] .viewer-side { border-left: 0; border-top: 1px solid var(--border); padding: 1rem; gap: 1rem; }
+:root[data-text-big] .viewer-strip { display: none; }
+:root[data-text-big] .viewer-labels { grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)); }
+:root[data-text-big] .viewer-hint { display: none; }

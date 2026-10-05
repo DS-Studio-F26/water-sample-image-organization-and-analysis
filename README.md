@@ -114,9 +114,11 @@ flowchart LR
   clears, `L` opens a tile's label menu, `Z` undoes, `?` lists every shortcut.
 
 Not set up yet, or want to show it off? Add `?demo` to any page's address
-(`labeling.html?demo`). Demo mode runs the whole site on sample data and generated
-images with no network and no database, and nothing is saved anywhere (switch between admin, labeler, viewer and signed-out from the
-pill at the bottom; `?demo=0` turns it off).
+(`labeling.html?demo`). Demo mode runs the catalog and labeling on sample data and
+generated images with no database, and nothing is saved anywhere. Anyone can label
+the sample images, signed in or not. Accounts stay real: the demo never signs you in
+or out, and your header and role are your own. The pill at the bottom has Reset and
+Exit; `?demo=0` also turns it off.
 
 ### Look and feel
 
@@ -128,6 +130,12 @@ variables, typography, buttons, forms, cards, toasts, dialogs), plus
   with the sun/moon button; `theme.js` applies it before the first paint so there is
   no flash. All colours are variables, and the palette passes WCAG AA contrast in
   both themes.
+- **Text size**: **Change Text Size** on the catalog page sets 1× to 4× (in 0.1
+  steps) for every page, remembered in the browser. `theme.js` scales the root font
+  size, so rem-sized text, spacing and panels grow together, and switches to the
+  stacked narrow-screen layouts when the text gets large for the window. The big stat
+  numbers, the donut totals, the hero title and the text inside the graphs keep their
+  size (they use `--rem0` or pixels).
 - **Fonts** are self-hosted in `ProjectCode/fonts/` (Fraunces for headings and a
   Cambria-compatible face for text, so no third-party font service is contacted).
   Cambria is used where installed.
