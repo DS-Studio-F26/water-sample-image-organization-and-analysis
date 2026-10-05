@@ -44,9 +44,9 @@
   box-shadow: var(--shadow-md);
   transition: transform 0.35s var(--ease-out), box-shadow 0.35s, filter 0.35s;
 }
-/* Total images, Unique sites and Date range open the folder table (dashboard.js),
-   so they lift and glow. The other cards only inform: they do the opposite,
-   sinking and dimming. */
+/* Unique sites, Date range and PP / Raw split open their dropdown under "Find a
+   sample" (dashboard.js), so they lift and glow. The other cards only inform:
+   they do the opposite, sinking and dimming. */
 .stat-link { cursor: pointer; }
 .stat-link:hover, .stat-link:focus-visible { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .stat-link:active { transform: translateY(-1px) scale(0.985); }
@@ -87,6 +87,13 @@
 .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(10.5rem, 100%), 1fr)); gap: 0.85rem; align-items: end; }
 .filter-group { display: grid; gap: 0.3rem; min-width: 0; }
 .filter-group label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+/* The dropdown a stat card opened glows for a moment (dashboard.js) */
+.filter-group.flash select { animation: field-flash 1.6s var(--ease-out); }
+.filter-group.flash label { color: var(--primary-ink); transition: color 0.3s; }
+:root[data-theme="dark"] .filter-group.flash label { color: var(--primary); }
+@keyframes field-flash {
+  0%, 40% { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft), 0 0 18px -2px var(--primary-glow); }
+}
 .filter-badge {
   display: inline-grid;
   place-items: center;
@@ -132,10 +139,6 @@
 /* 4. Table + pager --------------------------------------------------------------- */
 
 .table-card { margin-top: 1.25rem; }
-.table-card.flash { animation: card-flash 1.6s var(--ease-out); }
-@keyframes card-flash {
-  0%, 35% { box-shadow: 0 0 0 3px var(--primary), 0 0 0 9px var(--primary-soft), var(--shadow-md); }
-}
 .table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); }
 .results-count { font-size: 0.95rem; color: var(--text-2); }
 .results-count strong { font-family: var(--font-display); font-size: 1.15rem; color: var(--text); }

@@ -70,32 +70,33 @@
       </section>
 
       <!-- Stat cards -->
-      <!-- The three middle cards open the folder table sorted their way (dashboard.js) -->
+      <!-- Unique sites, Date range and PP / Raw split open their dropdown in "Find a sample" (dashboard.js) -->
       <section class="stats-grid" aria-label="Catalog at a glance">
         <article class="stat-card stat-static reveal" style="--i:0">
           <div class="stat-top"><span class="stat-label">Folders</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-folder"/></svg></div>
           <div class="stat-value" id="stat-folders">—</div>
           <div class="stat-sub">sample events</div>
         </article>
-        <article class="stat-card stat-link spot reveal" style="--i:1" role="button" tabindex="0" aria-controls="folders-card" data-sort="image_count" data-dir="desc" title="Show the folder table, largest folders first">
+        <article class="stat-card stat-static reveal" style="--i:1">
           <div class="stat-top"><span class="stat-label">Total images</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-image"/></svg></div>
           <div class="stat-value" id="stat-images">—</div>
-          <div class="stat-sub">particle crops<span class="visually-hidden">. Show the folder table, largest folders first</span></div>
+          <div class="stat-sub">particle crops</div>
         </article>
-        <article class="stat-card stat-link spot reveal" style="--i:2" role="button" tabindex="0" aria-controls="folders-card" data-sort="site_normalized" data-dir="asc" title="Show the folder table, sorted by site">
+        <article class="stat-card stat-link spot reveal" style="--i:2" role="button" tabindex="0" aria-controls="filter-site_normalized" data-filter="site_normalized" title="Choose a site">
           <div class="stat-top"><span class="stat-label">Unique sites</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-map-pin"/></svg></div>
           <div class="stat-value" id="stat-sites">—</div>
-          <div class="stat-sub">water bodies<span class="visually-hidden">. Show the folder table, sorted by site</span></div>
+          <div class="stat-sub">water bodies<span class="visually-hidden">. Choose a site</span></div>
         </article>
-        <article class="stat-card stat-link spot reveal" style="--i:3" role="button" tabindex="0" aria-controls="folders-card" data-sort="date" data-dir="asc" title="Show the folder table, oldest samples first">
+        <article class="stat-card stat-link spot reveal" style="--i:3" role="button" tabindex="0" aria-controls="filter-date" data-filter="date" title="Choose a date">
           <div class="stat-top"><span class="stat-label">Date range</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-calendar"/></svg></div>
           <div class="stat-value small" id="stat-dates">—</div>
-          <div class="stat-sub">first to last sample<span class="visually-hidden">. Show the folder table, oldest samples first</span></div>
+          <div class="stat-sub">first to last sample<span class="visually-hidden">. Choose a date</span></div>
         </article>
-        <article class="stat-card stat-static reveal" style="--i:4">
+        <article class="stat-card stat-link spot reveal" style="--i:4" role="button" tabindex="0" aria-controls="filter-is_pp" data-filter="is_pp" title="Choose post-processed or raw folders">
           <div class="stat-top"><span class="stat-label">PP / Raw split</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-layers"/></svg></div>
           <div class="stat-value small" id="stat-pp">—</div>
           <div class="split-bar" id="stat-pp-bar" aria-hidden="true"><span style="flex-basis:50%"></span><span style="flex-basis:50%"></span></div>
+          <span class="visually-hidden">Choose post-processed or raw folders</span>
         </article>
         <article class="stat-card stat-static reveal" id="stat-labeled-card" style="--i:5" hidden>
           <div class="stat-top"><span class="stat-label">Labeled</span><svg class="icon stat-icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg></div>

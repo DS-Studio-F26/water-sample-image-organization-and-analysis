@@ -644,26 +644,46 @@ function renderStats() {
   }
 }
 
-// Total images, Unique sites and Date range (the .stat-link cards) open the
-// folder table sorted by what they count, and bring it into view.
-function showSortedTable(column, direction) {
-  state.sortColumn = column;
-  state.sortDirection = direction;
-  state.currentPage = 1;
-  if (state.loaded) {  // before that, the first render applies this sort
-    saveStateToHash();
-    performSort();
-  }
+// Unique sites, Date range and PP / Raw split (the .stat-link cards) open their
+// dropdown under "Find a sample": the page glides down to the filters, then
+// the list drops open. A browser that can't open a dropdown from a script
+// (no select.showPicker(), e.g. older Safari) focuses it instead, so Space or
+// Alt+Down opens it.
+function openFilterDropdown(key) {
+  const select = document.getElementById(`filter-${key}`);
+  if (!select) return;
+  const grid = document.getElementById('filter-grid');
+  if (grid && grid.classList.contains('collapsed')) document.getElementById('filters-toggle').click();  // folded away on phones
 
-  const card = document.getElementById('folders-card');
-  card.scrollIntoView({ behavior: UI.reducedMotion() ? 'auto' : 'smooth', block: 'start' });
-  card.classList.remove('flash');
-  void card.offsetWidth;  // restart the highlight
-  card.classList.add('flash');
-  const header = document.querySelector(`th[data-col="${column}"] .th-btn`);
-  if (header) header.focus({ preventScroll: true });
-  const what = { image_count: 'image count, largest first', site_normalized: 'site', date: 'date, oldest first' }[column] || column;
-  UI.announce(`Folder table sorted by ${what}.`);
+  const group = select.closest('.filter-group');
+  document.getElementById('catalog').scrollIntoView({ behavior: UI.reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  // Open it only once the page is still: a scroll would close it again.
+  afterScroll(() => {
+    select.focus({ preventScroll: true });
+    group.classList.remove('flash');
+    void group.offsetWidth;  // restart the highlight
+    group.classList.add('flash');
+    select.addEventListener('animationend', () => group.classList.remove('flash'), { once: true });
+    if (typeof select.showPicker === 'function') {
+      try { select.showPicker(); } catch (e) { /* not allowed here: the focus will do */ }
+    }
+  });
+}
+
+// Calls fn once the page has stopped scrolling (or never started). Polls
+// instead of waiting for 'scrollend', which older Safari doesn't send; gives
+// up after 2 s, well inside the time a click lets a page open a dropdown.
+function afterScroll(fn) {
+  const started = performance.now();
+  let last = window.scrollY;
+  let stillFrames = 0;
+  const tick = () => {
+    stillFrames = window.scrollY === last ? stillFrames + 1 : 0;
+    last = window.scrollY;
+    if (stillFrames >= 4 || performance.now() - started > 2000) fn();
+    else requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 // 10. Charts (inline SVG, coloured with the theme's CSS variables, so a theme
@@ -1350,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (textSizeBtn) textSizeBtn.addEventListener('click', openTextSizeDialog);
 
   document.querySelectorAll('.stat-link').forEach(card => {
-    const open = () => showSortedTable(card.dataset.sort, card.dataset.dir);
+    const open = () => openFilterDropdown(card.dataset.filter);
     card.addEventListener('click', open);
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
