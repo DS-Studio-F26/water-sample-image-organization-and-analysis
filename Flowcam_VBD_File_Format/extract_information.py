@@ -14,10 +14,11 @@ if __name__ == "__main__":
     db = sqlite3.connect(db_file)
     cur = db.cursor()
 
-    mkdir_if_not_exist(f"./out/{db_file}/raw")
-    res = cur.execute("SELECT name FROM sqlite_master;")
-    for tablename, in res.fetchall():
-        pd.read_sql_query(f"SELECT * FROM {tablename}", db).to_csv(f"./out/{db_file}/raw/{tablename}.csv")
+    if "--write-raw-data" in sys.argv:
+        mkdir_if_not_exist(f"./out/{db_file}/raw")
+        res = cur.execute("SELECT name FROM sqlite_master;")
+        for tablename, in res.fetchall():
+            pd.read_sql_query(f"SELECT * FROM {tablename}", db).to_csv(f"./out/{db_file}/raw/{tablename}.csv")
 
 
     images = cur.execute("""SELECT run.ID, run.name, particle.ID, particle_image.image FROM 
@@ -29,6 +30,15 @@ if __name__ == "__main__":
     for i, (run_id, run_name, particle_id, image_data) in enumerate(images.fetchall()):
         out_folder = f"./out/{db_file}/runs/{run_name}"
         mkdir_if_not_exist(out_folder + "/images")
+
+        detail_csv = f"{out_folder}/images_details.csv"
+        if not os.path.exists(detail_csv):
+            pd.read_sql_query(f"""SELECT particle_property.* FROM 
+                run JOIN image_frame ON image_frame.run == run.ID 
+                JOIN particle ON particle.imageFrame == image_frame.ID 
+                JOIN particle_property ON particle_property.particle == particle.ID
+                WHERE run.ID = {run_id}
+            """, db).to_csv(detail_csv, index=False)
 
         with open(f"{out_folder}/images/{particle_id}.png", "wb") as pngfile:
             try:    

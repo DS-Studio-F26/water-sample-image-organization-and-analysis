@@ -39,6 +39,8 @@ Usage:
 import argparse
 import collections
 import csv
+from os import path
+import pandas as pd
 import gzip
 import hashlib
 import re
@@ -371,13 +373,18 @@ def main():
         parsed = folder_parsed[folder_name]
 
         image_files = sorted(
-            (p for p in folder.iterdir()
+            (p for p in folder.joinpath("images").iterdir()
              if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS and not p.name.startswith("._")),
             key=lambda p: p.name,
         )
 
         widths, heights = [], []
         unreadable_count = 0
+
+
+        extra_properties_manifest = (
+            pd.read_csv(folder.joinpath("images_details.csv")) if path.exists(folder.joinpath("images_details.csv")) else pd.DataFrame(columns=["particle"])
+        )
 
         for img_path in image_files:
             # as_posix() keeps "folder/file" with a forward slash on every OS, so
@@ -391,6 +398,8 @@ def main():
                 widths.append(info["width"])
                 heights.append(info["height"])
 
+            extra_properties = extra_properties_manifest[extra_properties_manifest["particle"] == int(img_path.stem)].to_dict('records')[0]
+             
             manifest_rows.append({
                 "image_id": image_id_for(rel_path),
                 "filename": img_path.name,
@@ -413,7 +422,7 @@ def main():
                 "labeled_by": "",
                 "labeled_date": "",
                 "source_dataset": args.source_tag,
-            })
+            } | extra_properties)
 
         folder_stats[folder_name] = {
             "folder_name": folder_name,
