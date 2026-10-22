@@ -250,6 +250,43 @@
     }
   });
 
+  // A sample of the FlowCam measurements (the real database has 64), made up
+  // from each image's size so that the size filters pick sensible images.
+  // [column, label, unit, group, sort order, value(measurements so far, image, random)],
+  // listed so each value comes after the ones it's made from.
+  var MEASURE_DEFS = [
+    ['particle_length', 'Length', 'µm', 'Size', 13, function (m, x, r) { return Math.max(x.width, x.height) * 0.55 * (0.85 + 0.3 * r()); }],
+    ['particle_width', 'Width', 'µm', 'Size', 14, function (m, x, r) { return Math.min(x.width, x.height) * 0.5 * (0.7 + 0.3 * r()); }],
+    ['diameter_esd', 'Diameter (ESD)', 'µm', 'Size', 10, function (m) { return (m.particle_length + m.particle_width) * 0.47; }],
+    ['area_abd', 'Area (ABD)', 'µm²', 'Size', 15, function (m) { return Math.PI / 4 * m.particle_length * m.particle_width * 0.8; }],
+    ['biovolume_sphere', 'Biovolume (sphere)', 'µm³', 'Size', 23, function (m) { return Math.PI / 6 * Math.pow(m.diameter_esd, 3); }],
+    ['width', 'Image width', 'px', 'Size', 26, function (m, x) { return x.width; }],
+    ['height', 'Image height', 'px', 'Size', 27, function (m, x) { return x.height; }],
+    ['aspect_ratio', 'Aspect ratio', null, 'Shape', 30, function (m) { return m.particle_width / m.particle_length; }],
+    ['circularity', 'Circularity', null, 'Shape', 31, function (m, x, r) { return Math.min(1, 0.15 + 0.8 * m.aspect_ratio * r()); }],
+    ['elongation', 'Elongation', null, 'Shape', 36, function (m, x, r) { return (1 / m.aspect_ratio) * (1 + 2 * r()); }],
+    ['intensity', 'Intensity', null, 'Colour and intensity', 56, function (m, x, r) { return 110 + 60 * r(); }],
+    ['transparency', 'Transparency', null, 'Colour and intensity', 59, function (m, x, r) { return 0.04 + 0.6 * r() * r(); }],
+    ['ch1_peak', 'Ch1 peak', null, 'Fluorescence', 71, function (m, x, r) { return r() < 0.3 ? 0 : 3 + 2 * r(); }],
+  ];
+  images.forEach(function (x) {
+    var r = rng(hashStr(x.relative_path + 'measure'));
+    var m = {};
+    MEASURE_DEFS.forEach(function (d) { m[d[0]] = d[5](m, x, r); });
+    MEASURE_DEFS.forEach(function (d) {
+      if (d[0] !== 'width' && d[0] !== 'height') x[d[0]] = Number(m[d[0]].toPrecision(7));
+    });
+  });
+  var MEASURES = MEASURE_DEFS.map(function (d) {
+    var values = images.map(function (x) { return x[d[0]]; }).sort(function (a, b) { return a - b; });
+    var at = function (p) { return values[Math.round(p * (values.length - 1))]; };
+    return {
+      column_name: d[0], source_name: d[0], label: d[1], unit: d[2], group_name: d[3], sort_order: d[4],
+      description: 'Demo: made-up values.', image_count: values.length,
+      min_value: values[0], max_value: values[values.length - 1], p01: at(0.01), p99: at(0.99),
+    };
+  });
+
   // Make the folders' own size ranges agree with their generated images.
   folders.forEach(function (f) {
     var mine = images.filter(function (x) { return x.folder_name === f.folder_name; });
@@ -329,6 +366,7 @@
       }).sort(function (a, b) { return a.folder_name.localeCompare(b.folder_name); });
     },
     images: function () { return images; },
+    measurement_columns: function () { return MEASURES; },
     profiles: function () { return []; },  // only used when the real client is missing (no one is signed in then)
   };
 
@@ -377,6 +415,8 @@
   P.in = function (c, arr) { var set = new Set(arr); this.filters.push(function (r) { return set.has(r[c]); }); return this; };
   P.not = function (c, op, v) { if (op === 'is' && v === null) this.filters.push(function (r) { return r[c] != null; }); return this; };
   P.is = function (c, v) { if (v === null) this.filters.push(function (r) { return r[c] == null; }); return this; };
+  P.gte = function (c, v) { this.filters.push(function (r) { return r[c] != null && r[c] >= v; }); return this; };
+  P.lte = function (c, v) { this.filters.push(function (r) { return r[c] != null && r[c] <= v; }); return this; };
   P.order = function (c, o) { this.orders.push([c, !o || o.ascending !== false]); return this; };
   P.range = function (a, b) { this.window = [a, b]; return this; };
   P.limit = function (n) { this.window = [0, n - 1]; return this; };
@@ -507,8 +547,35 @@
     },
   };
 
+  // The measurement filter files (deploy/build_filter_data.py), made from the
+  // sample images: folders by name, images in each by image_id.
+  var filterOrder = null;
+  function filterImages() {
+    if (!filterOrder) {
+      filterOrder = images.slice().sort(function (x, y) {
+        return x.folder_name < y.folder_name ? -1 : x.folder_name > y.folder_name ? 1
+          : x.image_id < y.image_id ? -1 : x.image_id > y.image_id ? 1 : 0;
+      });
+    }
+    return filterOrder;
+  }
+  var filterData = {
+    index: function () {
+      var counts = groupSum(images, function (x) { return x.folder_name; }, function () { return 1; });
+      return {
+        version: 'demo', images: images.length,
+        folders: Object.keys(counts).sort().map(function (f) { return [f, counts[f]]; }),
+        columns: MEASURES.map(function (m) { return m.column_name; }),
+      };
+    },
+    values: function (col) {
+      return Float32Array.from(filterImages(), function (x) { return x[col] == null ? NaN : x[col]; });
+    },
+  };
+
   window.Demo = {
     imageUrl: imageUrl,
+    filterData: filterData,
     guest: GUEST,  // who labels when no one is signed in
     truth: function (relPath) { return specimen(relPath).truth; },
     reset: function () { session(DATA, null); location.reload(); },

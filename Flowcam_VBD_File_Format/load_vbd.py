@@ -443,6 +443,12 @@ def make_db_tables(db):
         db.execute(sql)
     db.commit()
 
+def parse_percentage(x):
+    # Some runs append a note after the number, e.g.
+    # "72.73%\t** Warning: recommended efficiency exceeded **"
+    number = x.split("%", 1)[0].strip()
+    return pd.to_numeric(number) / 100.0 if number else np.nan
+
 def fixup_schema(schema):
     r = {
         "dtype": dict(),
@@ -460,7 +466,7 @@ def fixup_schema(schema):
         elif v == pd.Timedelta:
             r["converters"][k] = lambda x: pd.to_timedelta(x)
         elif v == "percentage":
-            r["converters"][k] = lambda x: pd.to_numeric(x.rstrip('%')) / 100.0
+            r["converters"][k] = parse_percentage
         elif v == bytearray:
             r["converters"][k] = lambda x: bytearray.fromhex(x[2:])
         else:
@@ -469,7 +475,7 @@ def fixup_schema(schema):
     return r
 
 def write_vbd_csvs(vbd_readable, header_len):
-    fhandle = None
+    f = None
 
     for len, _unknown, string in vbd_strings(vbd_readable, header_len):
             if string.startswith(b"**") and string.endswith(b"**"):
@@ -484,38 +490,50 @@ def write_vbd_csvs(vbd_readable, header_len):
         if f is not None:
             f.close()
 
-def vbd_tables(vbd_readable, header_len=0x1E8):
-    current = None
-    tablename = None
+# Rows are parsed this many at a time. Parsing each row on its own and
+# concatenating it onto the table made loading quadratic: a run with 70,000
+# particles took hours instead of seconds.
+ROWS_PER_CHUNK = 10_000
 
+
+def vbd_tables(vbd_readable, header_len=0x1E8):
+    columns = None
+    tablename = None
     table_schema = None
-    for len, _unknown, string in vbd_strings(vbd_readable, header_len):
+    rows = []
+    chunks = []
+
+    def parse(rows):
+        return pd.read_csv(BytesIO(b"\n".join(rows)), names=columns, header=None, delimiter=",", **table_schema)
+
+    def finish_table():
+        if columns is None:
+            return pd.DataFrame()
+        if rows:
+            chunks.append(parse(rows))
+        if not chunks:
+            return pd.DataFrame([], columns=columns)
+        return chunks[0] if len(chunks) == 1 else pd.concat(chunks, ignore_index=True)
+
+    for _length, _unknown, string in vbd_strings(vbd_readable, header_len):
         if string.startswith(b"**") and string.endswith(b"**"):
             if tablename is not None:
-                yield (tablename, current if current is not None else pd.DataFrame())
-            current = None
+                yield (tablename, finish_table())
+            columns = None
+            rows = []
+            chunks = []
             tablename = string[2:-2].decode()
             table_schema = fixup_schema(SCHEMA[tablename])
+        elif columns is None:
+            columns = string.decode().split(",")
         else:
-            if current is None:
-                current = pd.DataFrame([], columns=string.decode().split(","))
-            else:
-                next_row = pd.read_csv(BytesIO(string), names=current.columns, header=None, delimiter=",", **table_schema)
+            rows.append(string)
+            if len(rows) == ROWS_PER_CHUNK:
+                chunks.append(parse(rows))
+                rows = []
 
-                # To avoid warnings about concatenation with empty entries, check 
-                # for the case where the current table is empty, and in that case, 
-                # just overwrite it.
-                if current.size == 0:
-                    current = next_row
-                else: 
-                    current = pd.concat([
-                        current, 
-                        next_row
-                ])
-
-    else:
-        if tablename is not None:
-            yield (tablename, current if current is not None else pd.DataFrame())
+    if tablename is not None:
+        yield (tablename, finish_table())
 
 if __name__ == "__main__":
     import sys

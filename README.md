@@ -17,6 +17,16 @@ disk is touched; rerunning the script just recomputes which folders are
 included. `sample_code` is also classified into `capture_mode`
 (`autoimage` for AI* codes, `trigger` for TR*/TM codes).
 
+It also reads the FlowCam runs exported from the VBD files (see
+[Particle measurements](#particle-measurements-flowcam)) in
+`ProjectCode/vbd_export/`. An image the city already exported keeps its folder
+and ID, and gains the measurements of the matching FlowCam particle (checked
+byte for byte); runs the city export doesn't have are added from the VBD export
+(`source_dataset` `FlowCam_VBD`), but only at sites the city export already has.
+The measurements go to
+`catalog_output/image_measurements.csv.gz` -- one row per image, ~140 MB, so
+it stays out of git and is rebuilt by the script.
+
 ```bash
 pip3 install Pillow
 python3 ProjectCode/catalog_images.py
@@ -41,14 +51,22 @@ Workers and R2, plus Supabase.
 ```mermaid
 flowchart LR
     subgraph laptop["A laptop, when images are added"]
+        vbd[("FlowCam VBD files")]
+        exp["Flowcam_VBD_File_Format/export_all.py"]
+        runs[("vbd_export")]
         imgs[("WCMC_raw_images_2023_and_others")]
         cat["catalog_images.py"]
         imp["deploy/import_to_supabase.py"]
+        meas["deploy/import_measurements.py"]
         up["deploy/upload_images.ps1 (rclone)"]
+        vbd --> exp --> runs --> cat
         imgs --> cat --> imp
+        cat --> meas
         imgs --> up
+        runs --> up
     end
     imp -->|"folder and image rows"| db[("Supabase: Postgres + Auth")]
+    meas -->|"particle measurements"| db
     up -->|"image files"| r2[("Cloudflare R2 bucket: water-sample-images")]
     r2 --> worker["Cloudflare Worker: water-sample-images (read-only)"]
     gh["GitHub: host branch"] -->|"Cloudflare builds every push"| pages["Cloudflare Pages: water-sample-dashboard"]
@@ -67,7 +85,8 @@ flowchart LR
   key in `ProjectCode/config.js`. Stats and charts come from database views and
   per-folder totals, so the browser never downloads the 500K-row images table;
   a folder's image list is loaded only when that folder is opened.
-- **Images**: 511,765 PNGs (3.65 GiB) in the R2 bucket `water-sample-images`.
+- **Images**: 565,873 PNGs (4.17 GiB) in the R2 bucket `water-sample-images`:
+  511,765 from the city's export and 54,108 from the FlowCam VBD files.
   Each object key is the image's `relative_path` (`<folder>/<filename>`). The
   Worker in `ProjectCode/worker/` serves them read-only at
   `https://water-sample-images.watersampleimageorganization.workers.dev/<key>`;
@@ -75,7 +94,8 @@ flowchart LR
 - **Database** (`ProjectCode/supabase/migrations/`): `001_init.sql` creates the
   tables `folders`, `images`, `qa_log` and `profiles`, the views behind the stats
   and charts, and the role functions; `002_labeling.sql` adds image labeling (see
-  [Labeling](#labeling)). Security lives in the database (Row-Level Security and
+  [Labeling](#labeling)); `003_measurements.sql` adds the FlowCam measurements
+  (see [Particle measurements](#particle-measurements-flowcam)). Security lives in the database (Row-Level Security and
   SQL functions), not in the page:
   - anyone can read folders, images and the QA log, and nobody can change them
     through the website, except that labelers and admins can set the `label`
@@ -119,6 +139,43 @@ generated images with no database, and nothing is saved anywhere. Anyone can lab
 the sample images, signed in or not. Accounts stay real: the demo never signs you in
 or out, and your header and role are your own. The pill at the bottom has Reset and
 Exit; `?demo=0` also turns it off.
+
+### Particle measurements (FlowCam)
+
+The FlowCam's own files (`.VBD`, one per sampling day, 2021–2024) hold every
+particle's image and about 80 measurements. `Flowcam_VBD_File_Format/` decodes
+them (see its README); 64 of the measurements vary in our data, and the
+dashboard can filter on all of them.
+
+- Under **Find a sample → Particle measurements**, **Add measurement** lists them
+  by group (Size, Shape, Colour and intensity, Fluorescence, Capture, Pixel
+  measurements) with a search box. Each filter is a range: drag the two handles
+  (wide ranges like biovolume use a logarithmic scale) or type a minimum and/or
+  maximum. Below each one, "Most images" shows the 1st–99th percentile.
+- With a range set, the table lists only folders with images inside every range
+  and shows how many match out of the folder's total; the stats and charts count
+  matching images, and a folder's panel lists only its matching images, with a
+  column for each measurement. The ranges are kept in the address
+  (`#m_diameter_esd=20~50`), so a filtered view can be shared.
+- 565,778 of the 565,873 cataloged images have measurements. The 95 images in
+  `Salisbury_4.19.23_10x_TR1 0.5` don't: none of the VBD files has that run.
+- The values are stored as `real` columns on `images` (62 new columns; the pixel
+  width and height were already there), and `measurement_columns` describes
+  each filter. Loading them adds about 140 MB to the database.
+- The folder counts are made in the browser. Counting in the database means
+  reading the whole ~300 MB images table, which takes 8–12 seconds on the free
+  tier, past Supabase's 3-second limit for visitors. Instead,
+  `deploy/build_filter_data.py` writes one file per measurement holding every
+  image's value (2.2 MB each), and `upload_images.ps1` puts them in R2 under
+  `_filters/`. The dashboard downloads a measurement's file the first time it's
+  used; after that a filter change takes a few milliseconds. The files hold the
+  same 4-byte floats as the database, so the counts match the folder panel
+  (which still asks the database) exactly. If the files don't match the
+  catalog, for example after an import without the upload, the dashboard says
+  the filters are unavailable instead of showing wrong counts.
+- `measurement_folder_counts()` (migration 003) counts the same way in the
+  database. It's too slow for the website, but fine for scripts.
+- Demo mode (`?demo`) has 13 of the measurements, with made-up values.
 
 ### Look and feel
 
@@ -166,28 +223,55 @@ Copy-Item .env.example .env   # then fill in the real values
 1. Put the new sample-event folders into `WCMC_raw_images_2023_and_others/`.
    Don't rename or move existing folders: an image's ID and storage key come
    from its folder and file name.
-2. Rebuild the catalog (it opens every image, so expect 15–30 minutes):
+2. For FlowCam measurements (and runs the city export doesn't have), export the
+   VBD files -- a folder of them, or a `.zip` -- into `vbd_export/`. Files
+   already exported are skipped, so it's quick to re-run after adding one.
+   About 10 GB of VBDs take 30–60 minutes and ~15 GB of disk (6 GB of it SQLite
+   databases in `Flowcam_VBD_File_Format/out/sqlite`, which can be deleted
+   afterwards).
+   ```powershell
+   pip install pandas
+   python ..\Flowcam_VBD_File_Format\export_all.py C:\path\to\Worcester_FlowCam.zip vbd_export
+   ```
+3. Rebuild the catalog. It opens every image and checks the city's images
+   against the VBD export byte for byte, so expect 30–60 minutes:
    `python catalog_images.py`
-3. Check, then import into Supabase. One transaction adds new rows, updates
+4. Check, then import into Supabase. One transaction adds new rows, updates
    changed ones and removes ones no longer in the catalog. It never touches
-   labels, and refuses to commit if the counts don't match.
+   labels or measurements, and refuses to commit if the counts don't match or
+   if it would remove a labeled image. `--dry-run` lists what it would remove.
    ```powershell
    python deploy/import_to_supabase.py --dry-run
    python deploy/import_to_supabase.py
    ```
-4. Upload the images. The file list comes from the database, so import first.
-   Images already in R2 are skipped, so only new ones count against the free
-   write allowance. At the end it compares counts and checks 20 random images.
+5. Load the measurements (after `003_measurements.sql` is applied, below). It
+   goes in batches of 25,000 so the free database never needs room for two
+   copies of the images table; if it stops part-way, run it again.
+   ```powershell
+   python deploy/import_measurements.py --dry-run
+   python deploy/import_measurements.py
+   ```
+6. Upload the images, from `WCMC_raw_images_2023_and_others/` and `vbd_export/`
+   (chosen by each image's `source_dataset`). The file list comes from the
+   database, so import first. Images already in R2 are skipped, so only new ones
+   count against the free write allowance. It then rebuilds and uploads the
+   measurement filter files, so run it after every import, even with no new
+   images. At the end it compares counts and checks 20 random images from each
+   folder. If the import removed images,
+   `-Prune` deletes them from R2 too (it refuses to delete more than 20% of the
+   bucket):
    ```powershell
    powershell -ExecutionPolicy Bypass -File deploy\upload_images.ps1 -DryRun
    powershell -ExecutionPolicy Bypass -File deploy\upload_images.ps1
+   powershell -ExecutionPolicy Bypass -File deploy\upload_images.ps1 -Prune -DryRun
+   powershell -ExecutionPolicy Bypass -File deploy\upload_images.ps1 -Prune
    ```
-5. Commit the regenerated `catalog_output/folder_summary.csv` and
-   `catalog_output/image_manifest.csv.gz`. Nothing needs redeploying: the
-   dashboard reads the live data.
+7. Commit the regenerated `catalog_output/folder_summary.csv` and
+   `catalog_output/image_manifest.csv.gz` (`image_measurements.csv.gz` is
+   gitignored). Nothing needs redeploying: the dashboard reads the live data.
 
 Whenever a file in `supabase/migrations/` is new or changes (the first time that
-includes `002_labeling.sql`), apply them all with
+includes `002_labeling.sql` and `003_measurements.sql`), apply them all with
 `python deploy/apply_migrations.py`. It is safe to re-run and checks the result.
 
 ### Deploys
@@ -233,10 +317,10 @@ and image Worker.
 
 | Service | Free limit | This project |
 |---|---|---|
-| Supabase database | 500 MB | about 168 MB |
+| Supabase database | 500 MB | about 348 MB with the FlowCam images and measurements (the import scripts refuse to go past 450 MB; Postgres reuses space freed by removed rows rather than shrinking the file) |
 | Supabase activity | Pauses after about 7 days with no requests | See below |
 | Supabase sign-in emails | Built-in sender allows only a few emails per hour | Fine for a handful of users; add custom SMTP for more |
-| Cloudflare R2 storage | 10 GB | 3.65 GB |
+| Cloudflare R2 storage | 10 GB | 4.17 GB of images (3.65 GB city export, 0.52 GB FlowCam), plus 0.14 GB of measurement filter files |
 | R2 writes (Class A) | 1M per month | The first full upload used about 512K; later runs only upload new images |
 | R2 reads (Class B) | 10M per month | One per image viewed or downloaded |
 | Cloudflare Workers | 100,000 requests per day | One per image viewed or downloaded |
@@ -265,7 +349,25 @@ for a limited time only.
   the import loads it if the file exists.
 - **Some filter values are spelled inconsistently** in the source folder names
   (for example `0.1 Dilution` and `0.1 dilution`, or `1dilution` and
-  `1 dilution`), so they appear as separate options.
+  `1 dilution`), so they appear as separate options. 12 of the folders added
+  from the VBD files have no water-body type.
+- **FlowCam runs at sites the city export doesn't have are left out.** The
+  catalog skips them, which removes 12 runs (17,835 images) at 7 site names:
+  duplicates (`CoesDup`, `PatchDup`), misspellings (`CoesReswevoir`,
+  `Washacum`) and one-offs (`933greenish`, `9am`, `SterlingELW`). Their images
+  stay in `vbd_export/`.
+- **Some `-pp` runs added from the VBD files may hold particles a city export
+  would have left out.** In 72 of the city's 573 `-pp` exports, particles were
+  dropped (47,285 in all; Indian Lake on 5.27.23 kept 72 of 155), and the VBD
+  files don't record which ones. Runs the city exported use the city's images,
+  so none of those particles is on the site; the 57 `-pp` runs that only exist
+  in the VBD files keep every particle.
+- **Each measurement filter downloads 2.2 MB** the first time it's used in a
+  visit (see [Particle measurements](#particle-measurements-flowcam)).
+- **Avoid reading the whole images table from the website.** At ~300 MB it
+  takes longer than Supabase allows a visitor's request (3 s). That's why
+  `labeling_stats` totals the per-folder image counts and the labeling queries
+  use the indexes on `label` and `labeled_by`.
 - **The label categories are a placeholder** (cyanobacteria, diatom, other
   organism, debris, blank, unsure). Edit `ProjectCode/labels.js` once the team and
   Prof. Ahlgren settle on the real taxonomy.

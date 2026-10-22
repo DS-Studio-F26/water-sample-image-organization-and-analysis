@@ -143,6 +143,18 @@
               <option value="false">Raw only</option>
             </select></div>
         </div>
+        <!-- FlowCam particle measurements (dashboard.js, section 5b); shown once the database has them -->
+        <div class="measure-filters" id="measure-filters" hidden>
+          <div class="measure-head">
+            <h3>Particle measurements</h3>
+            <span class="measure-note" id="measure-note"></span>
+            <span class="measure-busy" aria-hidden="true"><span class="spinner"></span>Loading…</span>
+            <button type="button" class="btn btn-sm" id="measure-add">
+              <svg class="icon" aria-hidden="true"><use href="icons.svg#i-plus"/></svg>Add measurement
+            </button>
+          </div>
+          <div class="measure-list" id="measure-list"></div>
+        </div>
         <div class="active-filters" id="active-filters" aria-label="Active filters"></div>
       </section>
 

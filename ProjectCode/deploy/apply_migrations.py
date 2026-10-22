@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = PROJECT_DIR / "supabase" / "migrations"
 
-TABLES = ["folders", "images", "qa_log", "profiles"]
+TABLES = ["folders", "images", "qa_log", "profiles", "measurement_columns"]
 VIEWS = ["folders_visible", "dashboard_stats", "chart_site_counts",
          "chart_date_counts", "chart_water_body_counts",
          "folder_labeling_progress", "labeling_stats", "label_counts"]
@@ -104,6 +104,16 @@ def verify(conn: psycopg.Connection) -> bool:
           not priv("select has_column_privilege('authenticated', 'public.images', 'labeled_by', 'update')"))
     check("authenticated cannot update images.width",
           not priv("select has_column_privilege('authenticated', 'public.images', 'width', 'update')"))
+    check("authenticated cannot update images.diameter_esd",
+          not priv("select has_column_privilege('authenticated', 'public.images', 'diameter_esd', 'update')"))
+    check("anon can read measurement_columns",
+          priv("select has_table_privilege('anon', 'public.measurement_columns', 'select')"))
+    check("anon cannot write measurement_columns",
+          not priv("select has_table_privilege('anon', 'public.measurement_columns', 'insert, update, delete, truncate')"))
+    check("anon can execute measurement_folder_counts(jsonb)",
+          priv("select has_function_privilege('anon', 'public.measurement_folder_counts(jsonb)', 'execute')"))
+    filterable = conn.execute("select count(*) from public.measurement_columns").fetchone()[0]
+    check(f"measurement_columns lists 64 filters (found {filterable})", filterable == 64)
     for fn in ROLE_FUNCTIONS:
         check(f"anon cannot execute {fn}",
               not priv("select has_function_privilege('anon', %s, 'execute')", f"public.{fn}"))

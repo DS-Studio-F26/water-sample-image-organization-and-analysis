@@ -336,13 +336,12 @@ $$;
 -- folder_summary.csv, and the import script verifies they match the images
 -- it loads before committing.
 
-drop view if exists public.chart_water_body_counts;
-drop view if exists public.chart_date_counts;
-drop view if exists public.chart_site_counts;
-drop view if exists public.dashboard_stats;
-drop view if exists public.folders_visible;
+-- "create or replace", not drop + create: 002's folder_labeling_progress is
+-- built on folders_visible, and dropping a view another view uses fails, which
+-- stopped apply_migrations.py here on every re-run. (To change a view's
+-- columns, drop it and its dependents explicitly first.)
 
-create view public.folders_visible
+create or replace view public.folders_visible
 with (security_invoker = true) as
 select
   f.folder_name,
@@ -366,7 +365,7 @@ select
 from public.folders f
 where f.image_count > 0;
 
-create view public.dashboard_stats
+create or replace view public.dashboard_stats
 with (security_invoker = true) as
 select
   count(*)::int                                                 as total_folders,
@@ -380,7 +379,7 @@ select
   coalesce(sum(image_count) filter (where not is_pp), 0)::bigint as raw_images
 from public.folders_visible;
 
-create view public.chart_site_counts
+create or replace view public.chart_site_counts
 with (security_invoker = true) as
 select
   coalesce(site_normalized, 'Unknown') as site_normalized,
@@ -391,7 +390,7 @@ group by 1
 order by image_count desc, site_normalized;
 
 -- Monthly buckets, matching the "Images by Collection Date" chart.
-create view public.chart_date_counts
+create or replace view public.chart_date_counts
 with (security_invoker = true) as
 select
   date_trunc('month', sample_date)::date as month,
@@ -402,7 +401,7 @@ where sample_date is not null
 group by 1
 order by 1;
 
-create view public.chart_water_body_counts
+create or replace view public.chart_water_body_counts
 with (security_invoker = true) as
 select
   coalesce(water_body_type, 'Unknown') as water_body_type,
