@@ -53,6 +53,11 @@ const state = {
   catIndex: null,    // stable colour slot per category, so a type keeps its colour under filters
   labelStats: null,  // labeling_stats row, once migration 002 is applied
   labelMap: null,    // folder_name -> folder_labeling_progress row
+  // FlowCam measurement filters, once migration 003 is applied.
+  measures: [],         // measurement_columns rows, in display order
+  measureMap: new Map(),  // column_name -> measurement_columns row
+  measureFilters: {},   // column_name -> [min, max]; null = no limit on that side
+  measureCounts: null,  // folder_name -> images inside every range, while any range is set
 };
 
 // 2. Supabase queries
@@ -68,10 +73,19 @@ async function fetchAllRows(buildQuery) {
 }
 
 async function fetchFolderImages(folderName) {
-  const query = (options) => sb.from('images')
-    .select(IMAGE_COLUMNS, options)
-    .eq('folder_name', folderName)
-    .order('filename');
+  // With measurement filters set, only the images inside every range, along
+  // with the values they were filtered on.
+  const ranges = Object.entries(activeMeasures());
+  const extra = ranges.map(([col]) => col).filter(col => !IMAGE_COLUMNS.split(', ').includes(col));
+  const columns = [IMAGE_COLUMNS].concat(extra).join(', ');
+  const query = (options) => {
+    let q = sb.from('images').select(columns, options).eq('folder_name', folderName);
+    ranges.forEach(([col, [lo, hi]]) => {
+      if (lo != null) q = q.gte(col, lo);
+      if (hi != null) q = q.lte(col, hi);
+    });
+    return q.order('filename');
+  };
 
   const first = await query({ count: 'exact' }).range(0, DB_PAGE_SIZE - 1);
   if (first.error) throw first.error;
@@ -100,7 +114,7 @@ async function loadData() {
     if (!window.sb) {
       throw new Error('The Supabase library did not load (blocked by the network or a browser extension?).');
     }
-    const [folders, qa, stats, sites, months, waterBodies] = await Promise.all([
+    const [folders, qa, stats, sites, months, waterBodies, measures] = await Promise.all([
       fetchAllRows(() => sb.from('folders_visible').select(FOLDER_COLUMNS).order('folder_name')),
       fetchAllRows(() => sb.from('qa_log').select('level, target, detail').order('id')),
       sb.from('dashboard_stats').select('*').single(),
@@ -109,8 +123,13 @@ async function loadData() {
       fetchAllRows(() => sb.from('chart_date_counts').select('month, image_count').order('month')),
       fetchAllRows(() => sb.from('chart_water_body_counts').select('water_body_type, folder_count')
         .order('folder_count', { ascending: false }).order('water_body_type')),
+      // Only there once migration 003 is applied; until then the page simply
+      // has no measurement filters.
+      fetchAllRows(() => sb.from('measurement_columns').select('*').order('sort_order')).catch(() => []),
     ]);
     if (stats.error) throw stats.error;
+    state.measures = measures.filter(m => m.image_count !== 0);
+    state.measureMap = new Map(state.measures.map(m => [m.column_name, m]));
 
     state.allData = folders;
     state.qaData = qa;
@@ -127,6 +146,8 @@ async function loadData() {
     // supabase-js has consumed them before reading filters from the hash.
     if (window.Auth) await Auth.ready;
     loadStateFromHash(); // Restore before first render
+    setupMeasureFilters();
+    await refreshMeasureCounts();
     state.loaded = true;
     applyFilters(false); // don't update hash yet
     renderQALog();
@@ -281,7 +302,7 @@ function populateDropdown(id, values) {
 
 // 5. Filtering
 function hasActiveFilters() {
-  return Object.values(state.filters).some(v => v !== '');
+  return Object.values(state.filters).some(v => v !== '') || Object.keys(activeMeasures()).length > 0;
 }
 
 function applyFilters(updateHash = true) {
@@ -306,6 +327,13 @@ function applyFilters(updateHash = true) {
 
     return true;
   });
+  // Measurement ranges: keep the folders with images inside them, and count
+  // only those images (stats, charts and the table all read image_count).
+  if (state.measureCounts) {
+    state.filteredData = state.filteredData
+      .filter(row => state.measureCounts.has(row.folder_name))
+      .map(row => ({ ...row, image_count: state.measureCounts.get(row.folder_name), total_images: row.image_count }));
+  }
   state.maxCount = Math.max(1, ...state.filteredData.map(r => r.image_count || 0));
 
   // Reset to page 1 on new filter
@@ -324,7 +352,8 @@ function applyFilters(updateHash = true) {
 }
 
 function updateFilterBadge() {
-  const activeCount = Object.keys(state.filters).filter(k => k !== 'search' && state.filters[k] !== '').length;
+  const activeCount = Object.keys(state.filters).filter(k => k !== 'search' && state.filters[k] !== '').length
+    + Object.keys(activeMeasures()).length;
   const badge = document.getElementById('filter-badge');
   if (badge) {
     badge.hidden = activeCount === 0;
@@ -363,6 +392,316 @@ function renderActiveFilters() {
       `${FILTER_NAMES[key]}: ${displayFilterValue(key, value)}`,
       h('button', { type: 'button', 'aria-label': `Remove ${FILTER_NAMES[key]} filter`, onclick: () => clearFilter(key) }, UI.icon('x'))));
   });
+  Object.entries(activeMeasures()).forEach(([col, [lo, hi]]) => {
+    const m = state.measureMap.get(col);
+    host.appendChild(h('span', { class: 'filter-pill' },
+      `${m.label}: ${rangeText(lo, hi, m.unit)}`,
+      h('button', { type: 'button', 'aria-label': `Remove ${m.label} filter`, onclick: () => removeMeasure(col) }, UI.icon('x'))));
+  });
+}
+
+// 5b. Measurement filters
+// Each filter is a range on one FlowCam measurement (measurement_columns).
+// The folder counts are made here in the browser: counting in the database
+// reads its whole images table, which takes longer than Supabase allows an
+// anonymous request. deploy/build_filter_data.py writes, per measurement,
+// every image's value as 4-byte floats -- the database's own "real" type, so
+// the counts match it exactly -- and upload_images.ps1 puts the files in R2
+// under _filters/. The folder panel asks the database for its images with
+// the same ranges.
+
+let measureRequestId = 0;  // a newer request makes an older answer stale
+
+// The filter files: index.json lists the folders (in file order) with their
+// image counts; each <column>.f32 is downloaded the first time it's used.
+const filterData = { index: null, values: new Map() };
+
+async function fetchOk(url, options) {
+  const res = await fetch(url, options);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+  return res;
+}
+
+async function loadFilterIndex() {
+  if (!filterData.index) {
+    filterData.index = (async () => {
+      let index;
+      if (window.Demo && window.Demo.filterData) {
+        index = window.Demo.filterData.index();
+      } else {
+        const base = window.APP_CONFIG.FILTER_DATA_URL
+          || `${window.APP_CONFIG.IMAGE_BASE_URL.replace(/\/+$/, '')}/_filters`;
+        const res = await fetch(`${base}/current.json`, { cache: 'no-store' });
+        if (res.status === 404) {
+          throw Object.assign(new Error("Measurement filters aren't available yet: their data hasn't been uploaded."), { stale: true });
+        }
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${res.url}`);
+        const current = await res.json();
+        index = await (await fetchOk(`${base}/${current.version}/index.json`)).json();
+        index.base = `${base}/${current.version}`;
+      }
+      // The files must describe the catalog the page shows, or the counts would be wrong.
+      const shown = new Map(state.allData.filter(r => r.image_count > 0).map(r => [r.folder_name, r.image_count]));
+      const differ = index.folders.filter(([name, n]) => shown.get(name) !== n).length
+        + [...shown.keys()].filter(name => !index.folders.some(f => f[0] === name)).length;
+      if (differ) {
+        console.error(`Measurement filter files ${index.version}: ${differ} folder(s) differ from the database. `
+          + 'Re-run deploy/upload_images.ps1 after the import.');
+        throw Object.assign(new Error('Measurement filters are unavailable until their data is updated to match the catalog.'), { stale: true });
+      }
+      return index;
+    })();
+    filterData.index.catch(() => { filterData.index = null; });  // try again next time
+  }
+  return filterData.index;
+}
+
+function loadMeasureValues(col, index) {
+  if (!filterData.values.has(col)) {
+    const load = (async () => {
+      const values = window.Demo && window.Demo.filterData
+        ? window.Demo.filterData.values(col)
+        : new Float32Array(await (await fetchOk(`${index.base}/${col}.f32`)).arrayBuffer());
+      if (values.length !== index.images) throw new Error(`${col}: ${values.length} values for ${index.images} images`);
+      return values;
+    })();
+    load.catch(() => filterData.values.delete(col));
+    filterData.values.set(col, load);
+  }
+  return filterData.values.get(col);
+}
+
+// folder_name -> images inside every range (folders with none are left out).
+// Bounds are rounded to 4-byte floats, as the database compares them.
+function countMeasures(index, ranges) {
+  const counts = new Map();
+  let i = 0;
+  index.folders.forEach(([name, n]) => {
+    let matched = 0;
+    for (const end = i + n; i < end; i++) {
+      let inside = true;
+      for (const [values, lo, hi] of ranges) {
+        const x = values[i];
+        if (!(x >= lo && x <= hi)) { inside = false; break; }  // NaN (no value) is never inside
+      }
+      if (inside) matched++;
+    }
+    if (matched) counts.set(name, matched);
+  });
+  return counts;
+}
+
+function activeMeasures() {
+  const out = {};
+  Object.entries(state.measureFilters).forEach(([col, [lo, hi]]) => {
+    if (lo != null || hi != null) out[col] = [lo, hi];
+  });
+  return out;
+}
+
+// 3 significant digits, without the exponent notation toPrecision can give.
+function fmtMeasure(v) {
+  if (v == null || !isFinite(v)) return '-';
+  const rounded = Number(Number(v).toPrecision(3));
+  return rounded.toLocaleString(undefined, { maximumFractionDigits: 6 });
+}
+
+function rangeText(lo, hi, unit) {
+  const u = unit ? ` ${unit}` : '';
+  if (lo != null && hi != null) return `${fmtMeasure(lo)}–${fmtMeasure(hi)}${u}`;
+  if (lo != null) return `≥ ${fmtMeasure(lo)}${u}`;
+  return `≤ ${fmtMeasure(hi)}${u}`;
+}
+
+// Slider positions 0..1000 across the measurement's full range; logarithmic
+// when it spans orders of magnitude (biovolumes run from ~500 to ~10^8 µm³).
+function measureScale(m) {
+  const lo = Number(m.min_value), hi = Number(m.max_value);
+  if (!isFinite(lo) || !isFinite(hi) || hi <= lo) {
+    return { toPos: () => 0, fromPos: () => lo };
+  }
+  if (lo > 0 && hi / lo >= 50) {
+    const a = Math.log(lo), b = Math.log(hi);
+    return {
+      toPos: v => Math.round(((Math.log(Math.min(hi, Math.max(lo, v))) - a) / (b - a)) * 1000),
+      fromPos: p => Number(Math.exp(a + (b - a) * (p / 1000)).toPrecision(3)),
+    };
+  }
+  return {
+    toPos: v => Math.round(((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * 1000),
+    fromPos: p => Number((lo + (hi - lo) * (p / 1000)).toPrecision(3)),
+  };
+}
+
+function setupMeasureFilters() {
+  const section = document.getElementById('measure-filters');
+  if (!section) return;
+  section.hidden = state.measures.length === 0;
+  if (!state.measures.length) return;
+  const note = document.getElementById('measure-note');
+  if (note) note.textContent = `${state.measures.length} FlowCam measurements per image`;
+  document.getElementById('measure-add').onclick = openMeasurePicker;
+  renderMeasureFilters();
+}
+
+function renderMeasureFilters() {
+  const list = document.getElementById('measure-list');
+  if (!list) return;
+  list.innerHTML = '';
+  Object.keys(state.measureFilters).forEach(col => {
+    const m = state.measureMap.get(col);
+    if (m) list.appendChild(measureRow(m));
+  });
+}
+
+function measureRow(m) {
+  const col = m.column_name;
+  const scale = measureScale(m);
+  const [lo, hi] = state.measureFilters[col];
+  const unit = m.unit ? ` (${m.unit})` : '';
+
+  const minInput = h('input', { type: 'number', step: 'any', inputmode: 'decimal', placeholder: fmtMeasure(m.min_value),
+    value: lo != null ? String(lo) : null, 'aria-label': `${m.label} minimum${unit}` });
+  const maxInput = h('input', { type: 'number', step: 'any', inputmode: 'decimal', placeholder: fmtMeasure(m.max_value),
+    value: hi != null ? String(hi) : null, 'aria-label': `${m.label} maximum${unit}` });
+  const lowSlider = h('input', { type: 'range', min: '0', max: '1000', step: '1', value: String(lo != null ? scale.toPos(lo) : 0),
+    'aria-label': `${m.label} minimum slider` });
+  const highSlider = h('input', { type: 'range', min: '0', max: '1000', step: '1', value: String(hi != null ? scale.toPos(hi) : 1000),
+    'aria-label': `${m.label} maximum slider` });
+  const track = h('div', { class: 'dual-range' }, lowSlider, highSlider);
+  const paint = () => {
+    track.style.setProperty('--lo', `${Number(lowSlider.value) / 10}%`);
+    track.style.setProperty('--hi', `${Number(highSlider.value) / 10}%`);
+  };
+  paint();
+
+  function commit(newLo, newHi) {
+    if (newLo != null && newHi != null && newLo > newHi) [newLo, newHi] = [newHi, newLo];
+    state.measureFilters[col] = [newLo, newHi];
+    minInput.value = newLo != null ? String(newLo) : '';
+    maxInput.value = newHi != null ? String(newHi) : '';
+    lowSlider.value = String(newLo != null ? scale.toPos(newLo) : 0);
+    highSlider.value = String(newHi != null ? scale.toPos(newHi) : 1000);
+    lowSlider.setAttribute('aria-valuetext', newLo != null ? fmtMeasure(newLo) : 'no minimum');
+    highSlider.setAttribute('aria-valuetext', newHi != null ? fmtMeasure(newHi) : 'no maximum');
+    paint();
+    measuresChanged();
+  }
+  // A slider at its end means "no limit" on that side.
+  const fromSlider = (pos, end) => (pos === end ? null : scale.fromPos(pos));
+  const fromInput = (input) => (input.value.trim() === '' || !isFinite(Number(input.value)) ? null : Number(input.value));
+
+  lowSlider.addEventListener('input', () => {
+    if (Number(lowSlider.value) > Number(highSlider.value)) lowSlider.value = highSlider.value;
+    minInput.value = Number(lowSlider.value) === 0 ? '' : String(scale.fromPos(Number(lowSlider.value)));
+    paint();
+  });
+  highSlider.addEventListener('input', () => {
+    if (Number(highSlider.value) < Number(lowSlider.value)) highSlider.value = lowSlider.value;
+    maxInput.value = Number(highSlider.value) === 1000 ? '' : String(scale.fromPos(Number(highSlider.value)));
+    paint();
+  });
+  lowSlider.addEventListener('change', () => commit(fromSlider(Number(lowSlider.value), 0), state.measureFilters[col][1]));
+  highSlider.addEventListener('change', () => commit(state.measureFilters[col][0], fromSlider(Number(highSlider.value), 1000)));
+  minInput.addEventListener('change', () => commit(fromInput(minInput), state.measureFilters[col][1]));
+  maxInput.addEventListener('change', () => commit(state.measureFilters[col][0], fromInput(maxInput)));
+
+  const typical = (m.p01 != null && m.p99 != null)
+    ? `Most images: ${fmtMeasure(m.p01)}–${fmtMeasure(m.p99)}${m.unit ? ` ${m.unit}` : ''} · all: ${fmtMeasure(m.min_value)}–${fmtMeasure(m.max_value)}`
+    : '';
+  return h('div', { class: 'measure-row', 'data-col': col },
+    h('div', { class: 'measure-row-head' },
+      h('span', { class: 'measure-label', title: m.description || null, text: m.label }),
+      m.unit ? h('span', { class: 'measure-unit', text: m.unit }) : null,
+      h('span', { class: 'measure-group', text: m.group_name }),
+      h('button', { type: 'button', class: 'icon-btn sm plain', 'aria-label': `Remove ${m.label} filter`, title: 'Remove', onclick: () => removeMeasure(col) }, UI.icon('x'))),
+    h('div', { class: 'measure-range' }, minInput, track, maxInput),
+    typical ? h('small', { class: 'measure-hint', text: typical }) : null);
+}
+
+function openMeasurePicker() {
+  const search = h('input', { type: 'search', placeholder: 'Search measurements…', 'aria-label': 'Search measurements', autocomplete: 'off' });
+  const list = h('div', { class: 'measure-picker' });
+  let dlg = null;
+
+  function add(col) {
+    if (!state.measureFilters[col]) state.measureFilters[col] = [null, null];
+    renderMeasureFilters();
+    dlg.close();
+    const row = document.querySelector(`.measure-row[data-col="${col}"]`);
+    if (row) {
+      row.scrollIntoView({ behavior: UI.reducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+      row.querySelector('input[type="number"]').focus({ preventScroll: true });
+    }
+  }
+
+  function render() {
+    const q = search.value.trim().toLowerCase();
+    list.innerHTML = '';
+    let groupEl = null, groupName = null, shown = 0;
+    state.measures.forEach(m => {
+      const text = `${m.label} ${m.unit || ''} ${m.group_name} ${m.description || ''}`.toLowerCase();
+      if (q && !text.includes(q)) return;
+      if (m.group_name !== groupName) {
+        groupName = m.group_name;
+        groupEl = h('div', { class: 'measure-picker-group', role: 'group', 'aria-label': groupName }, h('h3', { text: groupName }));
+        list.appendChild(groupEl);
+      }
+      const added = !!state.measureFilters[m.column_name];
+      groupEl.appendChild(h('button', { type: 'button', class: 'measure-choice', disabled: added, onclick: () => add(m.column_name) },
+        h('span', { class: 'measure-choice-label' }, m.label, m.unit ? h('span', { class: 'measure-unit', text: m.unit }) : null,
+          added ? UI.icon('check') : null),
+        m.description ? h('small', { text: m.description }) : null));
+      shown++;
+    });
+    if (!shown) list.appendChild(h('p', { class: 'text-muted', text: 'No measurement matches that search.' }));
+  }
+  search.addEventListener('input', render);
+  render();
+  dlg = UI.dialog({ title: 'Filter by a particle measurement', content: h('div', { class: 'measure-picker-body' }, search, list), wide: true, focus: search });
+}
+
+function removeMeasure(col) {
+  delete state.measureFilters[col];
+  renderMeasureFilters();
+  measuresChanged();
+}
+
+// Re-counts after the user stops adjusting for a moment.
+const measuresChanged = UI.debounce(async () => {
+  await refreshMeasureCounts();
+  applyFilters();
+}, 350);
+
+async function refreshMeasureCounts() {
+  const filters = activeMeasures();
+  const requestId = ++measureRequestId;
+  const busy = document.getElementById('measure-filters');
+  if (!Object.keys(filters).length) {
+    state.measureCounts = null;
+    if (busy) busy.removeAttribute('aria-busy');
+    return;
+  }
+  if (busy) busy.setAttribute('aria-busy', 'true');
+  try {
+    const index = await loadFilterIndex();
+    const cols = Object.keys(filters);
+    const values = await Promise.all(cols.map(col => loadMeasureValues(col, index)));
+    if (requestId !== measureRequestId) return;
+    state.measureCounts = countMeasures(index, cols.map((col, k) => [
+      values[k],
+      filters[col][0] == null ? -Infinity : Math.fround(filters[col][0]),
+      filters[col][1] == null ? Infinity : Math.fround(filters[col][1]),
+    ]));
+  } catch (err) {
+    if (requestId !== measureRequestId) return;
+    console.error('Measurement filter failed:', err);
+    UI.toast({ id: 'measure-error', kind: 'error', duration: 8000,
+      message: err && err.stale ? err.message
+        : "Couldn't load the measurement data. Check your connection and change a filter to try again." });
+  } finally {
+    if (requestId === measureRequestId && busy) busy.removeAttribute('aria-busy');
+  }
 }
 
 // 6. Sorting
@@ -483,7 +822,9 @@ function renderTable() {
     const pct = Math.max(2, Math.round(((row.image_count || 0) / state.maxCount) * 100));
     const countTd = addCell(tr, 'Images', null, 'num count-cell');
     countTd.append(h('i', { class: 'bar', style: { '--pct': `${pct}%` }, 'aria-hidden': 'true' }),
-      h('span', { text: row.image_count != null ? row.image_count.toLocaleString() : '0' }));
+      h('span', { text: row.image_count != null ? row.image_count.toLocaleString() : '0' }),
+      row.total_images != null ? h('small', { class: 'of-total', text: ` / ${row.total_images.toLocaleString()}`,
+        title: 'Images inside the measurement ranges / all images in the folder' }) : null);
 
     if (state.labelMap) {
       const lp = state.labelMap.get(row.folder_name);
@@ -1042,7 +1383,9 @@ async function openDetailPanel(row, opener) {
     ['Capture mode', row.capture_mode],
     ['Dilution', row.dilution],
     ['Type', row.is_pp ? 'Post-processed (PP)' : 'Raw'],
-    ['Images', row.image_count != null ? row.image_count.toLocaleString() : null],
+    ['Images', row.total_images != null
+      ? `${row.image_count.toLocaleString()} of ${row.total_images.toLocaleString()} inside the measurement ranges`
+      : row.image_count != null ? row.image_count.toLocaleString() : null],
     ['Size range', (row.min_width && row.max_width)
       ? `${row.min_width}×${row.min_height} – ${row.max_width}×${row.max_height}` : null],
   ];
@@ -1177,15 +1520,22 @@ function renderImageListing(container, images, folderRow, labelHref) {
       return;
     }
 
-    // Table view
-    const cols = [['filename', 'Filename'], ['width', 'W'], ['height', 'H'], ['file_size_bytes', 'Size'], ['format', 'Fmt'], ['label', 'Label']];
+    // Table view, plus a column for each measurement the folder was filtered on
+    const measured = Object.keys(activeMeasures()).filter(col => col !== 'width' && col !== 'height')
+      .map(col => state.measureMap.get(col));
+    const cols = [['filename', 'Filename'], ['width', 'W'], ['height', 'H']]
+      .concat(measured.map(m => [m.column_name, m.label, m.unit]))
+      .concat([['file_size_bytes', 'Size'], ['format', 'Fmt'], ['label', 'Label']]);
     const head = h('tr');
-    cols.forEach(([key, text]) => {
+    cols.forEach(([key, text, unit]) => {
       const th = h('th', { scope: 'col', 'aria-sort': S.sortCol === key ? (S.sortDir === 'asc' ? 'ascending' : 'descending') : null },
         h('button', { type: 'button', class: 'th-btn', onclick: () => {
           if (S.sortCol === key) S.sortDir = S.sortDir === 'asc' ? 'desc' : 'asc'; else { S.sortCol = key; S.sortDir = 'asc'; }
           render();
-        } }, text, UI.icon('chevron-down', 'sort-icon')));
+        } }, text,
+        // Kept out of the header's capitals: an upper-case "µm" reads as "MM".
+        unit ? h('span', { class: 'th-unit', text: ` (${unit})` }) : null,
+        UI.icon('chevron-down', 'sort-icon')));
       head.appendChild(th);
     });
     head.appendChild(h('th', { scope: 'col' }, h('span', { class: 'visually-hidden', text: 'Actions' })));
@@ -1199,6 +1549,7 @@ function renderImageListing(container, images, folderRow, labelHref) {
         h('td', { class: 'img-filename', title: img.filename, text: img.filename }),
         h('td', { class: 'num', text: img.width != null ? String(img.width) : '-' }),
         h('td', { class: 'num', text: img.height != null ? String(img.height) : '-' }),
+        measured.map(m => h('td', { class: 'num', text: fmtMeasure(img[m.column_name]) })),
         h('td', { class: 'num', text: formatBytes(img.file_size_bytes) }),
         h('td', { text: img.format || '-' }),
         h('td', {}, Labels.chip(img.label)),
@@ -1258,6 +1609,10 @@ function saveStateToHash() {
       hashObj[`f_${k}`] = state.filters[k];
     }
   });
+  // m_diameter_esd=20~50; an empty side means no limit.
+  Object.entries(activeMeasures()).forEach(([col, [lo, hi]]) => {
+    hashObj[`m_${col}`] = `${lo != null ? lo : ''}~${hi != null ? hi : ''}`;
+  });
 
   const params = new URLSearchParams(hashObj);
   const newHash = '#' + params.toString();
@@ -1296,6 +1651,17 @@ function loadStateFromHash() {
         }
       }
     });
+
+    // Measurement ranges, for measurements this database has
+    const measureFilters = {};
+    params.forEach((value, key) => {
+      const col = key.slice(2);
+      if (!key.startsWith('m_') || !state.measureMap.has(col)) return;
+      const bound = s => (s.trim() === '' || !isFinite(Number(s)) ? null : Number(s));
+      const [lo, hi] = value.split('~');
+      measureFilters[col] = [bound(lo || ''), bound(hi || '')];
+    });
+    state.measureFilters = measureFilters;
 
     // update page size selector
     const szSelect = document.getElementById('page-size');
@@ -1403,10 +1769,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearBtn.addEventListener('click', () => {
       // Reset filter state
       Object.keys(state.filters).forEach(k => state.filters[k] = '');
+      state.measureFilters = {};
+      state.measureCounts = null;
+      measureRequestId++;  // ignore a count still on its way
 
       // Reset DOM
       if (searchInput) searchInput.value = '';
       document.querySelectorAll('.filter-select').forEach(sel => sel.value = '');
+      renderMeasureFilters();
+      document.getElementById('measure-filters')?.removeAttribute('aria-busy');
 
       applyFilters();
     });
@@ -1455,11 +1826,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Hash change
-  window.addEventListener('hashchange', () => {
+  window.addEventListener('hashchange', async () => {
     // Only reload if we actually triggered browser nav (back/forward)
     // In a full app we'd compare hash precisely
     if (!state.loaded) return;
     loadStateFromHash();
+    renderMeasureFilters();
+    await refreshMeasureCounts();
     applyFilters(false);
   });
 

@@ -111,18 +111,32 @@ left join (
 ) l using (folder_name)
 order by f.folder_name;
 
+-- Never reads the whole images table: since 003 added the FlowCam measurement
+-- columns it's ~300 MB, and counting every row took 15 s, past the 3 s anonymous
+-- request limit. The total comes from folders.image_count (the import checks it
+-- matches the images), and the labeled rows from the partial index on label.
 create view public.labeling_stats
 with (security_invoker = true) as
+with labeled as (
+  select count(*)::bigint                 as images,
+         count(distinct labeled_by)::int  as labelers,
+         max(labeled_date)                as last_at
+  from public.images
+  where label is not null
+), total as (
+  select coalesce(sum(image_count), 0)::bigint as images
+  from public.folders
+)
 select
-  count(*)::bigint                                                  as total_images,
-  count(*) filter (where label is not null)::bigint                 as labeled_images,
-  count(*) filter (where label is null)::bigint                     as unlabeled_images,
-  case when count(*) > 0
-       then round(100.0 * count(*) filter (where label is not null) / count(*), 1)
+  total.images                                                      as total_images,
+  labeled.images                                                    as labeled_images,
+  total.images - labeled.images                                     as unlabeled_images,
+  case when total.images > 0
+       then round(100.0 * labeled.images / total.images, 1)
        else 0 end                                                   as pct_labeled,
-  count(distinct labeled_by)::int                                   as labeler_count,
-  max(labeled_date)                                                 as last_labeled_at
-from public.images;
+  labeled.labelers                                                  as labeler_count,
+  labeled.last_at                                                   as last_labeled_at
+from total, labeled;
 
 create view public.label_counts
 with (security_invoker = true) as

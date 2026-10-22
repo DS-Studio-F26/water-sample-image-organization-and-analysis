@@ -18,7 +18,9 @@ manifest. Then the data is COPYed into temporary staging tables, and one
 transaction brings the live tables in line with them (insert new rows, update
 changed ones, delete ones no longer in the catalog) and re-checks the counts
 before committing. A failed run rolls back and leaves the previous data as it
-was. The reserved images.label column is never touched.
+was. The reserved images.label column is never touched, and an import that
+would delete a labeled image (one no longer in the catalog) refuses to run
+unless --allow-label-loss is given. --dry-run lists what would be removed.
 
 Usage (from ProjectCode/):
     python deploy/import_to_supabase.py --dry-run   # check the files, estimate size; writes nothing
@@ -40,8 +42,13 @@ from dotenv import load_dotenv
 from apply_migrations import PROJECT_DIR, connect, describe, get_db_url
 
 CATALOG_DIR = PROJECT_DIR / "catalog_output"
-SIZE_LIMIT_MB = 350  # stay well under Supabase's 500 MB free-tier database limit
+SIZE_LIMIT_MB = 450  # under Supabase's 500 MB free tier with room for all 64 measurement filters
+FREE_TIER_MB = 500
 MB = 1024 * 1024
+# Each image's FlowCam measurements (migration 003, filled by import_measurements.py):
+# 62 reals plus a wider null bitmap. This script never writes them, but they're
+# part of every images row, so they count toward the size.
+MEASUREMENT_BYTES_PER_ROW = 62 * 4 + 8
 
 # public.folders columns, in folder_summary.csv order, with their types.
 FOLDER_COLUMNS = [
@@ -300,7 +307,13 @@ def db_snapshot(conn) -> dict:
     ).fetchone()[0]
     counts = {t: conn.execute(f"select count(*) from public.{t}").fetchone()[0]
               for t in ("folders", "images", "qa_log")}
-    return {"size": size, "catalog_tables": ours, "baseline": size - ours, "counts": counts}
+    has_measurements = conn.execute(
+        "select exists (select 1 from information_schema.columns where table_schema = 'public' "
+        "and table_name = 'images' and column_name = 'diameter_esd')").fetchone()[0]
+    measured = conn.execute("select count(*) from public.images where diameter_esd is not null"
+                            ).fetchone()[0] if has_measurements else 0
+    return {"size": size, "catalog_tables": ours, "baseline": size - ours, "counts": counts,
+            "measurement_bytes": measured * MEASUREMENT_BYTES_PER_ROW}
 
 
 def quoted(cols):
@@ -335,7 +348,22 @@ def scalar(conn, sql: str):
     return conn.execute(sql).fetchone()[0]
 
 
-def run_import(conn, folder_rows, image_rows, qa_rows) -> dict:
+def removals(conn, folder_rows, image_rows) -> dict:
+    """What an import would delete: folders and images no longer in the catalog,
+    and how many of those images have a label. Read-only."""
+    keep_folders = {row[0] for row in folder_rows}
+    keep_images = {row[0] for row in image_rows}
+    folders = [r[0] for r in conn.execute("select folder_name from public.folders")
+               if r[0] not in keep_folders]
+    gone = labeled = 0
+    for image_id, has_label in conn.execute("select image_id, label is not null from public.images"):
+        if image_id not in keep_images:
+            gone += 1
+            labeled += has_label
+    return {"folders": folders, "images": gone, "labeled": labeled}
+
+
+def run_import(conn, folder_rows, image_rows, qa_rows, allow_label_loss=False) -> dict:
     folder_cols = [c for c, _ in FOLDER_COLUMNS]
     changes = {}
     with conn.transaction():
@@ -365,6 +393,14 @@ def run_import(conn, folder_rows, image_rows, qa_rows) -> dict:
                 "removed": scalar(conn, f"select count(*) from public.{table} t where not exists "
                                         f"(select 1 from {stage} s where s.{key} = t.{key})"),
             }
+
+        # Removing an image removes its label too: refuse unless asked.
+        labeled_gone = scalar(conn, "select count(*) from public.images t where t.label is not null "
+                                    "and not exists (select 1 from stage_images s where s.image_id = t.image_id)")
+        if labeled_gone and not allow_label_loss:
+            raise DataError(f"{labeled_gone:,} labeled image(s) are no longer in the catalog, so importing "
+                            "would delete their labels. Export the labels first (labeling page, Export labels), "
+                            "then re-run with --allow-label-loss")
 
         # Folder foreign keys are checked at commit, so this order is only for clarity.
         upserted = conn.execute(upsert_sql("public.folders", "folder_name", folder_cols,
@@ -402,20 +438,22 @@ def run_import(conn, folder_rows, image_rows, qa_rows) -> dict:
     return changes
 
 
-def print_estimate(est: dict, baseline: int, baseline_measured: bool) -> float:
-    images_total = est["heap"] + est["primary_key"] + est["folder_index"]
+def print_estimate(est: dict, baseline: int, baseline_measured: bool, measurement_bytes: int = 0):
+    """Prints the estimate; returns (total MB, peak MB)."""
+    images_total = est["heap"] + est["primary_key"] + est["folder_index"] + measurement_bytes
     total = baseline + images_total + 1 * MB  # folders + qa_log are well under 1 MB
     peak = total + est["staging"]
     source = "measured" if baseline_measured else "typical new project, not measured"
     print("Estimated database size after import:")
     print(f"  images table       ~{images_total / MB:,.0f} MB  (rows {est['heap'] / MB:,.0f}, "
-          f"primary key {est['primary_key'] / MB:,.0f}, folder index {est['folder_index'] / MB:,.0f})")
+          f"primary key {est['primary_key'] / MB:,.0f}, folder index {est['folder_index'] / MB:,.0f}, "
+          f"FlowCam measurements {measurement_bytes / MB:,.0f})")
     print(f"  folders + qa_log   <1 MB")
     print(f"  everything else    ~{baseline / MB:,.0f} MB  ({source})")
     print(f"  total              ~{total / MB:,.0f} MB   (limit for this project: {SIZE_LIMIT_MB} MB; "
-          f"Supabase free tier: 500 MB)")
+          f"Supabase free tier: {FREE_TIER_MB} MB)")
     print(f"  peak while loading ~{peak / MB:,.0f} MB   (temporary staging copy, dropped at commit)")
-    return total / MB
+    return total / MB, peak / MB
 
 
 def main():
@@ -425,6 +463,8 @@ def main():
     parser.add_argument("--summary", type=Path, default=CATALOG_DIR / "folder_summary.csv")
     parser.add_argument("--manifest", type=Path, default=CATALOG_DIR / "image_manifest.csv.gz")
     parser.add_argument("--qa-log", type=Path, default=CATALOG_DIR / "qa_log.csv")
+    parser.add_argument("--allow-label-loss", action="store_true",
+                        help="import even if that deletes images that have a label")
     args = parser.parse_args()
 
     started = time.time()
@@ -461,13 +501,25 @@ def main():
                 conn.read_only = True
                 with conn.transaction():
                     snapshot = db_snapshot(conn)
+                    gone = removals(conn, folder_rows, image_rows)
             c = snapshot["counts"]
             print(f"  now: {snapshot['size'] / MB:,.1f} MB, {c['folders']:,} folders, "
                   f"{c['images']:,} images, {c['qa_log']:,} QA entries")
+            print(f"  the import would remove {len(gone['folders']):,} folder(s) and {gone['images']:,} image(s), "
+                  f"{gone['labeled']:,} of them labeled")
+            for name in gone["folders"][:20]:
+                print(f"    - {name}")
+            if len(gone["folders"]) > 20:
+                print(f"    ... and {len(gone['folders']) - 20} more")
+            if gone["labeled"] and not args.allow_label_loss:
+                print("WARNING: that would delete labels; the real import will refuse without --allow-label-loss.")
         baseline = snapshot["baseline"] if snapshot else 30 * MB
-        total_mb = print_estimate(est, baseline, snapshot is not None)
+        total_mb, peak_mb = print_estimate(est, baseline, snapshot is not None,
+                                           snapshot["measurement_bytes"] if snapshot else 0)
         if total_mb > SIZE_LIMIT_MB:
             print(f"WARNING: over the {SIZE_LIMIT_MB} MB limit; the real import will refuse to run.")
+        if peak_mb > FREE_TIER_MB:
+            print(f"WARNING: the peak is over the {FREE_TIER_MB} MB free tier; the real import will refuse to run.")
         print(f"Dry run finished in {time.time() - started:.0f}s. Nothing was written.")
         return
 
@@ -475,13 +527,16 @@ def main():
     print(f"Connecting to {describe(url)} ...")
     with connect(url) as conn:
         before = db_snapshot(conn)
-        total_mb = print_estimate(est, before["baseline"], True)
+        total_mb, peak_mb = print_estimate(est, before["baseline"], True, before["measurement_bytes"])
         if total_mb > SIZE_LIMIT_MB:
             sys.exit(f"ERROR: the estimated size is over {SIZE_LIMIT_MB} MB. Nothing was written.")
+        if peak_mb > FREE_TIER_MB:
+            sys.exit(f"ERROR: loading would briefly need ~{peak_mb:,.0f} MB, over the {FREE_TIER_MB} MB "
+                     "free tier. Nothing was written.")
 
         print("Importing ...")
         try:
-            changes = run_import(conn, folder_rows, image_rows, qa_rows)
+            changes = run_import(conn, folder_rows, image_rows, qa_rows, args.allow_label_loss)
         except (DataError, psycopg.Error) as exc:
             sys.exit(f"ERROR: {exc}\nRolled back; the database is unchanged.")
         conn.execute("analyze public.folders, public.images")

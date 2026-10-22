@@ -32,15 +32,28 @@ for AI* codes, "trigger" for TR*/TM codes (confirmed with Prof. Ahlgren: AI =
 autoimage mode, TR1/TM = trigger mode, which uses laser-triggered detection
 and is the preferred/standardized mode post-2022).
 
+FlowCam measurements: --vbd-export points at the folders written by
+Flowcam_VBD_File_Format/export_all.py, one per FlowCam run, each holding the
+run's images ("<run>_<position>.png", the same names VisualSpreadsheet gives
+them) and an images_details.csv with every particle's measurements. A run
+that also has a folder under --root keeps the --root images -- they're the
+ones already hosted, and labels hang off their image_ids -- and each image
+gets the measurements of the particle at its position, but only if the
+export's copy of that image is byte-identical. Runs with no --root folder are
+cataloged from the export itself, as long as their site is one the --root
+folders already have (the export has a few sites the city export doesn't,
+such as duplicate samples and misspelled names, and those are skipped). The
+measurements go to their own file,
+image_measurements.csv.gz (one row per image_id): there are ~80 of them for
+~670K images, too much to add to the committed manifest.
+
 Usage:
-    python catalog_images.py [--root PATH] [--out-dir PATH] [--source-tag NAME]
+    python catalog_images.py [--root PATH] [--vbd-export PATH] [--out-dir PATH] [--source-tag NAME]
 """
 
 import argparse
 import collections
 import csv
-from os import path
-import pandas as pd
 import gzip
 import hashlib
 import re
@@ -252,6 +265,44 @@ def image_id_for(rel_path: str) -> str:
     return hashlib.sha1(rel_path.encode("utf-8")).hexdigest()[:16]
 
 
+# images_details.csv columns that identify the particle rather than measure it.
+DETAIL_KEY_COLUMNS = {"particle", "position", "capture_id"}
+CAMEL_BOUNDARY_RE = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+
+
+def measurement_column(name: str) -> str:
+    """FlowCam's camelCase property names as snake_case: diameterESD ->
+    diameter_esd, ch2_ch1Ratio -> ch2_ch1_ratio, biovolumePSpheroid ->
+    biovolume_p_spheroid."""
+    return CAMEL_BOUNDARY_RE.sub("_", name).lower()
+
+
+def read_details(path: Path) -> dict:
+    """images_details.csv -> {position: row}; empty if the file isn't there."""
+    if not path.exists():
+        return {}
+    with path.open(newline="", encoding="utf-8") as f:
+        return {int(row["position"]): row for row in csv.DictReader(f)}
+
+
+def image_position(filename: str):
+    """"<run>_00012.png" -> 12, the particle's position in its FlowCam run."""
+    number = Path(filename).stem.rsplit("_", 1)[-1]
+    return int(number) if number.isdigit() else None
+
+
+def file_sha1(path: Path) -> str:
+    return hashlib.sha1(path.read_bytes()).hexdigest()
+
+
+def format_measurement(value: str) -> str:
+    """Seven significant digits: what a 4-byte float (Postgres "real") keeps."""
+    if value in ("", None):
+        return ""
+    number = float(value)
+    return "" if number != number else format(number, ".7g")  # NaN -> empty
+
+
 def read_image_info(path: Path) -> dict:
     try:
         with Image.open(path) as im:
@@ -318,18 +369,39 @@ def main():
         default="WCMC_raw_2023",
         help="Value stamped into the manifest's source_dataset column.",
     )
+    parser.add_argument(
+        "--vbd-export",
+        type=Path,
+        default=Path(__file__).parent / "vbd_export",
+        help="Folders written by Flowcam_VBD_File_Format/export_all.py (skipped if missing).",
+    )
+    parser.add_argument(
+        "--vbd-source-tag",
+        default="FlowCam_VBD",
+        help="source_dataset value for images that come from --vbd-export.",
+    )
     args = parser.parse_args()
 
     root: Path = args.root
     out_dir: Path = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    def list_folders(base: Path) -> dict:
+        if not base.is_dir():
+            return {}
+        return {p.name: p for p in base.iterdir() if p.is_dir() and p.name not in SYSTEM_FOLDER_NAMES}
+
+    root_folders = list_folders(root)
+    vbd_folders = list_folders(args.vbd_export)
+    if vbd_folders:
+        print(f"FlowCam export: {len(vbd_folders)} runs in {args.vbd_export}, "
+              f"{len(vbd_folders.keys() & root_folders.keys())} of them also under {root}")
+    # A run under --root is cataloged from there; the export only adds the rest.
+    all_folders = {**vbd_folders, **root_folders}
+
     # Sort by name, not Path: Windows compares paths case-insensitively, which
     # would reorder the manifest's rows compared with a macOS run.
-    sample_folders = sorted(
-        (p for p in root.iterdir() if p.is_dir() and p.name not in SYSTEM_FOLDER_NAMES),
-        key=lambda p: p.name,
-    )
+    sample_folders = sorted(all_folders.values(), key=lambda p: p.name)
 
     excluded = [f for f in sample_folders if EXCLUDED_FOLDER_PATTERN.search(f.name)]
     for f in excluded:
@@ -365,15 +437,32 @@ def main():
     print(f"Dropped {len(dropped_names)} raw folders in favor of their -pp counterpart.")
     included_folders = [f for f in included_folders if f.name in selected_names]
 
+    # FlowCam runs are only added at sites the city export already has. Done
+    # after the -pp choice, so a skipped -pp run's raw twin stays dropped too.
+    city_sites = {folder_parsed[f.name]["site_normalized"] for f in included_folders if f.parent == root}
+    new_site_folders = sorted(f.name for f in included_folders
+                              if f.parent != root and folder_parsed[f.name]["site_normalized"] not in city_sites)
+    for name in new_site_folders:
+        print(f"Skipping FlowCam run at a site the city export doesn't have "
+              f"({folder_parsed[name]['site_normalized']}): {name}")
+    included_folders = [f for f in included_folders if f.name not in new_site_folders]
+
     manifest_rows = []
+    measurement_rows = []
+    measurement_fields = None
+    measurement_stats = collections.Counter()
     folder_stats = {}
 
     for folder in included_folders:
         folder_name = folder.name
         parsed = folder_parsed[folder_name]
+        from_export = folder.parent != root
+        export_folder = vbd_folders.get(folder_name)
+        details = read_details(export_folder / "images_details.csv") if export_folder else {}
+        export_positions = None  # sha1 -> position of the export's images, built if needed
 
         image_files = sorted(
-            (p for p in folder.joinpath("images").iterdir()
+            (p for p in folder.iterdir()
              if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS and not p.name.startswith("._")),
             key=lambda p: p.name,
         )
@@ -381,15 +470,11 @@ def main():
         widths, heights = [], []
         unreadable_count = 0
 
-
-        extra_properties_manifest = (
-            pd.read_csv(folder.joinpath("images_details.csv")) if path.exists(folder.joinpath("images_details.csv")) else pd.DataFrame(columns=["particle"])
-        )
-
         for img_path in image_files:
             # as_posix() keeps "folder/file" with a forward slash on every OS, so
             # image_id (a hash of this path) is the same on Windows and macOS.
-            rel_path = img_path.relative_to(root).as_posix()
+            rel_path = img_path.relative_to(folder.parent).as_posix()
+            image_id = image_id_for(rel_path)
             info = read_image_info(img_path)
 
             if not info["is_readable"]:
@@ -398,10 +483,33 @@ def main():
                 widths.append(info["width"])
                 heights.append(info["height"])
 
-            extra_properties = extra_properties_manifest[extra_properties_manifest["particle"] == int(img_path.stem)].to_dict('records')[0]
-             
+            # Measurements for the particle at this image's position, if the
+            # export has that particle and its image is this exact file.
+            detail = details.get(image_position(img_path.name)) if details else None
+            if details and not from_export:
+                twin = export_folder / img_path.name
+                if detail is None or not twin.exists() or file_sha1(twin) != file_sha1(img_path):
+                    # The city's numbering can be offset from the run's (one
+                    # folder starts at _04701), so find the particle by its image.
+                    if export_positions is None:
+                        export_positions = {file_sha1(p): image_position(p.name)
+                                            for p in export_folder.iterdir() if p.suffix.lower() == ".png"}
+                        measurement_stats["folders matched by image content"] += 1
+                    detail = details.get(export_positions.get(file_sha1(img_path)))
+            if detail is not None:
+                if measurement_fields is None:
+                    measurement_fields = [c for c in detail if c not in DETAIL_KEY_COLUMNS]
+                measurement_rows.append(
+                    [image_id, detail["particle"]]
+                    + [format_measurement(detail.get(c, "")) for c in measurement_fields])
+                measurement_stats["with measurements"] += 1
+            elif export_folder:
+                measurement_stats["no matching particle in the FlowCam export"] += 1
+            else:
+                measurement_stats["folder has no FlowCam export"] += 1
+
             manifest_rows.append({
-                "image_id": image_id_for(rel_path),
+                "image_id": image_id,
                 "filename": img_path.name,
                 "site_raw": parsed["site_raw"],
                 "site_normalized": parsed["site_normalized"],
@@ -421,8 +529,8 @@ def main():
                 "label": "",
                 "labeled_by": "",
                 "labeled_date": "",
-                "source_dataset": args.source_tag,
-            } | extra_properties)
+                "source_dataset": args.vbd_source_tag if from_export else args.source_tag,
+            })
 
         folder_stats[folder_name] = {
             "folder_name": folder_name,
@@ -464,6 +572,13 @@ def main():
     with manifest_path.open("rb") as src, gzip.open(manifest_gz_path, "wb") as dst:
         shutil.copyfileobj(src, dst)
 
+    measurements_path = out_dir / "image_measurements.csv.gz"
+    if measurement_rows:
+        with gzip.open(measurements_path, "wt", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["image_id", "particle_id"] + [measurement_column(c) for c in measurement_fields])
+            writer.writerows(measurement_rows)
+
     summary_path = out_dir / "folder_summary.csv"
     summary_fields = [
         "folder_name", "site_raw", "site_normalized", "water_body_type", "date", "magnification",
@@ -478,11 +593,16 @@ def main():
     print(f"Folders scanned: {len(sample_folders)}")
     print(f"Folders excluded (test/scratch): {len(excluded)}")
     print(f"Folders dropped (raw, superseded by -pp): {len(dropped_names)}")
+    print(f"Folders skipped (FlowCam runs at new sites): {len(new_site_folders)}")
     print(f"Folders cataloged: {len(included_folders)}")
     print(f"Images cataloged: {len(manifest_rows)}")
+    for reason, count in sorted(measurement_stats.items()):
+        print(f"  {reason}: {count}")
     print(f"Wrote: {manifest_path}")
     print(f"Wrote: {manifest_gz_path} (commit this one — under GitHub's 100MB limit)")
     print(f"Wrote: {summary_path}")
+    if measurement_rows:
+        print(f"Wrote: {measurements_path} ({len(measurement_rows)} images, {len(measurement_fields)} measurements)")
 
 
 if __name__ == "__main__":
