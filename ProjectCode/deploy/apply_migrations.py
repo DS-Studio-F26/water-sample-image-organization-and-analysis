@@ -27,12 +27,14 @@ from dotenv import load_dotenv
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = PROJECT_DIR / "supabase" / "migrations"
 
-TABLES = ["folders", "images", "qa_log", "profiles", "measurement_columns"]
+TABLES = ["folders", "images", "qa_log", "profiles", "measurement_columns", "role_requests"]
 VIEWS = ["folders_visible", "dashboard_stats", "chart_site_counts",
          "chart_date_counts", "chart_water_body_counts",
          "folder_labeling_progress", "labeling_stats", "label_counts"]
 ROLE_FUNCTIONS = ["is_admin()", "admin_list_users()", "set_user_role(uuid, text)",
-                   "can_label()", "my_labeling_count()", "admin_labeling_by_user()"]
+                   "can_label()", "my_labeling_count()", "admin_labeling_by_user()",
+                   "is_owner()", "request_role(text)", "cancel_role_request()",
+                   "review_role_request(uuid, boolean)", "team_labeling_progress()"]
 
 
 def get_db_url() -> str:
@@ -114,13 +116,19 @@ def verify(conn: psycopg.Connection) -> bool:
           priv("select has_function_privilege('anon', 'public.measurement_folder_counts(jsonb)', 'execute')"))
     filterable = conn.execute("select count(*) from public.measurement_columns").fetchone()[0]
     check(f"measurement_columns lists 64 filters (found {filterable})", filterable == 64)
+    check("anon cannot read role_requests",
+          not priv("select has_table_privilege('anon', 'public.role_requests', 'select')"))
+    check("authenticated cannot write role_requests",
+          not priv("select has_table_privilege('authenticated', 'public.role_requests', 'insert, update, delete, truncate')"))
     for fn in ROLE_FUNCTIONS:
         check(f"anon cannot execute {fn}",
               not priv("select has_function_privilege('anon', %s, 'execute')", f"public.{fn}"))
 
+    # 0 until the project account's first confirmed sign-in; never more than 1.
+    owners = conn.execute("select count(*) from public.profiles where role = 'owner'").fetchone()[0]
     admins = conn.execute("select count(*) from public.profiles where role = 'admin'").fetchone()[0]
     users = conn.execute("select count(*) from public.profiles").fetchone()[0]
-    print(f"  profiles: {users} account(s), {admins} admin(s)")
+    print(f"  profiles: {users} account(s), {owners} owner, {admins} other admin(s)")
     return ok
 
 

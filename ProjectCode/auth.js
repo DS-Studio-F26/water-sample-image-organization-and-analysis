@@ -11,9 +11,9 @@
  *   Auth.openSignIn(mode) open the modal: 'signin' | 'signup' | 'forgot'
  *   Auth.isRecovery()     true on a password-reset link visit
  *
- * Pages with an element #auth-area get the account controls rendered into it,
- * and an #nav-admin link is shown to admins. These checks only decide what to
- * show; the database enforces who can do what.
+ * Pages with an element #auth-area get the account controls rendered into it.
+ * Role checks in the pages only decide what to show; the database enforces
+ * who can do what.
  */
 (function () {
   // supabase-js removes tokens from the URL as it starts, so keep a copy.
@@ -106,13 +106,7 @@
     return svg;
   }
 
-  function updateNav() {
-    const admin = document.getElementById('nav-admin');
-    if (admin) admin.hidden = !(current.user && current.profile && current.profile.role === 'admin');
-  }
-
   function renderAuthArea() {
-    updateNav();
     const area = document.getElementById('auth-area');
     if (!area) return;
     area.innerHTML = '';
@@ -200,7 +194,7 @@
         </div>
         <div class="modal-body">
           <p class="modal-intro">Browsing and downloading images never needs an account. Sign in to label
-            images: new accounts start as viewers, and an admin can make you a labeler.</p>
+            images: new accounts start as viewers and can request the labeler role on the Admin page.</p>
           <button type="button" class="btn-google" data-action="google">${GOOGLE_LOGO}<span>Continue with Google</span></button>
           <div class="auth-divider"><span>or use email</span></div>
           <form class="auth-form" novalidate>

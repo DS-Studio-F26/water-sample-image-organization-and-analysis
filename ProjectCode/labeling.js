@@ -140,7 +140,7 @@
     const demo = !!window.APP_DEMO;
     state.user = auth.user || (demo ? Demo.guest : null);
     state.role = auth.user ? role : 'viewer';
-    state.canLabel = demo || (!!auth.user && (role === 'admin' || role === 'labeler'));
+    state.canLabel = demo || (!!auth.user && ['owner', 'admin', 'labeler'].includes(role));
     renderRoleBanner();
     if (!state.booted) await boot();
     else { await refreshOverview(true); applyRoleToUi(); }
@@ -157,9 +157,11 @@
         h('div', {},
           h('strong', { text: 'You’re in view-only mode' }),
           h('span', { text: signedIn
-            ? ' Your account has the Viewer role. Ask an admin to make you a labeler and the labeling tools will appear here.'
+            ? ' Your account has the Viewer role. Request the labeler role on the Admin page, and the labeling tools will appear here once an admin approves it.'
             : ' Browse every folder and image. Sign in with a labeler account to label them.' })),
-        !signedIn ? h('button', { type: 'button', class: 'btn btn-sm btn-primary', onclick: () => Auth.openSignIn('signin') }, UI.icon('log-in'), 'Sign in') : null)));
+        signedIn
+          ? h('a', { class: 'btn btn-sm btn-primary', href: 'admin.html' }, UI.icon('shield'), 'Request the labeler role')
+          : h('button', { type: 'button', class: 'btn btn-sm btn-primary', onclick: () => Auth.openSignIn('signin') }, UI.icon('log-in'), 'Sign in'))));
   }
 
   async function boot() {

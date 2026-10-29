@@ -42,8 +42,8 @@ gunzip -k ProjectCode/catalog_output/image_manifest.csv.gz
 
 The catalog is online at **https://water-sample-dashboard.pages.dev**. Anyone can
 browse, filter, view and download the images without an account. Signing in
-(Google, or email and password) is needed to label images (labeler role) and for
-the admin page (admin role). Everything runs on free tiers: Cloudflare Pages,
+(Google, or email and password) is needed to label images (labeler role), to
+manage accounts (admin role), or to request a role on the admin page. Everything runs on free tiers: Cloudflare Pages,
 Workers and R2, plus Supabase.
 
 ### Architecture
@@ -95,15 +95,21 @@ flowchart LR
   tables `folders`, `images`, `qa_log` and `profiles`, the views behind the stats
   and charts, and the role functions; `002_labeling.sql` adds image labeling (see
   [Labeling](#labeling)); `003_measurements.sql` adds the FlowCam measurements
-  (see [Particle measurements](#particle-measurements-flowcam)). Security lives in the database (Row-Level Security and
+  (see [Particle measurements](#particle-measurements-flowcam)); `004_roles.sql` adds the
+  Owner role and role requests. Security lives in the database (Row-Level Security and
   SQL functions), not in the page:
   - anyone can read folders, images and the QA log, and nobody can change them
     through the website, except that labelers and admins can set the `label`
     column of an image (and nothing else);
   - every account starts as `viewer`; `watersampleimageorganization@gmail.com`
-    becomes `admin` on its first confirmed sign-in;
-  - only admins can list accounts or change roles (admin page), and the last
-    admin can never be demoted or deleted;
+    becomes `owner` on its first confirmed sign-in. The Owner can do everything an
+    admin can; nobody can be made Owner, and the Owner's role can't be changed;
+  - only admins can list accounts or change roles (admin page), only the Owner can
+    change another admin's role (admins can change their own), and the last admin
+    can never be demoted or deleted;
+  - on the admin page, signed-in viewers can request the labeler or admin role and
+    labelers the admin role; admins approve or decline in the accounts table's
+    Status column;
   - labeling is switched on by applying `002_labeling.sql`: until then the
     labeling page shows a setup notice instead of the workspace.
 - **Duplicates**: `catalog_images.py` already leaves out raw folders that have a
@@ -128,8 +134,9 @@ flowchart LR
 - `labeled_by` and `labeled_date` are stamped by a database trigger from the signed-in
   user and the current time; the browser can write nothing but `label`.
 - Progress shows as an overall ring, a per-label mix, per-folder bars (also on the
-  dashboard) and, for admins, a per-labeler table on the admin page. **Export labels
-  (CSV)** downloads image id, folder, filename, label and time.
+  dashboard) and a per-labeler table on the admin page, for admins and labelers
+  (labelers see names, not email addresses). **Export labels (CSV)**, also on the
+  admin page, downloads image id, folder, filename, label and time.
 - Keyboard: arrows move, Space selects, Enter opens the viewer, `1`-`6` label, `0`
   clears, `L` opens a tile's label menu, `Z` undoes, `?` lists every shortcut.
 

@@ -36,6 +36,7 @@ create index if not exists images_labeled_by_idx on public.images (labeled_by) w
 -- -----------------------------------------------------------------------------
 -- Role check and label-metadata trigger
 -- -----------------------------------------------------------------------------
+-- 004_roles.sql replaces can_label() so the Owner can label too.
 
 create or replace function public.can_label()
 returns boolean

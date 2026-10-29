@@ -202,8 +202,9 @@
 
   // --- folders, images, people ---------------------------------------------------------
 
-  // Made-up labelers; the admin page lists them alongside your real account.
+  // Made-up people; the admin page lists them alongside your real account.
   var USERS = [
+    { id: 'demo-admin-2', email: 'jordan.reyes@example.com', full_name: 'Jordan Reyes', provider: 'google', role: 'admin', created_at: '2026-09-02T14:10:00Z', last_sign_in_at: '2026-10-03T15:22:00Z' },
     { id: 'demo-labeler-2', email: 'avery.lin@example.com', full_name: 'Avery Lin', provider: 'google', role: 'labeler', created_at: '2026-09-04T16:45:00Z', last_sign_in_at: '2026-10-02T21:08:00Z' },
     { id: 'demo-labeler-3', email: 'sam.okafor@example.com', full_name: 'Sam Okafor', provider: 'email', role: 'labeler', created_at: '2026-09-06T12:20:00Z', last_sign_in_at: '2026-10-01T18:40:00Z' },
     { id: 'demo-viewer-2', email: 'riley.chen@example.com', full_name: 'Riley Chen', provider: 'google', role: 'viewer', created_at: '2026-09-25T08:05:00Z', last_sign_in_at: '2026-09-30T13:12:00Z' },
@@ -221,6 +222,10 @@
   try { stored = JSON.parse(session(DATA) || '{}'); } catch (e) { stored = {}; }
   stored.labels = stored.labels || {};   // image_id -> [label, by, iso date]
   stored.roles = stored.roles || {};     // user id -> role
+  // user id -> latest role request; Riley starts with one waiting for review.
+  stored.requests = stored.requests || {
+    'demo-viewer-2': { requested_role: 'labeler', status: 'pending', requested_at: '2026-09-30T13:20:00Z', decided_at: null },
+  };
   function persist() { session(DATA, JSON.stringify(stored)); }
   USERS.forEach(function (u) { if (stored.roles[u.id]) u.role = stored.roles[u.id]; });
 
@@ -366,6 +371,13 @@
       }).sort(function (a, b) { return a.folder_name.localeCompare(b.folder_name); });
     },
     images: function () { return images; },
+    // Like the real policy: admins read every request, anyone else only their own.
+    role_requests: function () {
+      var me = actor(), admin = isAdminRole(realRole());
+      return Object.keys(stored.requests)
+        .filter(function (id) { return admin || id === me.id; })
+        .map(function (id) { return Object.assign({ user_id: id }, stored.requests[id]); });
+    },
     measurement_columns: function () { return MEASURES; },
     profiles: function () { return []; },  // only used when the real client is missing (no one is signed in then)
   };
@@ -382,6 +394,8 @@
   }
   function actor() { var a = signedIn(); return a ? a.user : GUEST; }
   function realRole() { var a = signedIn(); return a ? ((a.profile && a.profile.role) || 'viewer') : null; }
+  function isAdminRole(role) { return role === 'admin' || role === 'owner'; }
+  var RANK = { viewer: 1, labeler: 2, admin: 3, owner: 4 };
 
   // The sample people, plus your real account at the top when you're signed in.
   function people() {
@@ -483,9 +497,38 @@
     return { data: null, error: null, count: null };
   };
 
+  // How much each person (and the guest) has labeled, as admin_labeling_by_user() returns it.
+  function labelingByPerson() {
+    var guest = { id: GUEST.id, email: null, full_name: 'Guest (not signed in)', role: 'viewer' };
+    return people().concat([guest]).map(function (u) {
+      var mine = images.filter(function (x) { return x.labeled_by === u.id; });
+      var dates = mine.map(function (x) { return x.labeled_date; }).sort();
+      return { id: u.id, email: u.email, full_name: u.full_name, role: u.role, labeled_count: mine.length, last_labeled_at: dates.length ? dates[dates.length - 1] : null };
+    }).sort(function (x, y) { return y.labeled_count - x.labeled_count; });
+  }
+
+  // set_user_role() with 004_roles.sql's rules, on the made-up people only.
+  function setRole(me, targetId, newRole) {
+    if (!isAdminRole(realRole())) return err('Only admins can change roles', '42501');
+    if (['admin', 'labeler', 'viewer'].indexOf(newRole) < 0) return err('Invalid role "' + newRole + '": must be admin, labeler or viewer', '22023');
+    if (targetId === me.id) return err("Demo mode can't change your real account's role", 'DEMO');
+    var target = USERS.filter(function (u) { return u.id === targetId; })[0];
+    if (!target) return err('No user with id ' + targetId, 'P0002');
+    if (target.role === 'admin' && realRole() !== 'owner') return err("Only the Owner can change another admin's role", '42501');
+    target.role = newRole;
+    stored.roles[target.id] = newRole;
+    var req = stored.requests[target.id];
+    if (req && req.status === 'pending' && RANK[newRole] >= RANK[req.requested_role]) {
+      req.status = 'approved';
+      req.decided_at = new Date().toISOString();
+    }
+    persist();
+    return { data: null, error: null };
+  }
+
   P.runRpc = function () {
-    var name = this.table, a = this.args, me = actor(), admin = realRole() === 'admin';
-    var rows;
+    var name = this.table, a = this.args, me = actor(), admin = isAdminRole(realRole());
+    var rows, req;
     if (name === 'my_labeling_count') {
       return { data: images.filter(function (x) { return x.labeled_by === me.id; }).length, error: null };
     }
@@ -496,19 +539,33 @@
       rows = people().map(function (u) { return Object.assign({ avatar_url: null }, u); });
     } else if (name === 'admin_labeling_by_user') {
       if (!admin) return err('Not authorized', '42501');
-      var guest = { id: GUEST.id, email: null, full_name: 'Guest (not signed in)', role: 'viewer' };
-      rows = people().concat([guest]).map(function (u) {
-        var mine = images.filter(function (x) { return x.labeled_by === u.id; });
-        var dates = mine.map(function (x) { return x.labeled_date; }).sort();
-        return { id: u.id, email: u.email, full_name: u.full_name, role: u.role, labeled_count: mine.length, last_labeled_at: dates.length ? dates[dates.length - 1] : null };
-      }).sort(function (x, y) { return y.labeled_count - x.labeled_count; });
+      rows = labelingByPerson();
+    } else if (name === 'team_labeling_progress') {
+      // Anyone may label in the demo, so anyone may see this too. No emails, as for real.
+      rows = labelingByPerson().filter(function (r) { return r.labeled_count > 0; }).map(function (r) {
+        return { full_name: r.full_name, role: r.role, is_me: r.id === me.id, labeled_count: r.labeled_count, last_labeled_at: r.last_labeled_at };
+      });
     } else if (name === 'set_user_role') {
-      if (!admin) return err('Only admins can change roles', '42501');
-      if (a.target === me.id) return err("Demo mode can't change your real account's role", 'DEMO');
-      var target = USERS.filter(function (u) { return u.id === a.target; })[0];
-      if (!target) return err('No user with id ' + a.target, 'P0002');
-      target.role = a.new_role;
-      stored.roles[target.id] = a.new_role;
+      return setRole(me, a.target, a.new_role);
+    } else if (name === 'review_role_request') {
+      if (!admin) return err('Only admins can review role requests', '42501');
+      req = stored.requests[a.target];
+      if (!req || req.status !== 'pending') return err('This account has no open role request', 'P0002');
+      if (a.approve) return setRole(me, a.target, req.requested_role);
+      req.status = 'declined';
+      req.decided_at = new Date().toISOString();
+      persist();
+      return { data: null, error: null };
+    } else if (name === 'request_role') {
+      if (!signedIn()) return err('Sign in to request a role', '42501');
+      if (a.requested !== 'admin' && a.requested !== 'labeler') return err('Invalid request "' + a.requested + '": you can ask for admin or labeler', '22023');
+      if (RANK[realRole()] >= RANK[a.requested]) return err('You already have that role or a higher one', '22023');
+      stored.requests[me.id] = { requested_role: a.requested, status: 'pending', requested_at: new Date().toISOString(), decided_at: null };
+      persist();
+      return { data: null, error: null };
+    } else if (name === 'cancel_role_request') {
+      req = stored.requests[me.id];
+      if (req && req.status === 'pending') delete stored.requests[me.id];
       persist();
       return { data: null, error: null };
     } else {
