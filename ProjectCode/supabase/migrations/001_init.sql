@@ -143,6 +143,7 @@ $$;
 -- confirmation link is clicked for email + password sign-up. Requiring a
 -- confirmed email stops anyone from claiming admin by merely *registering*
 -- the project address without access to its inbox.
+-- (004_roles.sql replaces this function so the account becomes 'owner'.)
 create or replace function public.handle_auth_user_change()
 returns trigger
 language plpgsql
@@ -216,6 +217,7 @@ on conflict (id) do nothing;
 
 -- Never leave the project without an admin, whichever path tries it
 -- (set_user_role, the Supabase dashboard, or deleting the auth user).
+-- (004_roles.sql replaces this function to count the Owner as an admin.)
 create or replace function public.guard_last_admin()
 returns trigger
 language plpgsql
@@ -251,6 +253,8 @@ create or replace trigger profiles_guard_last_admin
 -- -----------------------------------------------------------------------------
 -- Role functions (called from the browser via supabase.rpc)
 -- -----------------------------------------------------------------------------
+-- 004_roles.sql replaces is_admin() and set_user_role() with versions that
+-- know about the Owner.
 
 create or replace function public.is_admin()
 returns boolean

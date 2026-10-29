@@ -25,7 +25,7 @@
       <nav class="appnav" aria-label="Primary">
         <a href="index.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-grid"/></svg>Catalog</a>
         <a href="labeling.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Label images</a>
-        <a href="admin.html" id="nav-admin" hidden><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg>Admin</a>
+        <a href="admin.html" id="nav-admin"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg>Admin</a>
       </nav>
       <div class="appbar-actions">
         <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
@@ -45,7 +45,7 @@
         <div class="banner-inner">
           <p class="eyebrow">Administration</p>
           <h1 id="page-title">Admin <em>console</em></h1>
-          <p class="lede">Decide who can label images, and keep an eye on how the labeling is going.</p>
+          <p class="lede" id="page-lede">Roles, role requests and labeling progress.</p>
         </div>
         <div class="waves" aria-hidden="true"></div>
       </section>
@@ -58,25 +58,25 @@
       </section>
 
       <section class="page-card" id="admin-signed-out" hidden>
-        <h2>Sign in required</h2>
-        <p>This page is for project admins. Please sign in to continue.</p>
+        <h2>Request a role</h2>
+        <p>Sign in to request a role.</p>
         <button type="button" class="btn btn-primary" id="admin-signin-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-log-in"/></svg>Sign in</button>
       </section>
 
-      <section class="page-card" id="admin-forbidden" hidden>
-        <h2>Not authorized</h2>
-        <p>Your account (<strong id="admin-forbidden-email"></strong>) has the
-          <strong id="admin-forbidden-role"></strong> role. Only admins can manage accounts;
-          ask an admin if you need access.</p>
+      <!-- viewers and labelers: ask for a higher role -->
+      <section class="page-card" id="admin-request" aria-labelledby="request-title" hidden>
+        <h2 id="request-title">Request a role</h2>
+        <div class="stack" id="request-body"></div>
       </section>
 
+      <!-- admins see all of it; labelers only the labeled tile and the progress table -->
       <div id="admin-panel" class="stack" style="--gap: 1.25rem" hidden>
 
         <section class="kpi-grid" aria-label="Summary">
-          <article class="kpi spot"><div class="kpi-top"><span class="kpi-label">Accounts</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg></div><div class="kpi-value" id="kpi-accounts">—</div></article>
-          <article class="kpi spot"><div class="kpi-top"><span class="kpi-label">Admins</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg></div><div class="kpi-value" id="kpi-admins">—</div></article>
-          <article class="kpi spot"><div class="kpi-top"><span class="kpi-label">Labelers</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg></div><div class="kpi-value" id="kpi-labelers">—</div></article>
-          <article class="kpi spot"><div class="kpi-top"><span class="kpi-label">Viewers</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye"/></svg></div><div class="kpi-value" id="kpi-viewers">—</div></article>
+          <article class="kpi spot" data-admin-only><div class="kpi-top"><span class="kpi-label">Accounts</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg></div><div class="kpi-value" id="kpi-accounts">—</div></article>
+          <article class="kpi spot" data-admin-only><div class="kpi-top"><span class="kpi-label">Admins</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg></div><div class="kpi-value" id="kpi-admins">—</div></article>
+          <article class="kpi spot" data-admin-only><div class="kpi-top"><span class="kpi-label">Labelers</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg></div><div class="kpi-value" id="kpi-labelers">—</div></article>
+          <article class="kpi spot" data-admin-only><div class="kpi-top"><span class="kpi-label">Viewers</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye"/></svg></div><div class="kpi-value" id="kpi-viewers">—</div></article>
           <article class="kpi spot" id="kpi-labeled-card" hidden>
             <div class="kpi-top"><span class="kpi-label">Images labeled</span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check-circle"/></svg></div>
             <div class="kpi-value" id="kpi-labeled">—</div>
@@ -84,7 +84,7 @@
           </article>
         </section>
 
-        <section class="card table-card" aria-labelledby="accounts-title">
+        <section class="card table-card" aria-labelledby="accounts-title" data-admin-only>
           <div class="card-head card-pad" style="margin-bottom:0">
             <h2 id="accounts-title"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Accounts</h2>
             <div class="admin-tools">
@@ -97,6 +97,7 @@
                 <button type="button" data-role="admin" aria-pressed="false">Admins</button>
                 <button type="button" data-role="labeler" aria-pressed="false">Labelers</button>
                 <button type="button" data-role="viewer" aria-pressed="false">Viewers</button>
+                <button type="button" data-role="requests" aria-pressed="false" id="requests-filter">Requests</button>
               </div>
               <button type="button" class="btn btn-sm" id="refresh-users-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-refresh"/></svg>Refresh</button>
             </div>
@@ -109,6 +110,7 @@
                   <th scope="col">Account</th>
                   <th scope="col">Sign-in</th>
                   <th scope="col">Role</th>
+                  <th scope="col">Status</th>
                   <th scope="col">Joined</th>
                   <th scope="col">Last seen</th>
                 </tr>

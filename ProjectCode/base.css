@@ -790,6 +790,7 @@ input[type="checkbox"], input[type="radio"] { width: 1.1rem; height: 1.1rem; acc
 .badge-danger { --b-bg: var(--danger-soft); --b-fg: var(--danger-ink); }
 :root[data-theme="dark"] .badge-primary, :root[data-theme="dark"] .pp-badge { --b-fg: var(--primary-ink); }
 
+.role-owner { --b-bg: var(--amber-soft); --b-fg: var(--amber-ink); }
 .role-admin { --b-bg: var(--accent-soft); --b-fg: var(--accent-ink); }
 .role-labeler { --b-bg: var(--success-soft); --b-fg: var(--success-ink); }
 .role-viewer { --b-bg: var(--surface-3); --b-fg: var(--text-2); }
@@ -1222,6 +1223,9 @@ table.data .dim { color: var(--text-muted); font-size: 0.88rem; white-space: now
 .role-cell { min-width: 12rem; }
 .role-select { width: auto; min-height: 2.1rem; padding: 0.25rem 2rem 0.25rem 0.7rem; font-size: 0.88rem; font-weight: 700; border-radius: 10px; }
 .role-confirm { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.85rem; }
+.status-cell { min-width: 11rem; }
+.request-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.status-cell .request-actions { margin-top: 0.45rem; }
 .bar-cell { min-width: 9rem; }
 .bar-cell .progress { height: 0.5rem; }
 
