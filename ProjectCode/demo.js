@@ -880,16 +880,6 @@
       sel.options[0].textContent = ((auth.profile && auth.profile.full_name) || auth.user.email || 'You') + ' · ' + actorRoleFor(null);
     });
 
-    // The Review page is part of the demo only, so its link is added here.
-    var nav = document.querySelector('.appnav');
-    if (nav && !nav.querySelector('a[href="review.html"]')) {
-      var link = document.createElement('a');
-      link.href = 'review.html';
-      link.innerHTML = '<svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye-off"/></svg>Review';
-      if (/review\.html$/.test(location.pathname)) link.setAttribute('aria-current', 'page');
-      var after = nav.querySelector('a[href="labeling.html"]');
-      if (after && after.nextSibling) nav.insertBefore(link, after.nextSibling); else nav.appendChild(link);
-    }
     if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) document.body.insertBefore(pill, document.body.firstChild);
     else document.body.appendChild(pill);
     pill.querySelector('#demo-reset').addEventListener('click', function (e) { e.preventDefault(); window.Demo.reset(); });

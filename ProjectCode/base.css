@@ -484,10 +484,14 @@ main:focus { outline: none; }
   .appbar-inner { flex-wrap: wrap; row-gap: 0; padding-block: 0.4rem 0.2rem; }
   .brand-sub { display: none; }
   .appnav { order: 3; width: 100%; margin: 0; overflow-x: auto; padding-bottom: 0.35rem; }
+  .appnav a { flex: 1 0 auto; justify-content: center; white-space: nowrap; }
   .user-chip .auth-email { display: none; }
   .user-chip { padding-right: 0.25rem; }
 }
 @media (max-width: 520px) {
+  /* Four tabs across a phone: text only, a little tighter. */
+  .appnav a { gap: 0.3rem; padding: 0.45rem 0.5rem; font-size: 0.88rem; }
+  .appnav a .icon { display: none; }
   .brand-text { display: none; }
 }
 
