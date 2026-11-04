@@ -208,33 +208,6 @@
 .viewer-when { font-size: 0.82rem; color: var(--text-muted); }
 .viewer-h { margin-bottom: 0.65rem; font: 700 0.74rem var(--font-text); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
 
-.viewer-labels { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-.vlabel {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 3rem;
-  padding: 0.45rem 0.6rem;
-  text-align: left;
-  font: 700 0.9rem/1.2 var(--font-text);
-  color: var(--text);
-  background: var(--surface-2);
-  border: 1.5px solid var(--border-strong);
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: transform 0.15s var(--ease-out), background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
-.vlabel .glyph { order: 1; width: 1.35em; height: 1.35em; color: var(--c, var(--text-muted)); }
-.vlabel span { order: 2; }
-.vlabel kbd { order: 3; margin-left: auto; font-size: 0.72em; }
-.vlabel:hover { transform: translateY(-1px); border-color: var(--c); background: var(--c-soft); }
-.vlabel:active { transform: scale(0.97); }
-.vlabel[aria-pressed="true"] {
-  color: var(--c-ink);
-  background: var(--c-soft);
-  border-color: var(--c);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 26%, transparent);
-}
 .viewer-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
 .viewer-section { display: grid; }
 .viewer-section .switch { margin-top: 0.1rem; padding-block: 0.35rem; }
@@ -266,7 +239,6 @@
   }
   .viewer-side { border-left: 0; border-top: 1px solid var(--border); padding: 1rem; gap: 1rem; }
   .viewer-strip { display: none; }
-  .viewer-labels { grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)); }
   .viewer-nav { width: 2.6rem; height: 2.6rem; }
   .viewer-hint { display: none; }
 }
@@ -283,5 +255,7 @@
 }
 :root[data-text-big] .viewer-side { border-left: 0; border-top: 1px solid var(--border); padding: 1rem; gap: 1rem; }
 :root[data-text-big] .viewer-strip { display: none; }
-:root[data-text-big] .viewer-labels { grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)); }
 :root[data-text-big] .viewer-hint { display: none; }
+
+/* The label box in the side panel (Labels.picker) */
+.viewer-picker { --lp-max: min(18rem, 40vh); }

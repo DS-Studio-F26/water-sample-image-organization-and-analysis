@@ -1504,10 +1504,11 @@ function renderImageListing(container, images, folderRow, labelHref) {
       const grid = h('div', { class: 'thumb-grid' });
       list.slice(0, S.shown).forEach((img, i) => {
         const thumb = h('button', {
-          type: 'button', class: 'thumb', style: { '--i': String(i % 30) }, 'data-label': img.label || null,
+          type: 'button', class: 'thumb', style: { '--i': String(i % 30) },
           'aria-label': `Open ${img.filename}${img.label ? `, labeled ${Labels.text(img.label)}` : ''}`,
         }, h('img', { src: UI.imageUrl(img.relative_path), alt: '', loading: 'lazy', decoding: 'async' }),
           img.width ? h('span', { class: 'thumb-dim', text: `${img.width}×${img.height}` }) : null);
+        Labels.paint(thumb, img.label);
         if (img.label) thumb.appendChild(h('span', { class: 'thumb-tag' }, Labels.chip(img.label)));
         thumb.addEventListener('click', () => openViewer(list, i, thumb));
         grid.appendChild(thumb);

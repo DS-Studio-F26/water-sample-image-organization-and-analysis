@@ -4,8 +4,10 @@
  *   signed out     a Sign in button, to request a role
  *   viewer         buttons to request the labeler or admin role
  *   labeler        the labeled tile, labeling progress (names, no emails),
- *                  the labels export, and a button to request admin
- *   admin, owner   every account, role changes and requests, and progress
+ *                  the labels export, the label list, and a button to request admin
+ *   admin, owner   every account, role changes and requests, progress, and
+ *                  changes to the label list (category any time; rename or
+ *                  delete only while no image uses the label, 005_label_options.sql)
  *
  * Everything here is convenience only. The database checks every rule itself
  * (supabase/migrations/001_init.sql and 004_roles.sql): only admins list
@@ -82,10 +84,10 @@ async function renderForUser(auth) {
   }
   if (isAdminRole(role)) {
     showView('admin');
-    await Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats()]);
+    await Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats(), loadLabelList()]);
   } else if (role === 'labeler') {
     showView('labeler');
-    await Promise.all([loadMyRequest(), loadLabelingProgress(), loadLabelStats()]);
+    await Promise.all([loadMyRequest(), loadLabelingProgress(), loadLabelStats(), loadLabelList()]);
   } else {
     showView('viewer');
     await loadMyRequest();
@@ -392,14 +394,147 @@ async function exportLabels() {
       if (data.length < USERS_PAGE_SIZE) break;
     }
     if (!rows.length) { UI.toast({ message: 'Nothing has been labeled yet, so there’s nothing to export.', kind: 'info' }); return; }
+    rows.forEach(r => { r.category = Labels.category(r.label).key || ''; });
     UI.download(`water-sample-labels-${new Date().toISOString().slice(0, 10)}.csv`,
-      UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'labeled_date']));
+      UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'category', 'labeled_date']));
     UI.toast({ message: `Exported ${rows.length.toLocaleString()} labels.`, kind: 'success' });
   } catch (err) {
     UI.toast({ message: `Export failed: ${describeError(err)}`, kind: 'error' });
   } finally {
     btn.disabled = false;
   }
+}
+
+// 4b. The label list: label_options and label_counts (005_label_options.sql).
+// Admins change it with admin_update_label() and admin_delete_label().
+
+const labelState = { counts: new Map(), busy: false };
+
+async function loadLabelList() {
+  const admin = isAdminRole(myRole());
+  const span = admin ? 5 : 4;
+  setTableMessage('labels-body', span, 'Loading…');
+  try {
+    await Labels.load();
+    if (Labels.missing) {
+      setTableMessage('labels-body', span, admin
+        ? 'The shared label list isn’t switched on yet: apply supabase/migrations/005_label_options.sql (python deploy/apply_migrations.py).'
+        : 'The shared label list isn’t switched on yet.');
+      document.getElementById('labels-count').textContent = '';
+      return;
+    }
+    const counts = [];
+    for (let from = 0; ; from += USERS_PAGE_SIZE) {
+      const { data, error } = await sb.from('label_counts').select('label, image_count').range(from, from + USERS_PAGE_SIZE - 1);
+      if (error) throw error;
+      counts.push(...data);
+      if (data.length < USERS_PAGE_SIZE) break;
+    }
+    labelState.counts = new Map(counts.map(c => [c.label, Number(c.image_count)]));
+    renderLabelList();
+  } catch (err) {
+    setTableMessage('labels-body', span, 'Couldn’t load the label list.');
+    showMessage(`Couldn't load the label list: ${describeError(err)}`);
+  }
+}
+
+function renderLabelList() {
+  const admin = isAdminRole(myRole());
+  const tbody = document.getElementById('labels-body');
+  tbody.innerHTML = '';
+  const options = Labels.options;
+  document.getElementById('labels-count').textContent = `${options.length} labels`;
+  document.getElementById('labels-help').textContent = admin
+    ? 'Labelers add labels from the labeling page with “Enter new label”. You can change a label’s category at any time, and rename or delete a label that no image uses yet.'
+    : 'Add labels from the labeling page with “Enter new label”. Admins can rename or delete a label that no image uses yet.';
+  options.forEach(opt => {
+    const used = labelState.counts.get(opt.value) || 0;
+    const catCell = admin ? categorySelect(opt) : Labels.chip(opt.value);
+    const row = h('tr', {},
+      h('td', {}, h('strong', { text: opt.text }), opt.builtin ? h('span', { class: 'badge', style: { marginLeft: '0.45rem' }, text: 'Starting list' }) : null),
+      h('td', { 'data-cat': opt.category }, catCell),
+      h('td', { class: 'num', text: used.toLocaleString() }),
+      h('td', { class: 'dim', title: opt.created_at ? new Date(opt.created_at).toLocaleString() : '', text: opt.builtin ? '-' : opt.created_at ? UI.relativeTime(opt.created_at) : '-' }));
+    if (admin) {
+      const why = used ? `${used.toLocaleString()} ${used === 1 ? 'image uses' : 'images use'} this label` : null;
+      const rename = h('button', { type: 'button', class: 'btn btn-sm btn-ghost', title: why ? `Can’t rename: ${why}` : 'Rename', onclick: () => renameLabel(opt) }, UI.icon('edit'), 'Rename');
+      const del = h('button', { type: 'button', class: 'btn btn-sm btn-ghost', title: why ? `Can’t delete: ${why}` : 'Delete', onclick: () => deleteLabel(opt) }, UI.icon('trash'), 'Delete');
+      rename.disabled = del.disabled = !!used;
+      row.appendChild(h('td', { class: 'row-actions' }, h('div', { style: { display: 'flex', gap: '0.3rem', flexWrap: 'wrap' } }, rename, del)));
+    }
+    tbody.appendChild(row);
+  });
+}
+
+function categorySelect(opt) {
+  const sel = h('select', { 'aria-label': `Category of ${opt.text}` });
+  Labels.categories.forEach(c => sel.appendChild(h('option', { value: c.key, text: c.text, selected: c.key === opt.category })));
+  sel.addEventListener('change', async () => {
+    const ok = await saveLabel(opt, opt.value, sel.value, `Moved “${opt.text}” to ${Labels.categoryOf(sel.value).text}.`);
+    if (!ok) sel.value = opt.category;
+  });
+  return sel;
+}
+
+async function saveLabel(opt, newName, newCategory, doneText) {
+  if (labelState.busy) return false;
+  labelState.busy = true;
+  try {
+    const { error } = await sb.rpc('admin_update_label', { label_name: opt.value, new_name: newName, new_category: newCategory });
+    if (error) throw error;
+    UI.toast({ message: doneText, kind: 'success' });
+    await loadLabelList();
+    return true;
+  } catch (err) {
+    UI.toast({ message: `Couldn’t change the label: ${describeError(err)}`, kind: 'error' });
+    return false;
+  } finally {
+    labelState.busy = false;
+  }
+}
+
+function renameLabel(opt) {
+  const input = h('input', { type: 'text', id: 'rename-label-input', value: opt.text, maxlength: '60', autocomplete: 'off' });
+  const err = h('p', { class: 'lp-error', hidden: true });
+  let dlg = null;
+  const form = h('form', { class: 'stack', novalidate: true },
+    h('label', { for: 'rename-label-input', text: 'New name' }), input, err,
+    h('div', { class: 'row', style: { display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' } },
+      h('button', { type: 'button', class: 'btn btn-ghost', text: 'Cancel', onclick: () => dlg.close() }),
+      h('button', { type: 'submit', class: 'btn btn-primary', text: 'Rename' })));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = input.value.trim().replace(/\s+/g, ' ');
+    if (!name) { err.textContent = 'Give the label a name.'; err.hidden = false; return; }
+    if (name === opt.value) { dlg.close(); return; }
+    dlg.close();
+    await saveLabel(opt, name, opt.category, `Renamed “${opt.text}” to “${name}”.`);
+  });
+  dlg = UI.dialog({ title: `Rename “${opt.text}”`, content: form, focus: input });
+}
+
+function deleteLabel(opt) {
+  let dlg = null;
+  const content = h('div', { class: 'stack' },
+    h('p', { text: `Delete “${opt.text}” from the label list? No image uses it, and labelers can add it again later.` }),
+    h('div', { style: { display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' } },
+      h('button', { type: 'button', class: 'btn btn-ghost', text: 'Cancel', onclick: () => dlg.close() }),
+      h('button', { type: 'button', class: 'btn btn-danger', text: 'Delete', onclick: async () => {
+        dlg.close();
+        if (labelState.busy) return;
+        labelState.busy = true;
+        try {
+          const { error } = await sb.rpc('admin_delete_label', { label_name: opt.value });
+          if (error) throw error;
+          UI.toast({ message: `Deleted “${opt.text}”.`, kind: 'success' });
+        } catch (err) {
+          UI.toast({ message: `Couldn’t delete the label: ${describeError(err)}`, kind: 'error' });
+        } finally {
+          labelState.busy = false;
+          await loadLabelList();
+        }
+      } })));
+  dlg = UI.dialog({ title: 'Delete label', content });
 }
 
 // 5. Requesting a role (viewers and labelers): request_role() and
@@ -514,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('admin-signin-btn').addEventListener('click', () => Auth.openSignIn('signin'));
   document.getElementById('refresh-users-btn').addEventListener('click', () => {
     hideMessage();
-    Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats()]);
+    Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats(), loadLabelList()]);
   });
   document.getElementById('export-btn').addEventListener('click', exportLabels);
 

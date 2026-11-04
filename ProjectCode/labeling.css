@@ -50,12 +50,17 @@ code { font-family: var(--font-mono); font-size: 0.88em; }
 .mix-bar span { display: block; min-width: 4px; background: var(--c, var(--lbl-none)); transition: flex-grow 0.8s var(--ease-out); }
 .mix-legend { display: flex; flex-wrap: wrap; gap: 0.45rem 0.55rem; margin: 0.85rem 0 0; padding: 0; list-style: none; }
 .mix-legend .label-chip b { font-variant-numeric: tabular-nums; margin-left: 0.15rem; }
+.mix-legend.by-cat { display: grid; gap: 0.5rem; }
+.mix-legend.by-cat > li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.45rem; }
+.mix-cat-name { display: inline-flex; align-items: center; gap: 0.35rem; min-width: 11.5rem; font-size: 0.8rem; font-weight: 700; color: var(--c-ink); }
+.mix-cat-name .glyph { width: 1em; height: 1em; color: var(--c); }
+.mix-cat-name b { font-variant-numeric: tabular-nums; color: var(--text); }
 .progress-actions { display: grid; gap: 0.5rem; justify-items: stretch; }
 
 
 /* 3. Folder rail ------------------------------------------------------------------ */
 
-.workspace { display: grid; grid-template-columns: 21.5rem minmax(0, 1fr); gap: 1.25rem; align-items: start; margin-top: 1.25rem; }
+.workspace { display: grid; grid-template-columns: 19rem minmax(0, 1fr); gap: 1.25rem; align-items: start; margin-top: 1.25rem; }
 
 .rail {
   position: sticky;
@@ -133,34 +138,36 @@ code { font-family: var(--font-mono); font-size: 0.88em; }
 .tool-group label { font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
 .tool-group select { width: auto; min-height: 2.25rem; padding-block: 0.3rem; font-size: 0.9rem; font-weight: 700; }
 .tool-end { margin-left: auto; }
+#view-filter { max-width: 13rem; }
 .selection-count { min-width: 11.5rem; font-size: 0.9rem; font-weight: 700; color: var(--text-2); }
 .selection-count.has { color: var(--primary-ink); }
 :root[data-theme="dark"] .selection-count.has { color: var(--primary); }
 
-.labelbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-.lbtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 2.45rem;
-  padding: 0.3rem 0.65rem 0.3rem 0.55rem;
-  font: 700 0.88rem var(--font-text);
-  color: var(--text);
-  background: var(--surface);
-  border: 1.5px solid var(--border-strong);
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: transform 0.18s var(--ease-out), background-color 0.2s, border-color 0.2s, box-shadow 0.25s, opacity 0.2s;
+/* The label panel beside the grid (option D): the box, with the whole list under it. */
+.label-layout { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: 1.1rem; align-items: start; }
+.label-main { min-width: 0; }
+.label-panel {
+  position: sticky;
+  top: calc(var(--appbar-h) + 0.5rem);
+  z-index: 15;
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  --lp-max: calc(100vh - var(--appbar-h) - 13rem);
 }
-.lbtn .glyph { width: 1.3em; height: 1.3em; color: var(--c, var(--text-muted)); }
-.lbtn kbd { margin-left: 0.15rem; font-size: 0.7em; }
-.lbtn:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--c, var(--primary)); background: var(--c-soft, var(--surface-3)); box-shadow: 0 10px 20px -12px var(--c, var(--primary)); }
-.lbtn:active:not(:disabled) { transform: scale(0.97); }
-.lbtn:disabled { opacity: 0.45; cursor: not-allowed; }
-.labelbar.armed .lbtn:not(.plain) { border-color: color-mix(in srgb, var(--c) 60%, var(--border-strong)); }
-.lbtn.plain { --c: var(--danger); color: var(--danger-ink); border-style: dashed; background: transparent; }
-.lbtn.plain .icon { color: var(--danger); }
-.labelbar .spacer { margin-left: auto; }
+.label-panel[hidden] { display: none; }
+.label-panel-head { display: grid; gap: 0.1rem; }
+.label-panel-head h3 { font: 700 0.74rem var(--font-text); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+.label-target { font-size: 0.9rem; font-weight: 700; color: var(--text-2); overflow-wrap: anywhere; }
+.label-target.has { color: var(--primary-ink); }
+:root[data-theme="dark"] .label-target.has { color: var(--primary); }
+.label-panel.armed { border-color: color-mix(in srgb, var(--primary) 55%, var(--border-strong)); }
+.label-panel-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.label-panel-actions kbd { margin-left: 0.15rem; font-size: 0.7em; }
 
 .status-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.3rem 1rem; margin: 0.75rem 0.2rem 0.8rem; font-size: 0.86rem; color: var(--text-muted); }
 .save-status { display: inline-flex; align-items: center; gap: 0.45rem; }
@@ -340,6 +347,12 @@ code { font-family: var(--font-mono); font-size: 0.88em; }
 
 @media (max-width: 1100px) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .label-layout { grid-template-columns: minmax(0, 1fr); }
+  .label-panel { position: static; order: -1; --lp-max: 13rem; }
+}
+@media (max-width: 1100px) {
   .rail { position: static; max-height: 24rem; }
 }
 
@@ -348,40 +361,22 @@ code { font-family: var(--font-mono); font-size: 0.88em; }
 :root[data-text-big] .workspace { grid-template-columns: minmax(0, 1fr); }
 :root[data-text-big] .rail { position: static; max-height: 24rem; }
 :root[data-text-big] .sticky-tools { position: static; }
+:root[data-text-big] .label-layout { grid-template-columns: minmax(0, 1fr); }
+:root[data-text-big] .label-panel { position: static; order: -1; --lp-max: 16rem; }
 
 @media (max-width: 760px) {
   .progress-panel { grid-template-columns: auto minmax(0, 1fr); padding: 1.2rem; }
   .progress-actions { grid-column: 1 / -1; grid-auto-flow: column; }
   .ring-wrap { width: 6.6rem; height: 6.6rem; }
   .ring-center strong { font-size: 1.6rem; }
-  .grid-panel { padding: 1rem 0.8rem 5.5rem; }
+  .grid-panel { padding: 1rem 0.8rem 1rem; }
   .setup-card { flex-direction: column; }
 
-  /* The grid controls scroll away; the label bar docks to the bottom of the
-     screen and slides up as soon as there is something to label. */
+  /* The grid controls scroll away; the label panel moves above the grid. */
   .sticky-tools { position: static; padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
   .toolbar { gap: 0.5rem 0.7rem; }
   .selection-count { min-width: 0; }
   .tool-end { margin-left: 0; }
-  .labelbar {
-    position: fixed;
-    z-index: 45;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 0.65rem 0.8rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
-    background: var(--surface-glass);
-    -webkit-backdrop-filter: blur(18px) saturate(170%);
-    backdrop-filter: blur(18px) saturate(170%);
-    border-top: 1px solid var(--border-strong);
-    box-shadow: 0 -14px 34px -16px rgba(0, 0, 0, 0.45);
-    transform: translateY(110%);
-    transition: transform 0.35s var(--ease-out);
-  }
-  .labelbar.armed { transform: none; }
-  .labelbar > * { flex: none; }
   .image-grid { --tile-min: 8rem; gap: 0.6rem; }
   .image-grid[data-size="s"] { --tile-min: 5.4rem; gap: 0.45rem; }
   .image-grid[data-size="l"] { --tile-min: 100%; }

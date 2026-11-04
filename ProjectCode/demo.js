@@ -20,7 +20,7 @@
 (function () {
   'use strict';
 
-  var FLAG = 'wsic-demo', DATA = 'wsic-demo-data';
+  var FLAG = 'wsic-demo', DATA = 'wsic-demo-data-v2';  // v2: the label list of 005_label_options.sql
 
   function session(key, value) {
     try {
@@ -128,7 +128,12 @@
     else if (cls === 'other') { w = 54 + Math.floor(r() * 90); h = 54 + Math.floor(r() * 80); }
     else if (cls === 'debris') { w = 28 + Math.floor(r() * 130); h = 28 + Math.floor(r() * 110); }
     else { w = 44 + Math.floor(r() * 80); h = 40 + Math.floor(r() * 70); }
-    var truth = { filament: 'cyanobacteria', colony: 'cyanobacteria', diatom: 'diatom', other: 'other_organism', debris: 'debris', blank: 'blank' }[cls];
+    var kinds = {
+      filament: ['Aphanizomenon', 'Dolichospermum', 'Oscillatoria'], colony: ['Microcystis', 'Woronichinia'],
+      diatom: ['Fragilaria', 'Centric Diatom'], other: ['Staurastrum', 'Dinobryon'],
+      debris: ['Microcystis Debris', 'Unsure'], blank: ['Blank / empty'],
+    }[cls];
+    var truth = kinds[Math.floor(r() * kinds.length)];
     return (specCache[relPath] = { cls: cls, truth: truth, w: w, h: h, seed: seed });
   }
 
@@ -222,6 +227,18 @@
   try { stored = JSON.parse(session(DATA) || '{}'); } catch (e) { stored = {}; }
   stored.labels = stored.labels || {};   // image_id -> [label, by, iso date]
   stored.roles = stored.roles || {};     // user id -> role
+  // The label list: 005_label_options.sql's starting labels, then any added here.
+  var BUILTIN_LABELS = [
+    ['Aphanizomenon', 'cyanobacteria'], ['Dolichospermum', 'cyanobacteria'], ['Microcystis', 'cyanobacteria'],
+    ['Oscillatoria', 'cyanobacteria'], ['Woronichinia', 'cyanobacteria'], ['Microcystis Debris', 'cyanobacteria'],
+    ['Staurastrum', 'other_significant'], ['Fragilaria', 'other_significant'], ['Dinobryon', 'other_significant'],
+    ['Centric Diatom', 'other_significant'], ['Blank / empty', 'non_organism'], ['Unsure', 'non_organism'],
+  ];
+  stored.labelOptions = stored.labelOptions || BUILTIN_LABELS.map(function (l) {
+    return { name: l[0], category: l[1], is_builtin: true, created_by: null, created_at: '2026-09-01T12:00:00Z' };
+  });
+  var LABEL_CATEGORIES = ['cyanobacteria', 'other_significant', 'non_organism'];
+  function labelOption(name) { return stored.labelOptions.filter(function (o) { return o.name === name; })[0] || null; }
   // user id -> latest role request; Riley starts with one waiting for review.
   stored.requests = stored.requests || {
     'demo-viewer-2': { requested_role: 'labeler', status: 'pending', requested_at: '2026-09-30T13:20:00Z', decided_at: null },
@@ -245,7 +262,7 @@
       };
       if (r() < fraction) {
         var wrong = r() < 0.1;
-        row.label = wrong ? ['diatom', 'debris', 'other_organism', 'unsure'][Math.floor(r() * 4)] : spec.truth;
+        row.label = wrong ? ['Fragilaria', 'Microcystis Debris', 'Staurastrum', 'Unsure'][Math.floor(r() * 4)] : spec.truth;
         row.labeled_by = r() < 0.6 ? 'demo-labeler-2' : 'demo-labeler-3';
         row.labeled_date = new Date(Date.now() - Math.floor(r() * 12 * 86400000) - 3600000).toISOString();
       }
@@ -379,6 +396,7 @@
         .map(function (id) { return Object.assign({ user_id: id }, stored.requests[id]); });
     },
     measurement_columns: function () { return MEASURES; },
+    label_options: function () { return stored.labelOptions; },
     profiles: function () { return []; },  // only used when the real client is missing (no one is signed in then)
   };
 
@@ -437,6 +455,7 @@
   P.single = function () { this.single_ = true; return this; };
   P.maybeSingle = function () { this.maybe_ = true; return this; };
   P.update = function (values) { this.mode = 'update'; this.patch = values; return this; };
+  P.insert = function (values) { this.mode = 'insert'; this.patch = values; return this; };
   P.then = function (resolve, reject) { return this.run().then(resolve, reject); };
 
   P.run = function () {
@@ -445,6 +464,7 @@
       if (q.kind === 'rpc') return q.runRpc();
       if (!views[q.table]) return err("Could not find the table 'public." + q.table + "' in the schema cache", 'PGRST205');
       if (q.mode === 'update') return q.runUpdate();
+      if (q.mode === 'insert') return q.runInsert();
 
       var rows = views[q.table]().filter(function (r) { return q.filters.every(function (f) { return f(r); }); });
       return q.shape(rows);
@@ -484,6 +504,10 @@
     var keys = Object.keys(q.patch);
     if (keys.some(function (k) { return k !== 'label'; })) return err('permission denied for table images', '42501');
     var me = actor(), now = new Date().toISOString();
+    // images_check_label (005): the label must be on the list.
+    if (q.patch.label != null && !labelOption(q.patch.label)) {
+      return { data: null, error: { message: 'Unknown label "' + q.patch.label + '"', code: '23503', hint: 'Add it with "Enter new label" first, or refresh the page.' }, count: null };
+    }
     images.filter(function (r) { return q.filters.every(function (f) { return f(r); }); }).forEach(function (r) {
       var value = q.patch.label == null ? null : q.patch.label;
       if (value === r.label) return;
@@ -496,6 +520,51 @@
     persist();
     return { data: null, error: null, count: null };
   };
+
+  // Adding a label (anyone may label in the demo, so anyone may add one).
+  P.runInsert = function () {
+    var q = this;
+    if (q.table !== 'label_options') return err('permission denied for table ' + q.table, '42501');
+    var keys = Object.keys(q.patch);
+    if (keys.some(function (k) { return k !== 'name' && k !== 'category'; })) return err('permission denied for table label_options', '42501');
+    var name = String(q.patch.name || '').trim().replace(/\s+/g, ' ');
+    if (!name || name.length > 60) return err('new row for relation "label_options" violates check constraint', '23514');
+    if (LABEL_CATEGORIES.indexOf(q.patch.category) < 0) return err('new row for relation "label_options" violates check constraint', '23514');
+    if (labelOption(name)) return err('duplicate key value violates unique constraint "label_options_pkey"', '23505');
+    var row = { name: name, category: q.patch.category, is_builtin: false, created_by: actor().id, created_at: new Date().toISOString() };
+    stored.labelOptions.push(row);
+    persist();
+    return q.shape([row]);
+  };
+
+  function labelInUse(name) { return images.some(function (x) { return x.label === name; }); }
+
+  // admin_update_label() / admin_delete_label() with 005's rules.
+  function updateLabel(a) {
+    if (!isAdminRole(realRole())) return err('Only admins can change labels', '42501');
+    var o = labelOption(a.label_name);
+    if (!o) return err('No label called "' + a.label_name + '"', 'P0002');
+    if (LABEL_CATEGORIES.indexOf(a.new_category) < 0) return err('Invalid category "' + a.new_category + '"', '22023');
+    var name = String(a.new_name || '').trim().replace(/\s+/g, ' ');
+    if (!name) return err('A label needs a name', '22023');
+    if (name !== o.name) {
+      if (labelInUse(o.name)) return { data: null, error: { message: 'Images already use "' + o.name + '", so it can\'t be renamed', code: '22023', hint: 'You can still change its category.' } };
+      if (labelOption(name)) return err('There is already a label called "' + name + '"', '23505');
+    }
+    o.name = name;
+    o.category = a.new_category;
+    persist();
+    return { data: null, error: null };
+  }
+  function deleteLabel(a) {
+    if (!isAdminRole(realRole())) return err('Only admins can delete labels', '42501');
+    var o = labelOption(a.label_name);
+    if (!o) return err('No label called "' + a.label_name + '"', 'P0002');
+    if (labelInUse(o.name)) return { data: null, error: { message: 'Images use "' + o.name + '", so it can\'t be deleted', code: '22023', hint: 'Relabel those images first.' } };
+    stored.labelOptions = stored.labelOptions.filter(function (x) { return x !== o; });
+    persist();
+    return { data: null, error: null };
+  }
 
   // How much each person (and the guest) has labeled, as admin_labeling_by_user() returns it.
   function labelingByPerson() {
@@ -545,6 +614,10 @@
       rows = labelingByPerson().filter(function (r) { return r.labeled_count > 0; }).map(function (r) {
         return { full_name: r.full_name, role: r.role, is_me: r.id === me.id, labeled_count: r.labeled_count, last_labeled_at: r.last_labeled_at };
       });
+    } else if (name === 'admin_update_label') {
+      return updateLabel(a);
+    } else if (name === 'admin_delete_label') {
+      return deleteLabel(a);
     } else if (name === 'set_user_role') {
       return setRole(me, a.target, a.new_role);
     } else if (name === 'review_role_request') {

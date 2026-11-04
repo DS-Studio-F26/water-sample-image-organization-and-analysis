@@ -140,6 +140,29 @@
             </table>
           </div>
         </section>
+
+        <!-- the shared label list (005_label_options.sql) -->
+        <section class="card table-card" aria-labelledby="labels-title">
+          <div class="card-head card-pad" style="margin-bottom:0">
+            <h2 id="labels-title"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Labels</h2>
+            <span class="text-muted" id="labels-count" aria-live="polite"></span>
+          </div>
+          <p class="text-muted card-pad" style="padding-top:0;padding-bottom:.6rem" id="labels-help">Labelers add labels from the labeling page with “Enter new label”.</p>
+          <div class="table-scroll" id="labels-table-container">
+            <table class="data labels-table">
+              <thead>
+                <tr>
+                  <th scope="col">Label</th>
+                  <th scope="col">Category</th>
+                  <th scope="col" class="num">Images</th>
+                  <th scope="col">Added</th>
+                  <th scope="col" data-admin-only><span class="visually-hidden">Changes</span></th>
+                </tr>
+              </thead>
+              <tbody id="labels-body"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
     </div>
