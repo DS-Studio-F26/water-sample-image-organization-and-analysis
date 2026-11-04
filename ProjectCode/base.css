@@ -1391,6 +1391,18 @@ body.modal-open .demo-pill { opacity: 0; pointer-events: none; }
 }
 .demo-pill { transition: opacity 0.2s; }
 .demo-pill a { color: inherit; }
+.demo-actor { display: inline-flex; align-items: center; gap: 0.35rem; }
+.demo-actor span { font-weight: 700; }
+.demo-pill .demo-actor select {
+  width: auto;
+  min-height: 1.9rem;
+  padding: 0.1rem 1.8rem 0.1rem 0.55rem;
+  font: 700 0.8rem var(--font-text);
+  color: var(--amber-ink);
+  background-color: var(--surface);
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+}
 
 
 /* 12. Utilities, motion ------------------------------------------------------- */

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Blind review of image labels: confirm another labeler's label without seeing it.">
+  <meta name="theme-color" content="#eef4f2">
+  <title>Blind Review — Water Sample Image Catalog</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/fraunces-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/caladea-400.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="labeling.css">
+  <link rel="stylesheet" href="review.css">
+  <link rel="stylesheet" href="viewer.css">
+</head>
+
+<body>
+  <a class="skip-link" href="#review-app">Skip to the review</a>
+
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="index.html" aria-label="Water Sample Image Catalog, home">
+        <img class="brand-mark" src="favicon.svg" alt="" width="40" height="40">
+        <span class="brand-text"><span class="brand-name">Water Sample</span><span class="brand-sub">Image Catalog</span></span>
+      </a>
+      <nav class="appnav" aria-label="Primary">
+        <a href="index.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-grid"/></svg>Catalog</a>
+        <a href="labeling.html"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-tag"/></svg>Label images</a>
+        <a href="admin.html" id="nav-admin"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-shield"/></svg>Admin</a>
+      </nav>
+      <div class="appbar-actions">
+        <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg class="icon ti-moon" aria-hidden="true"><use href="icons.svg#i-moon"/></svg>
+          <svg class="icon ti-sun" aria-hidden="true"><use href="icons.svg#i-sun"/></svg>
+        </button>
+        <div class="auth-area" id="auth-area"></div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap">
+
+      <noscript>
+        <div class="alert alert-warn"><div class="alert-body"><strong>JavaScript is off.</strong>
+          Reviewing needs JavaScript to load images and save reviews.</div></div>
+      </noscript>
+
+      <section class="banner page-head" aria-labelledby="page-title">
+        <canvas class="banner-fx" data-fx="plankton" aria-hidden="true"></canvas>
+        <div class="banner-inner">
+          <p class="eyebrow">Blind review · demo</p>
+          <h1 id="page-title">Review <em>labels</em></h1>
+          <p class="lede">Pick a label for each image without seeing the one it was given. If you pick the same label, it becomes official. If you pick a different one, an admin decides.</p>
+        </div>
+        <div class="waves" aria-hidden="true"></div>
+      </section>
+
+      <!-- Outside demo mode: blind review isn't on the real site yet -->
+      <section class="card setup-card" id="not-demo" hidden>
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye-off"/></svg>
+        <div>
+          <h2>Blind review is only in the demo for now</h2>
+          <p>On the real site a label is official as soon as it’s applied. Try blind review on sample data in the demo. It saves nothing.</p>
+          <p><a class="btn btn-primary" href="review.html?demo"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sparkles"/></svg>Try blind review in the demo</a></p>
+        </div>
+      </section>
+
+      <div id="review-app" hidden>
+        <section class="card review-summary" aria-label="Review status">
+          <dl class="review-counts" id="review-counts"></dl>
+          <p class="review-rule">A labeler’s label is <strong>in review</strong> until <strong>one other labeler</strong> picks the same label here, or <strong>an admin</strong> reviews it. An admin’s own label is official straight away.</p>
+        </section>
+
+        <div class="seg review-tabs" id="review-tabs" role="tablist" aria-label="Review lists">
+          <button type="button" role="tab" id="tab-review" aria-controls="panel-review" aria-selected="true">To review <span class="badge" id="count-review">0</span></button>
+          <button type="button" role="tab" id="tab-disputed" aria-controls="panel-disputed" aria-selected="false" hidden>Disputed <span class="badge" id="count-disputed">0</span></button>
+        </div>
+
+        <section class="card review-panel" id="panel-review" role="tabpanel" aria-labelledby="tab-review"></section>
+        <section class="card review-panel" id="panel-disputed" role="tabpanel" aria-labelledby="tab-disputed" hidden></section>
+      </div>
+
+    </div>
+
+    <footer class="site-footer">
+      <a href="privacy.html">Privacy Policy</a>
+      <span aria-hidden="true">·</span>
+      <span>Clark University Data Science Studio</span>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+    integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+    crossorigin="anonymous"></script>
+  <script src="config.js"></script>
+  <script src="demo.js"></script>
+  <script src="auth.js"></script>
+  <script src="ui.js"></script>
+  <script src="labels.js"></script>
+  <script src="fx.js"></script>
+  <script src="viewer.js"></script>
+  <script src="review.js"></script>
+</body>
+
+</html>

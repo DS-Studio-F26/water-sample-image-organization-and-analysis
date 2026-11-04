@@ -14,6 +14,8 @@
  *     userId,          current account id (to say "you" in "labeled by you")
  *     onLabel(items, value)   apply a label (null clears); the caller updates the
  *                             items synchronously and saves in the background
+ *     lockedText(item) optional; text for an image this person can't label
+ *                      (demo blind review: someone else's label in review)
  *     onUndo(),        optional; returns true if something was undone
  *     onClose(index),  optional
  *     originEl,        element to animate from and to return focus to
@@ -25,6 +27,9 @@
 (function () {
   var h = function () { return UI.h.apply(null, arguments); };
   var current = null;
+
+  // Has a label, even one hidden while it's in review (demo blind review).
+  function labeled(it) { return !!(it.label || it.label_hidden); }
 
   function open(opts) {
     if (!opts.items || !opts.items.length) return null;
@@ -99,13 +104,14 @@
     var downloadLink = h('a', { class: 'btn btn-sm', target: '_blank', rel: 'noopener' }, UI.icon('download'), 'Download');
     var openLink = h('a', { class: 'btn btn-sm btn-ghost', target: '_blank', rel: 'noopener' }, UI.icon('external'), 'Open original');
 
+    var labelSection = canLabel ? h('div', { class: 'viewer-section' },
+      h('h3', { class: 'viewer-h', text: 'Label' }),
+      labelBox,
+      h('div', { class: 'viewer-actions' }, clearBtn, undoBtn, nextUnlabeledBtn)) : null;
     var side = h('aside', { class: 'viewer-side' },
       h('div', { class: 'viewer-head' }, titleEl, metaEl),
       statusEl,
-      canLabel ? h('div', { class: 'viewer-section' },
-        h('h3', { class: 'viewer-h', text: 'Label' }),
-        labelBox,
-        h('div', { class: 'viewer-actions' }, clearBtn, undoBtn, nextUnlabeledBtn)) : viewOnly,
+      labelSection || viewOnly,
       canLabel ? h('div', { class: 'viewer-section' }, h('h3', { class: 'viewer-h', text: 'Flow' }), advanceSwitch.el, skipSwitch.el) : null,
       h('div', { class: 'viewer-section viewer-links' }, downloadLink, openLink),
       h('p', { class: 'viewer-hint' }, canLabel ? [h('kbd', { text: '←' }), ' ', h('kbd', { text: '→' }), ' move · ', h('kbd', { text: '/' }), ' label · ', h('kbd', { text: '?' }), ' all shortcuts']
@@ -164,8 +170,14 @@
       stage.setAttribute('aria-label', 'Image ' + (index + 1) + ' of ' + items.length + ': ' + item.filename + '. ' + (item.label ? 'Labeled ' + Labels.text(item.label) : 'Unlabeled'));
 
       statusEl.innerHTML = '';
-      statusEl.appendChild(Labels.chip(item.label));
-      if (item.label) statusEl.appendChild(h('span', { class: 'viewer-when', text: labelledBy(item) }));
+      var locked = opts.lockedText ? opts.lockedText(item) : null;
+      if (locked) statusEl.appendChild(h('span', { class: 'viewer-locked' }, UI.icon('eye-off'), locked));
+      else {
+        statusEl.appendChild(Labels.chip(item.label));
+        if (item.review_status && item.review_status !== 'official' && item.label) statusEl.appendChild(h('span', { class: 'badge', text: item.review_status === 'disputed' ? 'Disputed' : 'In review' }));
+        if (item.label) statusEl.appendChild(h('span', { class: 'viewer-when', text: labelledBy(item) }));
+      }
+      if (labelSection) labelSection.hidden = !!locked;
 
       if (picker) picker.refresh();
       prevBtn.disabled = index === 0;
@@ -324,8 +336,8 @@
     function go(delta) { var n = index + delta; if (n >= 0 && n < items.length) show(n, true); }
 
     function goNextUnlabeled(announce) {
-      for (var i = index + 1; i < items.length; i++) if (!items[i].label) { show(i, true); return true; }
-      for (var j = 0; j < index; j++) if (!items[j].label) { show(j, true); return true; }
+      for (var i = index + 1; i < items.length; i++) if (!labeled(items[i])) { show(i, true); return true; }
+      for (var j = 0; j < index; j++) if (!labeled(items[j])) { show(j, true); return true; }
       if (announce) UI.toast({ message: 'Every image in this view has a label.', kind: 'success' });
       return false;
     }
@@ -333,7 +345,7 @@
     function advanceAfterLabel() {
       if (!prefs.advance) return;
       if (prefs.skipLabeled) {
-        for (var i = index + 1; i < items.length; i++) if (!items[i].label) { show(i, true); return; }
+        for (var i = index + 1; i < items.length; i++) if (!labeled(items[i])) { show(i, true); return; }
         UI.toast({ message: 'That was the last unlabeled image in this view.', kind: 'info' });
       } else if (index < items.length - 1) {
         show(index + 1, true);

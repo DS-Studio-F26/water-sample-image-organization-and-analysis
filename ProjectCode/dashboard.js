@@ -247,12 +247,9 @@ function hideDataError() {
   if (banner) banner.hidden = true;
 }
 
-// sample_date arrives as 'YYYY-MM-DD'; format it as M/D/YYYY without any
-// timezone conversion (new Date('2021-06-19') would be UTC midnight).
+// sample_date arrives as 'YYYY-MM-DD'; shown as MM/DD/YYYY (UI.formatDate).
 function formatIsoDate(iso) {
-  if (!iso) return '-';
-  const [y, m, d] = iso.split('-').map(Number);
-  return `${m}/${d}/${y}`;
+  return iso ? UI.formatDate(iso) : '-';
 }
 
 // 4. Filter Population
@@ -267,23 +264,20 @@ function populateFilters() {
     return Array.from(values);
   };
 
-  // Dates are written M.D.YY or M.D.YYYY; order them by the parsed sample_date.
-  const sortKeyForDate = {};
-  state.allData.forEach(row => {
-    if (row.date) sortKeyForDate[row.date] = row.sample_date || '';
-  });
-  const dates = getUnique('date').sort((a, b) =>
-    (sortKeyForDate[a] || '9999').localeCompare(sortKeyForDate[b] || '9999') || a.localeCompare(b));
+  // The date filter works on sample_date ('YYYY-MM-DD'), so 6.19.21 and
+  // 6.19.2021 are one choice; it's shown as MM/DD/YYYY.
+  const dates = getUnique('sample_date').sort();
+  const dilutions = getUnique('dilution').sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
 
   populateDropdown('filter-site_normalized', getUnique('site_normalized').sort());
   populateDropdown('filter-water_body_type', getUnique('water_body_type').sort());
-  populateDropdown('filter-date', dates);
+  populateDropdown('filter-date', dates, v => UI.formatDate(v));
   populateDropdown('filter-sample_code', getUnique('sample_code').sort());
   populateDropdown('filter-capture_mode', getUnique('capture_mode').sort());
-  populateDropdown('filter-dilution', getUnique('dilution').sort());
+  populateDropdown('filter-dilution', dilutions);
 }
 
-function populateDropdown(id, values) {
+function populateDropdown(id, values, labelFor) {
   const select = document.getElementById(id);
   if (!select) return;
 
@@ -295,7 +289,7 @@ function populateDropdown(id, values) {
   values.forEach(val => {
     const option = document.createElement('option');
     option.value = val;
-    option.textContent = val;
+    option.textContent = labelFor ? labelFor(val) : val;
     select.appendChild(option);
   });
 }
@@ -315,7 +309,7 @@ function applyFilters(updateHash = true) {
     }
     if (f.site_normalized && row.site_normalized !== f.site_normalized) return false;
     if (f.water_body_type && row.water_body_type !== f.water_body_type) return false;
-    if (f.date && row.date !== f.date) return false;
+    if (f.date && row.sample_date !== f.date) return false;
     if (f.sample_code && row.sample_code !== f.sample_code) return false;
     if (f.capture_mode && row.capture_mode !== f.capture_mode) return false;
     if (f.dilution && row.dilution !== f.dilution) return false;
@@ -366,6 +360,7 @@ function updateFilterBadge() {
 function displayFilterValue(key, value) {
   if (key === 'is_pp') return value === 'true' ? 'Post-processed' : 'Raw only';
   if (key === 'search') return `“${value}”`;
+  if (key === 'date') return UI.formatDate(value);
   return value;
 }
 
@@ -813,18 +808,19 @@ function renderTable() {
     addCell(tr, 'Folder', link, 'col-folder');
     addCell(tr, 'Site', row.site_normalized ? h('span', { class: 'site-name', text: row.site_normalized }) : '-');
     addCell(tr, 'Water body', typeChip(row.water_body_type));
-    addCell(tr, 'Date', row.date || '-', 'nowrap');
+    addCell(tr, 'Date', UI.formatDate(row.sample_date, row.date) || '-', 'nowrap');
     addCell(tr, 'Code', row.sample_code ? h('span', { class: 'code-tag', text: row.sample_code }) : '-');
     addCell(tr, 'Capture', captureChip(row.capture_mode));
-    addCell(tr, 'Dilution', row.dilution || '-', 'nowrap');
+    addCell(tr, 'Dilution', UI.formatDilution(row.dilution), 'nowrap');
     addCell(tr, 'Type', h('span', { class: `badge ${row.is_pp ? 'badge-primary' : 'badge-amber'}`, text: row.is_pp ? 'PP' : 'Raw' }));
 
     const pct = Math.max(2, Math.round(((row.image_count || 0) / state.maxCount) * 100));
     const countTd = addCell(tr, 'Images', null, 'num count-cell');
+    // (DOM append() writes a null as the text "null", so only real nodes go in.)
     countTd.append(h('i', { class: 'bar', style: { '--pct': `${pct}%` }, 'aria-hidden': 'true' }),
-      h('span', { text: row.image_count != null ? row.image_count.toLocaleString() : '0' }),
-      row.total_images != null ? h('small', { class: 'of-total', text: ` / ${row.total_images.toLocaleString()}`,
-        title: 'Images inside the measurement ranges / all images in the folder' }) : null);
+      h('span', { text: row.image_count != null ? row.image_count.toLocaleString() : '0' }));
+    if (row.total_images != null) countTd.append(h('small', { class: 'of-total', text: ` / ${row.total_images.toLocaleString()}`,
+      title: 'Images inside the measurement ranges / all images in the folder' }));
 
     if (state.labelMap) {
       const lp = state.labelMap.get(row.folder_name);
@@ -1377,11 +1373,11 @@ async function openDetailPanel(row, opener) {
   const metaFields = [
     ['Site', row.site_normalized ? titleCase(row.site_normalized) : null],
     ['Water body', row.water_body_type ? titleCase(row.water_body_type) : null],
-    ['Date', row.date],
+    ['Date', UI.formatDate(row.sample_date, row.date)],
     ['Magnification', row.magnification],
     ['Sample code', row.sample_code],
     ['Capture mode', row.capture_mode],
-    ['Dilution', row.dilution],
+    ['Dilution', UI.formatDilution(row.dilution)],
     ['Type', row.is_pp ? 'Post-processed (PP)' : 'Raw'],
     ['Images', row.total_images != null
       ? `${row.image_count.toLocaleString()} of ${row.total_images.toLocaleString()} inside the measurement ranges`

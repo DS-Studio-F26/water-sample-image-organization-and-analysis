@@ -259,3 +259,4 @@
 
 /* The label box in the side panel (Labels.picker) */
 .viewer-picker { --lp-max: min(18rem, 40vh); }
+.viewer-locked { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.9rem; font-weight: 700; color: var(--text-2); }

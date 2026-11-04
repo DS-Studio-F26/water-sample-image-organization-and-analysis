@@ -21,6 +21,10 @@
  *     if a save fails, the images are put back and you're told. Undo covers it all.
  *
  * The label list (shared, in the database) and the type-ahead box live in labels.js.
+ *
+ * Demo mode adds blind review (demo.js): a labeler's label starts "in review",
+ * other people's labels in review are hidden and locked here (they're judged
+ * on review.html), and the progress counts official labels only.
  */
 (function () {
   'use strict';
@@ -28,7 +32,8 @@
   const h = UI.h;
   const DB_PAGE_SIZE = 1000;   // PostgREST's per-request row cap
   const BATCH_SIZE = 200;      // ids per UPDATE request (image_id is a 16-char hex string)
-  const IMAGE_COLUMNS = 'image_id, filename, relative_path, width, height, file_size_bytes, format, label, labeled_by, labeled_date';
+  const IMAGE_COLUMNS = 'image_id, filename, relative_path, width, height, file_size_bytes, format, label, labeled_by, labeled_date'
+    + (window.APP_DEMO ? ', review_status, label_hidden' : '');  // blind review is in the demo only
   const fmt = (n) => Number(n).toLocaleString();
   const $ = (id) => document.getElementById(id);
 
@@ -63,7 +68,15 @@
     celebrated: new Set(),
     rerenderTimer: null,
     pinnedId: null,         // with nothing selected, the image the label panel acts on
+    reviewMode: false,      // demo: blind review is on
+    isAdmin: false,
   };
+
+  // Has a label, even one hidden from you while it's in review.
+  const hasLabel = (img) => !!(img.label || img.label_hidden);
+  // Someone else's label waiting for review (demo): not yours to change here.
+  const isLocked = (img) => state.reviewMode && !state.isAdmin && !!img.label_hidden;
+  const statusText = (img) => img.review_status === 'disputed' ? 'Disputed' : 'In review';
   let panelPicker = null;
   let tileEls = new Map();
   let menuEl = null;
@@ -137,15 +150,18 @@
 
   async function applyAuth(auth) {
     const role = (auth.profile && auth.profile.role) || 'viewer';
-    const key = auth.user ? `${auth.user.id}|${role}` : 'anon';
+    const demo = !!window.APP_DEMO;
+    const actor = demo ? Demo.actor() : null;
+    const key = (auth.user ? `${auth.user.id}|${role}` : 'anon') + (actor ? `|${actor.id}` : '');
     if (key === lastAuthKey) return;
     lastAuthKey = key;
     // Demo mode (demo.js) is a sandbox on sample data: anyone may label there,
-    // signed in or not (as a guest), without touching their real account.
-    const demo = !!window.APP_DEMO;
-    state.user = auth.user || (demo ? Demo.guest : null);
-    state.role = auth.user ? role : 'viewer';
+    // signed in or not, as themselves or a sample person ("Acting as").
+    state.user = demo ? actor : auth.user;
+    state.role = demo ? actor.role : auth.user ? role : 'viewer';
     state.canLabel = demo || (!!auth.user && ['owner', 'admin', 'labeler'].includes(role));
+    state.reviewMode = demo && !!Demo.reviewMode;
+    state.isAdmin = ['owner', 'admin'].includes(state.role);
     renderRoleBanner();
     if (!state.booted) await boot();
     else { await refreshOverview(true); applyRoleToUi(); }
@@ -248,7 +264,12 @@
 
     const stats = $('progress-stats');
     stats.innerHTML = '';
-    stats.append(h('strong', { text: fmt(labeled) }), ` of ${fmt(total)} images labeled`);
+    stats.append(h('strong', { text: fmt(labeled) }), ` of ${fmt(total)} images ${state.reviewMode ? 'officially ' : ''}labeled`);
+    if (state.reviewMode && s.in_review_images != null) {
+      stats.append(' · ', h('strong', { text: fmt(s.in_review_images) }), ' in review');
+      if (Number(s.disputed_images)) stats.append(' · ', h('strong', { text: fmt(s.disputed_images) }), ' disputed');
+      stats.append(' · ', h('a', { href: 'review.html', text: 'Open the review queue' }));
+    }
     if (state.user) stats.append(' · you’ve labeled ', h('strong', { text: fmt(state.myCount) }));
     if (Number(s.labeler_count)) stats.append(` · ${s.labeler_count} ${Number(s.labeler_count) === 1 ? 'person' : 'people'} contributing`);
 
@@ -290,12 +311,12 @@
     btn.disabled = true;
     const toast = UI.toast({ message: 'Preparing your CSV…', kind: 'info', sticky: true, id: 'export' });
     try {
-      const rows = await fetchAll(() => sb.from('images').select('image_id, folder_name, filename, label, labeled_date')
+      const rows = await fetchAll(() => sb.from('images').select('image_id, folder_name, filename, label, labeled_date' + (state.reviewMode ? ', review_status' : ''))
         .not('label', 'is', null).order('folder_name').order('filename'));
       toast.dismiss(true);
       if (!rows.length) { UI.toast({ message: 'Nothing has been labeled yet, so there’s nothing to export.', kind: 'info' }); return; }
-      rows.forEach(r => { r.category = Labels.category(r.label).key || ''; });
-      const text = UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'category', 'labeled_date']);
+      rows.forEach(r => { r.category = Labels.category(r.label).key || ''; r.status = r.review_status || 'official'; });
+      const text = UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'category'].concat(state.reviewMode ? ['status'] : [], ['labeled_date']));
       UI.download(`water-sample-labels-${new Date().toISOString().slice(0, 10)}.csv`, text);
       UI.toast({ message: `Exported ${fmt(rows.length)} labels.`, kind: 'success' });
     } catch (err) {
@@ -312,7 +333,7 @@
   function railRows() {
     const q = state.railQuery.trim().toLowerCase();
     let rows = state.folders.filter(f => {
-      if (q && !(`${f.folder_name} ${f.site} ${f.date}`.toLowerCase().includes(q))) return false;
+      if (q && !(`${f.folder_name} ${f.site} ${f.date} ${UI.formatDate(f.sample_date, f.date)}`.toLowerCase().includes(q))) return false;
       const todo = f.labeled_count < f.image_count;
       if (state.railFilter === 'todo') return todo;
       if (state.railFilter === 'done') return !todo && f.image_count > 0;
@@ -332,7 +353,7 @@
     const pct = f.image_count ? (f.labeled_count / f.image_count) * 100 : 0;
     const done = f.image_count > 0 && f.labeled_count >= f.image_count;
     const current = state.currentFolder && state.currentFolder.folder_name === f.folder_name;
-    const meta = [f.site ? f.site.replace(/\b[a-z]/g, c => c.toUpperCase()) : '', f.date, f.capture_mode].filter(Boolean).join(' · ');
+    const meta = [f.site ? f.site.replace(/\b[a-z]/g, c => c.toUpperCase()) : '', UI.formatDate(f.sample_date, f.date), f.capture_mode].filter(Boolean).join(' · ');
     const btn = h('button', {
       type: 'button', class: `rail-item${done ? ' done' : ''}`, 'data-folder': f.folder_name, 'aria-current': current ? 'true' : null,
       title: f.folder_name,
@@ -414,7 +435,7 @@
       state.byId = new Map(images.map(i => [i.image_id, i]));
       // the server's count is the truth; keep the rail in step with what we actually loaded
       f.image_count = images.length;
-      f.labeled_count = images.filter(i => i.label).length;
+      f.labeled_count = images.filter(hasLabel).length;
       updateRailItem(f);
       renderFolderHeader();
       renderGrid();
@@ -438,7 +459,7 @@
     const f = state.currentFolder;
     if (!f) return;
     $('folder-title').textContent = f.folder_name;
-    const sub = [f.site ? f.site.replace(/\b[a-z]/g, c => c.toUpperCase()) : '', f.date, f.capture_mode, f.sample_code, f.is_pp ? 'Post-processed' : 'Raw'].filter(Boolean).join(' · ');
+    const sub = [f.site ? f.site.replace(/\b[a-z]/g, c => c.toUpperCase()) : '', UI.formatDate(f.sample_date, f.date), f.capture_mode, f.sample_code, f.is_pp ? 'Post-processed' : 'Raw'].filter(Boolean).join(' · ');
     $('folder-sub').textContent = sub;
     const pct = f.image_count ? (f.labeled_count / f.image_count) * 100 : 0;
     const bar = $('folder-bar');
@@ -456,6 +477,7 @@
     add('all', 'All images');
     add('unlabeled', 'Unlabeled only');
     add('labeled', 'Labeled (any)');
+    if (state.reviewMode) { add('status:in_review', 'In review'); add('status:disputed', 'Disputed'); add('status:official', 'Official'); }
     const cats = h('optgroup', { label: 'A category' });
     Labels.categories.forEach(c => add(`cat:${c.key}`, c.text, cats));
     sel.appendChild(cats);
@@ -480,8 +502,9 @@
 
   function viewList() {
     const f = state.viewFilter;
-    if (f === 'unlabeled') return state.images.filter(i => !i.label);
-    if (f === 'labeled') return state.images.filter(i => i.label);
+    if (f === 'unlabeled') return state.images.filter(i => !hasLabel(i));
+    if (f === 'labeled') return state.images.filter(hasLabel);
+    if (f.startsWith('status:')) { const st = f.slice(7); return state.images.filter(i => hasLabel(i) && i.review_status === st); }
     if (f.startsWith('label:')) { const v = f.slice(6); return state.images.filter(i => i.label === v); }
     if (f.startsWith('cat:')) { const c = f.slice(4); return state.images.filter(i => i.label && Labels.get(i.label).category === c); }
     return state.images;
@@ -556,14 +579,19 @@
   }
 
   function labelButtonContent(img) {
+    if (isLocked(img)) return [h('span', { class: 'lab' }, UI.icon('eye-off'), h('span', { text: statusText(img) })), h('span', { class: 'tile-status', text: 'Hidden' })];
     if (!img.label) return [h('span', { class: 'lab' }, state.canLabel ? 'Add label' : 'Unlabeled'), state.canLabel ? UI.icon('chevron-down', 'chev') : null];
-    return [h('span', { class: 'lab' }, Labels.glyph(Labels.category(img.label).glyph), h('span', { text: Labels.text(img.label) })), state.canLabel ? UI.icon('chevron-down', 'chev') : null];
+    const pending = state.reviewMode && img.review_status && img.review_status !== 'official';
+    return [h('span', { class: 'lab' }, Labels.glyph(Labels.category(img.label).glyph), h('span', { text: Labels.text(img.label) })),
+      pending ? h('span', { class: 'tile-status', text: statusText(img) }) : null,
+      state.canLabel ? UI.icon('chevron-down', 'chev') : null];
   }
 
   function tileAria(img) {
     const bits = [img.filename];
     if (img.width) bits.push(`${img.width} by ${img.height} pixels`);
-    bits.push(img.label ? `labeled ${Labels.text(img.label)}` : 'unlabeled');
+    bits.push(isLocked(img) ? `${statusText(img).toLowerCase()}, label hidden` : img.label ? `labeled ${Labels.text(img.label)}` : 'unlabeled');
+    if (state.reviewMode && img.label && img.review_status && img.review_status !== 'official') bits.push(statusText(img).toLowerCase());
     return bits.join(', ');
   }
 
@@ -590,9 +618,11 @@
     const main = tile.querySelector('.tile-main');
     Labels.paint(tile, img.label);
     Labels.paint(labelBtn, img.label);
+    if (state.reviewMode && hasLabel(img) && img.review_status) tile.setAttribute('data-status', img.review_status); else tile.removeAttribute('data-status');
+    tile.classList.toggle('locked', isLocked(img));
     labelBtn.innerHTML = '';
-    labelBtn.append(...labelButtonContent(img));
-    if (state.canLabel) labelBtn.setAttribute('aria-label', `Label: ${Labels.text(img.label)}. Change label`);
+    labelBtn.append(...labelButtonContent(img).filter(Boolean));  // append() would write a null as "null"
+    if (state.canLabel) labelBtn.setAttribute('aria-label', isLocked(img) ? `${statusText(img)}: waiting for review` : `Label: ${Labels.text(img.label)}. Change label`);
     const selected = state.selected.has(img.image_id);
     tile.classList.toggle('selected', selected);
     main.setAttribute('aria-pressed', String(selected));
@@ -647,14 +677,21 @@
 
   function visibleIds() { return viewList().map(i => i.image_id); }
 
+  function lockedToast() {
+    UI.toast({ id: 'locked', message: 'That image is waiting for review. Its label is hidden until someone reviews it on the Review page.', kind: 'info', duration: 3500 });
+  }
+
+  function selectable(id) { const img = state.byId.get(id); return !!img && !isLocked(img); }
+
   function toggleSelect(id, extend) {
     if (!state.canLabel) return;
+    if (!selectable(id)) { lockedToast(); return; }
     if (extend && state.anchorId && state.anchorId !== id) {
       const ids = visibleIds();
       const a = ids.indexOf(state.anchorId), b = ids.indexOf(id);
       if (a >= 0 && b >= 0) {
         const [lo, hi] = a < b ? [a, b] : [b, a];
-        for (let i = lo; i <= hi; i++) state.selected.add(ids[i]);
+        for (let i = lo; i <= hi; i++) if (selectable(ids[i])) state.selected.add(ids[i]);
       }
     } else {
       if (state.selected.has(id)) state.selected.delete(id); else state.selected.add(id);
@@ -666,9 +703,10 @@
 
   function selectPage() {
     const { slice } = pageOf(viewList());
-    slice.forEach(i => state.selected.add(i.image_id));
+    const open = slice.filter(i => !isLocked(i));
+    open.forEach(i => state.selected.add(i.image_id));
     renderSelection();
-    UI.announce(`${slice.length} images selected`);
+    UI.announce(`${open.length} images selected`);
   }
 
   function clearSelection() {
@@ -716,7 +754,7 @@
     if (state.selected.size) return [...state.selected].map(id => state.byId.get(id)).filter(Boolean);
     const id = inPanel() ? state.pinnedId : targetId();
     const img = id && state.byId.get(id);
-    return img ? [img] : [];
+    return img && !isLocked(img) ? [img] : [];
   }
 
   // Remember which image the panel acts on before focus moves into it (while
@@ -747,7 +785,7 @@
     if (state.canLabel && extend) {
       if (!state.anchorId) state.anchorId = fromId || state.focusId;
       const a = ids.indexOf(state.anchorId), lo = Math.min(a, next), hi = Math.max(a, next);
-      for (let i = lo; i <= hi; i++) state.selected.add(ids[i]);
+      for (let i = lo; i <= hi; i++) if (selectable(ids[i])) state.selected.add(ids[i]);
       renderSelection();
     }
     focusTile(ids[next]);
@@ -772,7 +810,7 @@
     if (!state.selected.size && state.canLabel) {
       const id = inPanel() ? state.pinnedId : targetId();
       const el = id && tileEls.get(id);
-      if (el) el.classList.add('is-target');
+      if (el && !el.classList.contains('locked')) el.classList.add('is-target');
     }
     // The current label is marked in the list when every target shares it.
     if (panelPicker) panelPicker.refresh();
@@ -846,15 +884,31 @@
     if (state.undoStack.length > 30) state.undoStack.shift();
   }
 
-  // Updates the counters as one image's label moves from its current value to `next`.
-  function bump(img, next, nextBy) {
+  // The review status a new label gets: official, unless blind review (demo)
+  // needs someone else to confirm it.
+  function statusFor(value) {
+    if (!value) return null;
+    return state.reviewMode && !state.isAdmin ? 'in_review' : 'official';
+  }
+
+  // Updates the counters as one image's label moves from its current value to
+  // `next` (with review status nextStatus). Only official labels count as labeled.
+  function bump(img, next, nextBy, nextStatus) {
     const prev = img.label || null;
+    const prevStatus = prev ? (state.reviewMode ? img.review_status || 'official' : 'official') : null;
     const s = state.stats;
-    if (!prev && next) { s.labeled_images = Number(s.labeled_images) + 1; s.unlabeled_images = Number(s.unlabeled_images) - 1; }
-    if (prev && !next) { s.labeled_images = Number(s.labeled_images) - 1; s.unlabeled_images = Number(s.unlabeled_images) + 1; }
+    const prevOfficial = prevStatus === 'official', nextOfficial = nextStatus === 'official';
+    if (!prevOfficial && nextOfficial) { s.labeled_images = Number(s.labeled_images) + 1; s.unlabeled_images = Number(s.unlabeled_images) - 1; }
+    if (prevOfficial && !nextOfficial) { s.labeled_images = Number(s.labeled_images) - 1; s.unlabeled_images = Number(s.unlabeled_images) + 1; }
     s.pct_labeled = Number(s.total_images) ? Math.round((1000 * Number(s.labeled_images)) / Number(s.total_images)) / 10 : 0;
-    if (prev) state.counts.set(prev, Math.max(0, (state.counts.get(prev) || 0) - 1));
-    if (next) state.counts.set(next, (state.counts.get(next) || 0) + 1);
+    ['in_review', 'disputed'].forEach(st => {
+      const k = `${st}_images`;
+      if (s[k] == null) return;
+      if (prevStatus === st) s[k] = Math.max(0, Number(s[k]) - 1);
+      if (nextStatus === st) s[k] = Number(s[k]) + 1;
+    });
+    if (prev && prevOfficial) state.counts.set(prev, Math.max(0, (state.counts.get(prev) || 0) - 1));
+    if (next && nextOfficial) state.counts.set(next, (state.counts.get(next) || 0) + 1);
     const me = state.user && state.user.id;
     if (prev && img.labeled_by === me) state.myCount = Math.max(0, state.myCount - 1);
     if (next && nextBy === me) state.myCount += 1;
@@ -865,11 +919,13 @@
     }
   }
 
-  function setImageLabel(img, value, by, date) {
-    bump(img, value, by);
+  function setImageLabel(img, value, by, date, status) {
+    const st = status !== undefined ? status : statusFor(value);
+    bump(img, value, by, st);
     img.label = value || null;
     img.labeled_by = value ? by : null;
     img.labeled_date = value ? date : null;
+    if (state.reviewMode) img.review_status = value ? st : null;
   }
 
   // Apply `value` (or null to clear) to images; returns the images that actually changed.
@@ -877,13 +933,19 @@
     opts = opts || {};
     if (!state.canLabel || !state.user) return [];
     value = value || null;
+    const locked = images.filter(isLocked);
+    if (locked.length) {
+      images = images.filter(img => !isLocked(img));
+      if (!opts.quiet) UI.toast({ id: 'locked', message: `Skipped ${fmt(locked.length)} ${locked.length === 1 ? 'image' : 'images'} waiting for review.`, kind: 'info', duration: 3000 });
+    }
     const changing = images.filter(img => (img.label || null) !== value);
     if (!changing.length) {
       if (!opts.quiet) UI.toast({ message: value ? `Already labeled ${Labels.text(value)}.` : 'Nothing to clear.', kind: 'info', duration: 2200 });
       return [];
     }
     const me = state.user.id, now = new Date().toISOString();
-    const snapshot = changing.map(img => ({ img, label: img.label || null, by: img.labeled_by || null, date: img.labeled_date || null }));
+    const snapshot = changing.map(img => ({ img, label: img.label || null, by: img.labeled_by || null, date: img.labeled_date || null,
+      status: img.label ? (state.reviewMode ? img.review_status || 'official' : 'official') : null }));
     const entry = { snapshot, value, failed: false };
     if (opts.record !== false) pushUndo(entry);
     changing.forEach(img => setImageLabel(img, value, me, now));
@@ -896,7 +958,8 @@
   function afterChange(changed, value, opts) {
     const f = state.currentFolder;
     const filter = state.viewFilter;
-    const stillShown = (img) => filter === 'all' || (filter === 'unlabeled' && !img.label) || (filter === 'labeled' && img.label)
+    const stillShown = (img) => filter === 'all' || (filter === 'unlabeled' && !hasLabel(img)) || (filter === 'labeled' && hasLabel(img))
+      || (filter.startsWith('status:') && img.review_status === filter.slice(7))
       || (filter.startsWith('label:') && img.label === filter.slice(6))
       || (filter.startsWith('cat:') && !!img.label && Labels.get(img.label).category === filter.slice(4));
     let leaving = 0;
@@ -970,7 +1033,7 @@
   }
 
   function revert(snapshot, err) {
-    snapshot.forEach(s => setImageLabel(s.img, s.label, s.by, s.date));
+    snapshot.forEach(s => setImageLabel(s.img, s.label, s.by, s.date, s.status));
     snapshot.forEach(s => { const tile = tileEls.get(s.img.image_id); if (tile) paintTile(tile, s.img); });
     const f = state.currentFolder;
     renderFolderHeader();
@@ -1040,6 +1103,7 @@
   // The label box for one tile, floating next to its label button.
   function openLabelMenu(anchor, img, returnTo) {
     if (!state.canLabel) return;
+    if (isLocked(img)) { lockedToast(); return; }
     closeMenu();
     const picker = Labels.picker({
       label: `Label for ${img.filename}`,
@@ -1085,6 +1149,7 @@
       index,
       folderName: state.currentFolder.folder_name,
       canLabel: state.canLabel,
+      lockedText: (item) => isLocked(item) ? `${statusText(item)}: someone else’s label, hidden until it’s reviewed` : null,
       userId: state.user && state.user.id,
       originEl,
       onLabel: (items, value) => applyLabel(items, value, { source: 'viewer', quiet: true }),

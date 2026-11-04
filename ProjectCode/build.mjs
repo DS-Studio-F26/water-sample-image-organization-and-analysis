@@ -15,6 +15,7 @@ const WEB_FILES = [
   // pages
   'index.html',
   'labeling.html',
+  'review.html',   // blind review: demo only for now
   'admin.html',
   'privacy.html',
   'reset-password.html',
@@ -23,6 +24,7 @@ const WEB_FILES = [
   'base.css',
   'dashboard.css',
   'labeling.css',
+  'review.css',
   'viewer.css',
   // scripts
   'config.js',
@@ -35,6 +37,7 @@ const WEB_FILES = [
   'viewer.js',
   'dashboard.js',
   'labeling.js',
+  'review.js',
   'admin.js',
   'reset.js',
   // images
