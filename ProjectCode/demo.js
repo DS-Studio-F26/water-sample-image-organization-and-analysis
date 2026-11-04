@@ -669,7 +669,8 @@
       else { outcome = 'disputed'; x.review_status = 'disputed'; }
       stored.labels[x.image_id] = [x.label, x.labeled_by, x.labeled_date];
       saveReview(x);
-      return { data: { outcome: outcome, first_label: first, first_by: personName(x.labeled_by) } };
+      // The first label, but not who gave it: reviewers never learn whose label they judged.
+      return { data: { outcome: outcome, first_label: first } };
     },
     // Admins only: both labels and who gave them.
     disputed_list: function (a, me) {

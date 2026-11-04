@@ -156,11 +156,12 @@
     const corrected = r.outcome === 'corrected';
     const kind = match ? 'is-match' : corrected ? 'is-corrected' : 'is-different';
     const title = match ? 'Match: it’s official now' : corrected ? 'Official, with your label' : 'Different: sent to an admin';
+    // Never who gave the first label: reviewers stay blind to people, not just labels.
     const body = match
-      ? `You and ${r.first_by} both chose ${r.chosen}.`
+      ? `The labeler chose ${r.chosen} too.`
       : corrected
-        ? `${r.first_by} chose ${r.first_label}. As an admin, your ${r.chosen} is the official label.`
-        : `${r.first_by} chose ${r.first_label}; you chose ${r.chosen}. An admin will settle it.`;
+        ? `The labeler chose ${r.first_label}. As an admin, your ${r.chosen} is the official label.`
+        : `The labeler chose ${r.first_label}; you chose ${r.chosen}. An admin will settle it.`;
     return h('div', { class: `review-result ${kind}`, role: 'status' },
       UI.icon(match || corrected ? 'check-circle' : 'flag'),
       h('div', {}, h('strong', { text: title }), h('p', { text: body }),
