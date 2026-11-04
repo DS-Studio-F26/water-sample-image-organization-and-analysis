@@ -96,7 +96,8 @@ flowchart LR
   and charts, and the role functions; `002_labeling.sql` adds image labeling (see
   [Labeling](#labeling)); `003_measurements.sql` adds the FlowCam measurements
   (see [Particle measurements](#particle-measurements-flowcam)); `004_roles.sql` adds the
-  Owner role and role requests. Security lives in the database (Row-Level Security and
+  Owner role and role requests; `005_label_options.sql` adds the shared label list
+  (see [Labeling](#labeling)). Security lives in the database (Row-Level Security and
   SQL functions), not in the page:
   - anyone can read folders, images and the QA log, and nobody can change them
     through the website, except that labelers and admins can set the `label`
@@ -125,10 +126,27 @@ flowchart LR
 
 - Pick a folder from the searchable list on the left (it shows each folder's
   progress and sorts the least-labeled first), then click image tiles to select them
-  (Shift-click for a range) and press a label button or its number key to label every
-  selected image at once.
-- Every tile also has its own label menu, and Enter or the expand button opens the
-  viewer (zoom, pan, filmstrip, "label and move on") for careful one-by-one work.
+  (Shift-click for a range). The **Label** panel beside the grid has a text box with
+  the whole label list under it: type any part of a name (`m` lists Microcystis and
+  Microcystis Debris first; `deb` finds Microcystis Debris), then press Enter or
+  click a label. It applies straight away to every selected image.
+- **Enter new label** is always last in the list. It asks for a name and a category
+  and adds the label to the shared list, so every labeler sees it at once. Exact
+  duplicates are refused; near-duplicates (different capitals) are allowed.
+- Every label has a category: **Cyanobacteria**, **Other significant** or
+  **Non-organism / Unsure**. Colours and shapes come from the category. The
+  starting list (in `005_label_options.sql`): Aphanizomenon, Dolichospermum,
+  Microcystis, Oscillatoria, Woronichinia, Microcystis Debris (Cyanobacteria);
+  Staurastrum, Fragilaria, Dinobryon, Centric Diatom (Other significant); Blank /
+  empty, Unsure (Non-organism / Unsure).
+- On the admin page, labelers and admins see every label and how many images use
+  it. Admins can change a label's category at any time, and rename or delete a label
+  no image uses yet (the database enforces this: `admin_update_label()`,
+  `admin_delete_label()`). A starting label that was deleted comes back the next time
+  `apply_migrations.py` runs.
+- Every tile also has its own label box (click its label), and Enter or the expand
+  button opens the viewer (zoom, pan, filmstrip, the same label box, "label and move
+  on") for careful one-by-one work.
 - Changes appear instantly and save in the background; if a save fails the images
   are put back and a message says so. **Undo** (Z) works across everything.
 - `labeled_by` and `labeled_date` are stamped by a database trigger from the signed-in
@@ -136,9 +154,14 @@ flowchart LR
 - Progress shows as an overall ring, a per-label mix, per-folder bars (also on the
   dashboard) and a per-labeler table on the admin page, for admins and labelers
   (labelers see names, not email addresses). **Export labels (CSV)**, also on the
-  admin page, downloads image id, folder, filename, label and time.
-- Keyboard: arrows move, Space selects, Enter opens the viewer, `1`-`6` label, `0`
-  clears, `L` opens a tile's label menu, `Z` undoes, `?` lists every shortcut.
+  admin page, downloads image id, folder, filename, label, category and time. The
+  **Show** filter picks a category or a single label.
+- Keyboard: arrows move, Space selects, Enter opens the viewer, `/` (or `L`) goes to
+  the label box (with nothing selected it labels the focused or hovered image), ↑ ↓
+  and Enter pick a label, Esc goes back to the images, `0` clears, `Z` undoes, `?`
+  lists every shortcut.
+- `images.label` stores the label's name exactly as shown, and the database refuses
+  a name that isn't on the list (`images_check_label` trigger).
 
 Not set up yet, or want to show it off? Add `?demo` to any page's address
 (`labeling.html?demo`). Demo mode runs the catalog and labeling on sample data and
@@ -375,8 +398,8 @@ for a limited time only.
   takes longer than Supabase allows a visitor's request (3 s). That's why
   `labeling_stats` totals the per-folder image counts and the labeling queries
   use the indexes on `label` and `labeled_by`.
-- **The label categories are a placeholder** (cyanobacteria, diatom, other
-  organism, debris, blank, unsure). Edit `ProjectCode/labels.js` once the team and
-  Prof. Ahlgren settle on the real taxonomy.
+- **Applying `005_label_options.sql` clears labels from the old placeholder set**
+  (cyanobacteria, diatom, other_organism, debris, blank, unsure): they aren't on the
+  new list. Export the labels first if any are worth keeping.
 - **Bulk labeling is chunked**: selections are saved 200 images per request, so a
   selection of thousands takes a moment to finish saving.

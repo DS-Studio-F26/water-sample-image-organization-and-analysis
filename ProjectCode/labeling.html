@@ -150,49 +150,65 @@ python deploy/apply_migrations.py</code></pre>
                 </div>
               </header>
 
-              <div class="sticky-tools" id="sticky-tools">
-                <div class="toolbar" role="toolbar" aria-label="Grid controls">
-                  <div class="tool-group">
-                    <label for="view-filter">Show</label>
-                    <select id="view-filter"></select>
-                  </div>
-                  <div class="tool-group select-tools" id="select-tools">
-                    <button type="button" class="btn btn-sm" id="select-page-btn">Select page</button>
-                    <button type="button" class="btn btn-sm btn-ghost" id="clear-selection-btn">Clear</button>
-                    <span class="selection-count" id="selection-count" aria-live="polite">0 selected</span>
-                  </div>
-                  <div class="tool-group tool-end">
-                    <div class="seg" id="size-seg" role="group" aria-label="Thumbnail size">
-                      <button type="button" data-size="s" aria-pressed="false" aria-label="Small thumbnails">S</button>
-                      <button type="button" data-size="m" aria-pressed="true" aria-label="Medium thumbnails">M</button>
-                      <button type="button" data-size="l" aria-pressed="false" aria-label="Large thumbnails">L</button>
+              <div class="label-layout">
+                <div class="label-main">
+                  <div class="sticky-tools" id="sticky-tools">
+                    <div class="toolbar" role="toolbar" aria-label="Grid controls">
+                      <div class="tool-group">
+                        <label for="view-filter">Show</label>
+                        <select id="view-filter"></select>
+                      </div>
+                      <div class="tool-group select-tools" id="select-tools">
+                        <button type="button" class="btn btn-sm" id="select-page-btn">Select page</button>
+                        <button type="button" class="btn btn-sm btn-ghost" id="clear-selection-btn">Clear</button>
+                        <span class="selection-count" id="selection-count" aria-live="polite">0 selected</span>
+                      </div>
+                      <div class="tool-group tool-end">
+                        <div class="seg" id="size-seg" role="group" aria-label="Thumbnail size">
+                          <button type="button" data-size="s" aria-pressed="false" aria-label="Small thumbnails">S</button>
+                          <button type="button" data-size="m" aria-pressed="true" aria-label="Medium thumbnails">M</button>
+                          <button type="button" data-size="l" aria-pressed="false" aria-label="Large thumbnails">L</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  <div class="status-line">
+                    <span class="save-status" id="save-status" aria-live="polite"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check-circle"/></svg>All changes saved</span>
+                    <span class="status-hint" id="status-hint"></span>
+                  </div>
+
+                  <p class="visually-hidden" id="grid-help">Use the arrow keys to move between images. Space selects an image, Enter opens it
+                    in the viewer, and the slash key or L moves to the label box, which labels the selected images, or the focused one when nothing is selected.</p>
+                  <div class="image-grid" id="image-grid" role="group" aria-label="Images" aria-describedby="grid-help"></div>
+
+                  <nav class="pager grid-pager" id="grid-pager" aria-label="Image pages">
+                    <span class="page-info" id="grid-pagination-info"></span>
+                    <div id="grid-pagination-container"></div>
+                    <div class="page-size">
+                      <label for="grid-page-size">Per page</label>
+                      <select id="grid-page-size">
+                        <option value="24">24</option>
+                        <option value="48" selected>48</option>
+                        <option value="96">96</option>
+                      </select>
+                    </div>
+                  </nav>
                 </div>
-                <div class="labelbar" id="labelbar" role="toolbar" aria-label="Apply a label to the selected images"></div>
+
+                <!-- Label panel: type to find a label, or add a new one -->
+                <aside class="label-panel" id="label-panel" aria-labelledby="label-panel-title">
+                  <div class="label-panel-head">
+                    <h3 id="label-panel-title">Label</h3>
+                    <span class="label-target" id="label-target" aria-live="polite">Select the images to label</span>
+                  </div>
+                  <div id="label-picker-host"></div>
+                  <div class="label-panel-actions">
+                    <button type="button" class="btn btn-sm btn-ghost" id="clear-label-btn" disabled><svg class="icon" aria-hidden="true"><use href="icons.svg#i-x"/></svg>Clear label <kbd>0</kbd></button>
+                    <button type="button" class="btn btn-sm btn-ghost" id="undo-btn" disabled><svg class="icon" aria-hidden="true"><use href="icons.svg#i-undo"/></svg>Undo <kbd>Z</kbd></button>
+                  </div>
+                </aside>
               </div>
-
-              <div class="status-line">
-                <span class="save-status" id="save-status" aria-live="polite"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check-circle"/></svg>All changes saved</span>
-                <span class="status-hint" id="status-hint"></span>
-              </div>
-
-              <p class="visually-hidden" id="grid-help">Use the arrow keys to move between images. Space selects an image, Enter opens it
-                in the viewer, and the number keys apply a label to the selected images, or to the focused one when nothing is selected.</p>
-              <div class="image-grid" id="image-grid" role="group" aria-label="Images" aria-describedby="grid-help"></div>
-
-              <nav class="pager grid-pager" id="grid-pager" aria-label="Image pages">
-                <span class="page-info" id="grid-pagination-info"></span>
-                <div id="grid-pagination-container"></div>
-                <div class="page-size">
-                  <label for="grid-page-size">Per page</label>
-                  <select id="grid-page-size">
-                    <option value="24">24</option>
-                    <option value="48" selected>48</option>
-                    <option value="96">96</option>
-                  </select>
-                </div>
-              </nav>
             </div>
           </section>
         </div>

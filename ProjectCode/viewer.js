@@ -1,7 +1,7 @@
 /**
  * Image viewer: a full-screen lightbox with zoom/pan, a filmstrip, and -- when
- * the visitor can label -- one-click, keyboard-friendly labeling that advances
- * to the next image.
+ * the visitor can label -- a type-ahead label box (Labels.picker, labels.js)
+ * that labels the image and moves on to the next one.
  *
  *   ImageViewer.open({
  *     items,           array of {image_id, filename, relative_path, width, height,
@@ -19,7 +19,7 @@
  *     originEl,        element to animate from and to return focus to
  *   })
  *
- * Keys: arrows/J/K move, 1-9 label, 0/Delete clear, Z undo, N next unlabeled,
+ * Keys: arrows/J/K move, / or L label, 0/Delete clear, Z undo, N next unlabeled,
  * F fit, A actual size, + / - zoom, S sharp pixels, ? help, Esc close.
  */
 (function () {
@@ -32,7 +32,6 @@
 
     var items = opts.items;
     var canLabel = !!opts.canLabel;
-    var labelOptions = opts.labels || Labels.options;
     var index = Math.max(0, Math.min(items.length - 1, opts.index || 0));
     var originEl = opts.originEl || document.activeElement;
 
@@ -81,14 +80,16 @@
     var titleEl = h('h2', { class: 'viewer-name' });
     var metaEl = h('p', { class: 'viewer-meta' });
     var statusEl = h('div', { class: 'viewer-status' });
-    var labelBox = h('div', { class: 'viewer-labels', role: 'group', 'aria-label': 'Label this image' });
-    var labelButtons = {};
-    labelOptions.forEach(function (opt) {
-      var btn = h('button', { type: 'button', class: 'vlabel', 'data-label': opt.value, 'aria-pressed': 'false', onclick: function () { applyLabel(opt.value); } },
-        h('kbd', { text: opt.key || '' }), Labels.glyph(opt.glyph), h('span', { text: opt.text }));
-      labelButtons[opt.value] = btn;
-      labelBox.appendChild(btn);
-    });
+    // Focus stays in the box after a label, so the next image can be labeled
+    // straight away by typing; Esc goes back to the image (arrow keys, zoom).
+    var picker = canLabel ? Labels.picker({
+      className: 'viewer-picker',
+      label: 'Label this image',
+      current: function () { return cur().label || null; },
+      onPick: function (option) { applyLabel(option.value); },
+      onEscape: function () { stage.focus(); },
+    }) : null;
+    var labelBox = picker ? picker.el : null;
     var clearBtn = h('button', { type: 'button', class: 'btn btn-sm btn-danger', onclick: function () { applyLabel(null); } }, UI.icon('x'), 'Clear label ', h('kbd', { text: '0' }));
     var undoBtn = h('button', { type: 'button', class: 'btn btn-sm', onclick: undo }, UI.icon('undo'), 'Undo ', h('kbd', { text: 'Z' }));
     var nextUnlabeledBtn = h('button', { type: 'button', class: 'btn btn-sm', onclick: function () { goNextUnlabeled(true); } }, UI.icon('skip-forward'), 'Next unlabeled ', h('kbd', { text: 'N' }));
@@ -107,7 +108,7 @@
         h('div', { class: 'viewer-actions' }, clearBtn, undoBtn, nextUnlabeledBtn)) : viewOnly,
       canLabel ? h('div', { class: 'viewer-section' }, h('h3', { class: 'viewer-h', text: 'Flow' }), advanceSwitch.el, skipSwitch.el) : null,
       h('div', { class: 'viewer-section viewer-links' }, downloadLink, openLink),
-      h('p', { class: 'viewer-hint' }, canLabel ? [h('kbd', { text: '←' }), ' ', h('kbd', { text: '→' }), ' move · ', h('kbd', { text: '1' }), '–', h('kbd', { text: String(Math.min(9, labelOptions.length)) }), ' label · ', h('kbd', { text: '?' }), ' all shortcuts']
+      h('p', { class: 'viewer-hint' }, canLabel ? [h('kbd', { text: '←' }), ' ', h('kbd', { text: '→' }), ' move · ', h('kbd', { text: '/' }), ' label · ', h('kbd', { text: '?' }), ' all shortcuts']
         : [h('kbd', { text: '←' }), ' ', h('kbd', { text: '→' }), ' move · scroll to zoom · ', h('kbd', { text: 'Esc' }), ' close']));
 
     var root = h('div', { class: 'viewer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Image viewer' },
@@ -166,9 +167,7 @@
       statusEl.appendChild(Labels.chip(item.label));
       if (item.label) statusEl.appendChild(h('span', { class: 'viewer-when', text: labelledBy(item) }));
 
-      Object.keys(labelButtons).forEach(function (v) {
-        labelButtons[v].setAttribute('aria-pressed', String(item.label === v));
-      });
+      if (picker) picker.refresh();
       prevBtn.disabled = index === 0;
       nextBtn.disabled = index === items.length - 1;
       clearBtn.disabled = !item.label;
@@ -191,7 +190,7 @@
             type: 'button', class: 'strip-thumb' + (i === index ? ' active' : ''), 'aria-label': 'Go to image ' + (i + 1) + (it.label ? ', ' + Labels.text(it.label) : ''),
             'aria-current': i === index ? 'true' : null, onclick: function () { show(i); },
           }, h('img', { src: UI.imageUrl(it.relative_path), alt: '', loading: 'lazy', draggable: 'false' }));
-          if (it.label) t.setAttribute('data-label', it.label);
+          Labels.paint(t, it.label);
           strip.appendChild(t);
         })(i);
       }
@@ -353,7 +352,7 @@
     }
 
     function pulse(value) {
-      var btn = value ? labelButtons[value] : clearBtn;
+      var btn = value ? statusEl : clearBtn;
       if (btn && btn.animate) btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' });
     }
 
@@ -371,7 +370,9 @@
     function onKey(e) {
       if (document.querySelector('.modal-backdrop')) return;
       var tag = (e.target.tagName || '').toLowerCase();
+      if (e.key === 'Tab') { UI.trapFocus(root, e); return; }
       if (tag === 'input' && e.target.type !== 'checkbox') return;
+      if (picker && picker.el.contains(e.target)) return;  // the box handles its own keys, Esc included
       if (e.altKey) return;
       var key = e.key;
 
@@ -393,10 +394,8 @@
       else if (canLabel && (key === 'n' || key === 'N')) { goNextUnlabeled(true); }
       else if (canLabel && (key === 'z' || key === 'Z')) { undo(); }
       else if (canLabel && (key === '0' || key === 'Delete' || key === 'Backspace')) { e.preventDefault(); applyLabel(null); }
-      else if (canLabel) {
-        var opt = Labels.byKey(key);
-        if (opt && labelOptions.indexOf(opt) >= 0) { e.preventDefault(); applyLabel(opt.value); }
-      } else if (key === '0') { fitView(); }
+      else if (canLabel && (key === '/' || key === 'l' || key === 'L')) { e.preventDefault(); picker.focus(); }
+      else if (key === '0') { fitView(); }
     }
 
     // --- open / close ----------------------------------------------------------------
@@ -405,6 +404,7 @@
     function close(immediate) {
       if (current !== api) return;
       current = null;
+      if (picker) picker.destroy();
       document.removeEventListener('keydown', onKey, true);
       window.removeEventListener('resize', layout);
       inerted.forEach(function (el) { el.inert = false; });

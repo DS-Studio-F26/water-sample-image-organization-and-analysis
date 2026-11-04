@@ -27,14 +27,16 @@ from dotenv import load_dotenv
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = PROJECT_DIR / "supabase" / "migrations"
 
-TABLES = ["folders", "images", "qa_log", "profiles", "measurement_columns", "role_requests"]
+TABLES = ["folders", "images", "qa_log", "profiles", "measurement_columns", "role_requests",
+          "label_options"]
 VIEWS = ["folders_visible", "dashboard_stats", "chart_site_counts",
          "chart_date_counts", "chart_water_body_counts",
          "folder_labeling_progress", "labeling_stats", "label_counts"]
 ROLE_FUNCTIONS = ["is_admin()", "admin_list_users()", "set_user_role(uuid, text)",
                    "can_label()", "my_labeling_count()", "admin_labeling_by_user()",
                    "is_owner()", "request_role(text)", "cancel_role_request()",
-                   "review_role_request(uuid, boolean)", "team_labeling_progress()"]
+                   "review_role_request(uuid, boolean)", "team_labeling_progress()",
+                   "admin_update_label(text, text, text)", "admin_delete_label(text)"]
 
 
 def get_db_url() -> str:
@@ -120,6 +122,22 @@ def verify(conn: psycopg.Connection) -> bool:
           not priv("select has_table_privilege('anon', 'public.role_requests', 'select')"))
     check("authenticated cannot write role_requests",
           not priv("select has_table_privilege('authenticated', 'public.role_requests', 'insert, update, delete, truncate')"))
+    check("anon can read label_options",
+          priv("select has_table_privilege('anon', 'public.label_options', 'select')"))
+    check("anon cannot write label_options",
+          not priv("select has_table_privilege('anon', 'public.label_options', 'insert, update, delete, truncate')"))
+    check("authenticated can add a label (name, category)",
+          priv("select has_column_privilege('authenticated', 'public.label_options', 'name', 'insert')")
+          and priv("select has_column_privilege('authenticated', 'public.label_options', 'category', 'insert')"))
+    check("authenticated cannot set label_options.is_builtin",
+          not priv("select has_column_privilege('authenticated', 'public.label_options', 'is_builtin', 'insert')"))
+    check("authenticated cannot update or delete label_options",
+          not priv("select has_table_privilege('authenticated', 'public.label_options', 'update, delete, truncate')"))
+    check("trigger images_check_label on images",
+          conn.execute("select 1 from pg_trigger where tgname = 'images_check_label' "
+                       "and tgrelid = 'public.images'::regclass").fetchone() is not None)
+    builtin = conn.execute("select count(*) from public.label_options where is_builtin").fetchone()[0]
+    check(f"label_options has the 12 starting labels (found {builtin})", builtin == 12)
     for fn in ROLE_FUNCTIONS:
         check(f"anon cannot execute {fn}",
               not priv("select has_function_privilege('anon', %s, 'execute')", f"public.{fn}"))

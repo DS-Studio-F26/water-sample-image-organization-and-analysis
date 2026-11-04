@@ -9,15 +9,18 @@
  * never sent from here.
  *
  * How labeling works:
- *   - Click tiles to select them (Shift-click for a range), then press a number
- *     key or a label button to label every selected image at once.
- *   - With nothing selected, number keys label the focused (or hovered) tile.
- *   - Each tile also has its own label menu, and Enter / the expand button opens
+ *   - Click tiles to select them (Shift-click for a range), then pick a label in
+ *     the label panel beside the grid: type part of its name (any part: "deb"
+ *     finds Microcystis Debris) and press Enter, or click it. Every selected
+ *     image gets it at once. "Enter new label" adds a label to the shared list.
+ *   - With nothing selected, / or L jumps to the panel for the focused (or
+ *     hovered) tile.
+ *   - Each tile also has its own label box, and Enter / the expand button opens
  *     the viewer for careful, one-by-one review.
  *   - Changes appear instantly and save in the background (in order, in batches);
  *     if a save fails, the images are put back and you're told. Undo covers it all.
  *
- * The label categories live in labels.js.
+ * The label list (shared, in the database) and the type-ahead box live in labels.js.
  */
 (function () {
   'use strict';
@@ -59,7 +62,9 @@
     loadSeq: 0,
     celebrated: new Set(),
     rerenderTimer: null,
+    pinnedId: null,         // with nothing selected, the image the label panel acts on
   };
+  let panelPicker = null;
   let tileEls = new Map();
   let menuEl = null;
   let exporting = false;
@@ -168,7 +173,7 @@
     state.booted = true;
     if (!window.sb) return showFatal(new Error('The Supabase library did not load (blocked by the network or a browser extension?).'));
     try {
-      await loadOverview();
+      await Promise.all([loadOverview(), Labels.ready]);
     } catch (err) {
       if (isMissingSchema(err)) { $('role-banner').innerHTML = ''; $('setup-card').hidden = false; return; }
       return showFatal(err);
@@ -178,8 +183,13 @@
     syncControls();
     renderProgress(false);
     renderRail();
-    renderLabelbar();
+    setupLabelPanel();
     applyRoleToUi();
+    Labels.onChange(() => {
+      buildViewFilter();
+      renderProgress(false);
+      if (state.currentFolder) renderGrid({ keepFocus: true });
+    });
 
     const wanted = new URLSearchParams(location.search).get('folder');
     if (wanted && state.folders.some(f => f.folder_name === wanted)) await selectFolder(wanted, { quiet: true });
@@ -215,12 +225,12 @@
 
   function applyRoleToUi() {
     $('select-tools').hidden = !state.canLabel;
-    $('labelbar').hidden = !state.canLabel;
+    $('label-panel').hidden = !state.canLabel;
     $('status-hint').textContent = state.canLabel
-      ? 'Click to select · Shift-click for a range · Enter opens the viewer'
+      ? 'Click to select · Shift-click for a range · / to label · Enter opens the viewer'
       : 'Click an image to open it in the viewer';
     if (state.currentFolder) renderGrid({ keepFocus: true });
-    updateLabelbar();
+    updatePanel();
   }
 
   // 3. Overview: ring, label mix, export ----------------------------------------------------------
@@ -242,22 +252,35 @@
     if (state.user) stats.append(' · you’ve labeled ', h('strong', { text: fmt(state.myCount) }));
     if (Number(s.labeler_count)) stats.append(` · ${s.labeler_count} ${Number(s.labeler_count) === 1 ? 'person' : 'people'} contributing`);
 
+    // The bar is split by category; the legend lists each category's labels.
     const bar = $('mix-bar');
     const legend = $('label-breakdown');
     bar.innerHTML = '';
     legend.innerHTML = '';
+    legend.classList.add('by-cat');
     const known = Labels.options.map(o => o.value);
-    const extra = [...state.counts.keys()].filter(k => known.indexOf(k) < 0);
-    const order = known.concat(extra);
-    order.forEach(value => {
-      const n = state.counts.get(value) || 0;
-      if (n > 0) bar.appendChild(h('span', { 'data-label': value, style: { flexGrow: String(n), flexBasis: '0' }, title: `${Labels.text(value)}: ${fmt(n)}` }));
-      const chip = Labels.chip(value);
-      chip.appendChild(h('b', { text: fmt(n) }));
-      if (n === 0) chip.style.opacity = '0.55';
-      legend.appendChild(h('li', {}, chip));
+    const extra = [...state.counts.keys()].filter(k => known.indexOf(k) < 0 && state.counts.get(k) > 0);
+    const groups = Labels.categories.map(c => ({ cat: c, values: Labels.options.filter(o => o.category === c.key).map(o => o.value) }));
+    if (extra.length) groups.push({ cat: Labels.categoryOf(''), values: extra });
+    const parts = [];
+    groups.forEach(({ cat, values }) => {
+      const total = values.reduce((sum, v) => sum + (state.counts.get(v) || 0), 0);
+      if (total > 0) {
+        bar.appendChild(h('span', { 'data-cat': cat.key || null, style: { flexGrow: String(total), flexBasis: '0' }, title: `${cat.text}: ${fmt(total)}` }));
+        parts.push(`${cat.text} ${fmt(total)}`);
+      }
+      const li = h('li', { 'data-cat': cat.key || null },
+        h('span', { class: 'mix-cat-name' }, Labels.glyph(cat.glyph), cat.text, h('b', { text: fmt(total) })));
+      values.forEach(value => {
+        const n = state.counts.get(value) || 0;
+        const chip = Labels.chip(value);
+        chip.appendChild(h('b', { text: fmt(n) }));
+        if (n === 0) chip.style.opacity = '0.55';
+        li.appendChild(chip);
+      });
+      legend.appendChild(li);
     });
-    bar.setAttribute('aria-label', labeled ? `Label mix: ${order.filter(v => state.counts.get(v)).map(v => `${Labels.text(v)} ${fmt(state.counts.get(v))}`).join(', ')}` : 'No labels yet');
+    bar.setAttribute('aria-label', labeled ? `Label mix: ${parts.join(', ')}` : 'No labels yet');
   }
 
   async function exportLabels() {
@@ -271,7 +294,8 @@
         .not('label', 'is', null).order('folder_name').order('filename'));
       toast.dismiss(true);
       if (!rows.length) { UI.toast({ message: 'Nothing has been labeled yet, so there’s nothing to export.', kind: 'info' }); return; }
-      const text = UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'labeled_date']);
+      rows.forEach(r => { r.category = Labels.category(r.label).key || ''; });
+      const text = UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'category', 'labeled_date']);
       UI.download(`water-sample-labels-${new Date().toISOString().slice(0, 10)}.csv`, text);
       UI.toast({ message: `Exported ${fmt(rows.length)} labels.`, kind: 'success' });
     } catch (err) {
@@ -432,9 +456,16 @@
     add('all', 'All images');
     add('unlabeled', 'Unlabeled only');
     add('labeled', 'Labeled (any)');
-    const group = h('optgroup', { label: 'A specific label' });
-    Labels.options.forEach(o => add(`label:${o.value}`, o.text, group));
-    sel.appendChild(group);
+    const cats = h('optgroup', { label: 'A category' });
+    Labels.categories.forEach(c => add(`cat:${c.key}`, c.text, cats));
+    sel.appendChild(cats);
+    Labels.categories.forEach(c => {
+      const opts = Labels.options.filter(o => o.category === c.key);
+      if (!opts.length) return;
+      const group = h('optgroup', { label: c.text });
+      opts.forEach(o => add(`label:${o.value}`, o.text, group));
+      sel.appendChild(group);
+    });
     if (![...sel.options].some(o => o.value === state.viewFilter)) state.viewFilter = 'all';
     sel.value = state.viewFilter;
   }
@@ -452,6 +483,7 @@
     if (f === 'unlabeled') return state.images.filter(i => !i.label);
     if (f === 'labeled') return state.images.filter(i => i.label);
     if (f.startsWith('label:')) { const v = f.slice(6); return state.images.filter(i => i.label === v); }
+    if (f.startsWith('cat:')) { const c = f.slice(4); return state.images.filter(i => i.label && Labels.get(i.label).category === c); }
     return state.images;
   }
 
@@ -525,8 +557,7 @@
 
   function labelButtonContent(img) {
     if (!img.label) return [h('span', { class: 'lab' }, state.canLabel ? 'Add label' : 'Unlabeled'), state.canLabel ? UI.icon('chevron-down', 'chev') : null];
-    const opt = Labels.get(img.label);
-    return [h('span', { class: 'lab' }, Labels.glyph(opt.glyph), h('span', { text: opt.text })), state.canLabel ? UI.icon('chevron-down', 'chev') : null];
+    return [h('span', { class: 'lab' }, Labels.glyph(Labels.category(img.label).glyph), h('span', { text: Labels.text(img.label) })), state.canLabel ? UI.icon('chevron-down', 'chev') : null];
   }
 
   function tileAria(img) {
@@ -546,7 +577,7 @@
       state.canLabel ? h('span', { class: 'tile-check', 'aria-hidden': 'true' }, UI.icon('check')) : null,
       img.width ? h('span', { class: 'tile-dim', text: `${img.width}×${img.height}` }) : null, expand);
     const labelBtn = h(state.canLabel ? 'button' : 'div', { class: 'tile-label' });
-    if (state.canLabel) { labelBtn.type = 'button'; labelBtn.tabIndex = -1; labelBtn.setAttribute('aria-haspopup', 'menu'); }
+    if (state.canLabel) { labelBtn.type = 'button'; labelBtn.tabIndex = -1; labelBtn.setAttribute('aria-haspopup', 'dialog'); }
     const tile = h('div', { class: `tile${state.canLabel ? '' : ' readonly'}`, 'data-id': img.image_id, style: { '--i': String(i % 24) } },
       media, h('div', { class: 'tile-foot' }, labelBtn));
     paintTile(tile, img);
@@ -557,8 +588,8 @@
   function paintTile(tile, img) {
     const labelBtn = tile.querySelector('.tile-label');
     const main = tile.querySelector('.tile-main');
-    if (img.label) { tile.setAttribute('data-label', img.label); labelBtn.setAttribute('data-label', img.label); }
-    else { tile.removeAttribute('data-label'); labelBtn.removeAttribute('data-label'); }
+    Labels.paint(tile, img.label);
+    Labels.paint(labelBtn, img.label);
     labelBtn.innerHTML = '';
     labelBtn.append(...labelButtonContent(img));
     if (state.canLabel) labelBtn.setAttribute('aria-label', `Label: ${Labels.text(img.label)}. Change label`);
@@ -629,6 +660,7 @@
       if (state.selected.has(id)) state.selected.delete(id); else state.selected.add(id);
       state.anchorId = id;
     }
+    state.pinnedId = null;
     renderSelection();
   }
 
@@ -647,6 +679,7 @@
   }
 
   function renderSelection() {
+    if (state.selected.size) state.pinnedId = null;
     tileEls.forEach((tile, id) => {
       const on = state.selected.has(id);
       tile.classList.toggle('selected', on);
@@ -654,7 +687,7 @@
       const img = state.byId.get(id);
       if (img) tile.querySelector('.tile-main').setAttribute('aria-label', tileAria(img) + (on ? ', selected' : ''));
     });
-    updateLabelbar();
+    updatePanel();
   }
 
   // The tile that has real keyboard focus right now (not just the roving-tabindex anchor).
@@ -672,11 +705,25 @@
     return state.lastVia === 'hover' ? (hovered || focused) : (focused || hovered);
   }
 
+  function inPanel() {
+    const el = document.activeElement;
+    return !!(el && $('label-panel').contains(el));
+  }
+
+  // Selected images, else the one image the panel was opened for, else the
+  // focused or hovered tile.
   function targets() {
     if (state.selected.size) return [...state.selected].map(id => state.byId.get(id)).filter(Boolean);
-    const id = targetId();
+    const id = inPanel() ? state.pinnedId : targetId();
     const img = id && state.byId.get(id);
     return img ? [img] : [];
+  }
+
+  // Remember which image the panel acts on before focus moves into it (while
+  // the mouse is in the panel there's no hovered tile any more).
+  function pinTarget() {
+    if (inPanel()) return;
+    state.pinnedId = state.selected.size ? null : targetId();
   }
 
   function focusTile(id, silent) {
@@ -706,38 +753,83 @@
     focusTile(ids[next]);
   }
 
-  function updateLabelbar() {
-    const bar = $('labelbar');
-    if (!bar || bar.hidden) return;
+  function updatePanel() {
+    const panel = $('label-panel');
+    if (!panel || panel.hidden) return;
     const t = targets();
-    bar.classList.toggle('armed', t.length > 0);
-    bar.querySelectorAll('.lbtn').forEach(b => { b.disabled = t.length === 0; });
-    const clearBtn = bar.querySelector('.lbtn.plain');
-    if (clearBtn) clearBtn.disabled = t.length === 0 || !t.some(i => i.label);
-    const undoBtn = $('undo-btn');
-    if (undoBtn) undoBtn.disabled = !state.undoStack.some(e => !e.failed);
+    panel.classList.toggle('armed', t.length > 0);
+    const target = $('label-target');
+    target.textContent = state.selected.size
+      ? `Applies to ${fmt(state.selected.size)} selected ${state.selected.size === 1 ? 'image' : 'images'}`
+      : t.length ? `Applies to ${t[0].filename}` : 'Select the images to label';
+    target.classList.toggle('has', t.length > 0);
+    $('clear-label-btn').disabled = !t.some(i => i.label);
+    $('undo-btn').disabled = !state.undoStack.some(e => !e.failed);
     const count = $('selection-count');
-    count.textContent = state.selected.size
-      ? `${fmt(state.selected.size)} selected`
-      : t.length ? 'Labels apply to this image' : 'Select images, or hover one';
-    count.classList.toggle('has', t.length > 0);
+    count.textContent = state.selected.size ? `${fmt(state.selected.size)} selected` : 'Nothing selected';
+    count.classList.toggle('has', state.selected.size > 0);
     document.querySelectorAll('.tile.is-target').forEach(el => el.classList.remove('is-target'));
     if (!state.selected.size && state.canLabel) {
-      const id = targetId();
+      const id = inPanel() ? state.pinnedId : targetId();
       const el = id && tileEls.get(id);
       if (el) el.classList.add('is-target');
     }
+    // The current label is marked in the list when every target shares it.
+    if (panelPicker) panelPicker.refresh();
   }
 
-  function renderLabelbar() {
-    const bar = $('labelbar');
-    bar.innerHTML = '';
-    Labels.options.forEach(opt => {
-      bar.appendChild(h('button', { type: 'button', class: 'lbtn', 'data-label': opt.value, disabled: true, onclick: () => applyToTargets(opt.value), title: `${opt.text} (${opt.key})` },
-        Labels.glyph(opt.glyph), h('span', { text: opt.text }), h('kbd', { text: opt.key })));
+  function sharedLabel() {
+    const t = targets();
+    if (!t.length) return null;
+    const first = t[0].label || null;
+    return t.every(i => (i.label || null) === first) ? first : null;
+  }
+
+  function setupLabelPanel() {
+    panelPicker = Labels.picker({
+      label: 'Label the selected images',
+      current: sharedLabel,
+      onPick: (option) => applyFromPanel(option.value),
+      onEscape: () => returnToGrid(),
     });
-    bar.appendChild(h('button', { type: 'button', class: 'lbtn plain', disabled: true, onclick: () => applyToTargets(null), title: 'Clear the label (0)' }, UI.icon('x'), h('span', { text: 'Clear' }), h('kbd', { text: '0' })));
-    bar.appendChild(h('button', { type: 'button', class: 'lbtn plain spacer', id: 'undo-btn', style: { '--c': 'var(--text-muted)', color: 'var(--text-2)' }, disabled: true, onclick: () => undo(), title: 'Undo the last change (Z)' }, UI.icon('undo'), h('span', { text: 'Undo' }), h('kbd', { text: 'Z' })));
+    $('label-picker-host').appendChild(panelPicker.el);
+    const panel = $('label-panel');
+    panel.addEventListener('pointerdown', pinTarget, true);
+    panel.addEventListener('focusin', () => updatePanel());
+    panel.addEventListener('focusout', () => setTimeout(updatePanel, 0));
+    $('clear-label-btn').addEventListener('click', () => applyFromPanel(null));
+    $('undo-btn').addEventListener('click', () => undo());
+  }
+
+  function applyFromPanel(value) {
+    const t = targets();
+    if (!t.length) {
+      UI.toast({ message: 'Select some images first, or hover one and press /.', kind: 'info', duration: 2600 });
+      return;
+    }
+    const fromSelection = state.selected.size > 0;
+    const backTo = fromSelection ? null : t[0].image_id;
+    applyLabel(t, value, { source: 'grid', clearSelection: fromSelection });
+    state.pinnedId = null;
+    returnToGrid(backTo);
+  }
+
+  // Back to the grid so the arrow keys work again.
+  function returnToGrid(id) {
+    const want = id || state.focusId;
+    if (want && tileEls.has(want)) focusTile(want, true);
+    else if (document.activeElement && $('label-panel').contains(document.activeElement)) document.activeElement.blur();
+    updatePanel();
+  }
+
+  function focusPanel() {
+    if (!state.canLabel || !panelPicker) return;
+    pinTarget();
+    panelPicker.focus();
+    const panel = $('label-panel');
+    const r = panel.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > window.innerHeight) panel.scrollIntoView({ block: 'nearest', behavior: UI.reducedMotion() ? 'auto' : 'smooth' });
+    updatePanel();
   }
 
   // 8. Labeling: apply, save, undo -----------------------------------------------------------------------------
@@ -805,7 +897,8 @@
     const f = state.currentFolder;
     const filter = state.viewFilter;
     const stillShown = (img) => filter === 'all' || (filter === 'unlabeled' && !img.label) || (filter === 'labeled' && img.label)
-      || (filter.startsWith('label:') && img.label === filter.slice(6));
+      || (filter.startsWith('label:') && img.label === filter.slice(6))
+      || (filter.startsWith('cat:') && !!img.label && Labels.get(img.label).category === filter.slice(4));
     let leaving = 0;
     changed.forEach(img => {
       const tile = tileEls.get(img.image_id);
@@ -816,7 +909,7 @@
       } else { tile.classList.add('leaving'); leaving++; }
     });
     if (opts.clearSelection) { state.selected.clear(); state.anchorId = null; renderSelection(); }
-    else updateLabelbar();
+    else updatePanel();
     if (leaving) scheduleRerender(340);
 
     renderFolderHeader();
@@ -883,7 +976,7 @@
     renderFolderHeader();
     new Set(snapshot.map(x => x.img._folder || f)).forEach(folder => { if (folder) updateRailItem(folder); });
     renderProgress(true);
-    updateLabelbar();
+    updatePanel();
     state.saveError = true;
     updateSaveStatus();
     const denied = err && (err.code === '42501' || /row-level security|permission denied/i.test(err.message || ''));
@@ -920,7 +1013,7 @@
       const restored = [];
       groups.forEach((imgs, k) => restored.push(...applyLabel(imgs, k || null, { record: false, quiet: true, source: 'undo' })));
       UI.toast({ message: `Undid ${fmt(entry.snapshot.length)} ${entry.snapshot.length === 1 ? 'label' : 'labels'}.`, kind: 'info', duration: 2600, id: 'label' });
-      updateLabelbar();
+      updatePanel();
       return restored.length ? restored : true;
     }
     UI.toast({ message: 'Nothing to undo.', kind: 'info', duration: 2000 });
@@ -932,26 +1025,39 @@
   function closeMenu(restoreFocus) {
     if (!menuEl) return;
     const returnTo = menuEl._returnTo;
+    if (menuEl._picker) menuEl._picker.destroy();
     menuEl.remove();
     menuEl = null;
     document.removeEventListener('pointerdown', onOutsideMenu, true);
-    window.removeEventListener('scroll', closeMenu, true);
+    window.removeEventListener('scroll', onMenuScroll, true);
     window.removeEventListener('resize', closeMenu);
     if (restoreFocus && returnTo && document.contains(returnTo)) returnTo.focus({ preventScroll: true });
   }
   function onOutsideMenu(e) { if (menuEl && !menuEl.contains(e.target)) closeMenu(); }
+  // Scrolling the page closes the box; scrolling its own list doesn't.
+  function onMenuScroll(e) { if (menuEl && !menuEl.contains(e.target)) closeMenu(); }
 
+  // The label box for one tile, floating next to its label button.
   function openLabelMenu(anchor, img, returnTo) {
     if (!state.canLabel) return;
     closeMenu();
-    const menu = h('div', { class: 'popover', role: 'menu', 'aria-label': `Label for ${img.filename}` });
-    Labels.options.forEach(opt => {
-      menu.appendChild(h('button', { type: 'button', role: 'menuitemradio', 'aria-checked': String(img.label === opt.value), 'data-label': opt.value, 'data-value': opt.value },
-        Labels.glyph(opt.glyph), h('span', { text: opt.text }), h('kbd', { text: opt.key })));
+    const picker = Labels.picker({
+      label: `Label for ${img.filename}`,
+      current: () => img.label || null,
+      onPick: (option) => { closeMenu(true); applyLabel([img], option.value, { source: 'menu' }); },
+      onEscape: () => closeMenu(true),
     });
-    menu.appendChild(h('hr'));
-    menu.appendChild(h('button', { type: 'button', role: 'menuitemradio', 'aria-checked': String(!img.label), 'data-value': '' }, UI.icon('x'), h('span', { text: 'No label' }), h('kbd', { text: '0' })));
+    const clearBtn = h('button', { type: 'button', class: 'btn btn-sm btn-ghost', disabled: !img.label,
+      onclick: () => { closeMenu(true); applyLabel([img], null, { source: 'menu' }); } }, UI.icon('x'), 'Clear label');
+    const menu = h('div', { class: 'popover label-popover', role: 'dialog', 'aria-label': `Label for ${img.filename}` },
+      h('div', { class: 'lp-head' }, h('strong', { text: img.filename }), clearBtn),
+      picker.el);
     menu._returnTo = returnTo || anchor;
+    menu._picker = picker;
+    menu.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu(true); }
+      else if (e.key === 'Tab') UI.trapFocus(menu, e);
+    });
     (document.querySelector('main') || document.body).appendChild(menu);
     menuEl = menu;
 
@@ -962,32 +1068,10 @@
     menu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - mw - 8))}px`;
     menu.style.setProperty('--ox', below ? 'top left' : 'bottom left');
 
-    const items = [...menu.querySelectorAll('[role="menuitemradio"]')];
-    menu.addEventListener('click', (e) => {
-      const item = e.target.closest('[role="menuitemradio"]');
-      if (!item) return;
-      const value = item.dataset.value || null;
-      closeMenu(true);
-      applyLabel([img], value, { source: 'menu' });
-    });
-    menu.addEventListener('keydown', (e) => {
-      const at = items.indexOf(document.activeElement);
-      if (e.key === 'ArrowDown') { e.preventDefault(); items[(at + 1) % items.length].focus(); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); items[(at - 1 + items.length) % items.length].focus(); }
-      else if (e.key === 'Home') { e.preventDefault(); items[0].focus(); }
-      else if (e.key === 'End') { e.preventDefault(); items[items.length - 1].focus(); }
-      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu(true); }
-      else if (e.key === 'Tab') { e.preventDefault(); closeMenu(true); }
-      else {
-        const opt = Labels.byKey(e.key);
-        if (opt) { e.preventDefault(); closeMenu(true); applyLabel([img], opt.value, { source: 'menu' }); }
-        else if (e.key === '0') { e.preventDefault(); closeMenu(true); applyLabel([img], null, { source: 'menu' }); }
-      }
-    });
     document.addEventListener('pointerdown', onOutsideMenu, true);
-    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('scroll', onMenuScroll, true);
     window.addEventListener('resize', closeMenu);
-    (items.find(i => i.getAttribute('aria-checked') === 'true') || items[0]).focus();
+    picker.focus();
   }
 
   // 10. The viewer ---------------------------------------------------------------------------------------------------
@@ -1024,7 +1108,6 @@
   function openHelp() {
     const group = (title, rows) => h('section', { class: 'shortcut-group' }, h('h3', { text: title }),
       h('dl', {}, rows.map(([keys, text]) => [h('dt', {}, keys.map(k => h('kbd', { text: k }))), h('dd', { text })])));
-    const max = String(Math.min(9, Labels.options.length));
     UI.dialog({
       title: 'Keyboard shortcuts', wide: true,
       content: h('div', { class: 'shortcut-grid' },
@@ -1033,17 +1116,22 @@
           [['Space'], 'Select or deselect the image'],
           [['Shift', '←→'], 'Extend the selection'],
           [['Enter'], 'Open the viewer'],
-          [['1', '–', max], 'Apply that label to the selection (or the focused image)'],
+          [['/'], 'Go to the label box (L works too)'],
           [['0'], 'Clear the label'],
-          [['L'], 'Open the label menu for the focused image'],
           [['Z'], 'Undo the last change'],
           [['Ctrl/⌘', 'A'], 'Select everything on this page'],
           [['Esc'], 'Deselect'],
           [['PgUp', 'PgDn'], 'Previous / next page'],
         ]),
+        group('In the label box', [
+          [['a–z'], 'Type any part of a name: “deb” finds Microcystis Debris'],
+          [['↑', '↓'], 'Move through the matches'],
+          [['Enter'], 'Apply the highlighted label (or add a new one)'],
+          [['Esc'], 'Clear what you typed, then back to the images'],
+        ]),
         group('In the viewer', [
           [['←', '→'], 'Previous / next image'],
-          [['1', '–', max], 'Label it and move on'],
+          [['/'], 'Go to the label box; Enter labels it and moves on'],
           [['0'], 'Clear the label'],
           [['N'], 'Jump to the next unlabeled image'],
           [['Z'], 'Undo'],
@@ -1068,20 +1156,14 @@
     if (mod && key.toLowerCase() === 'a' && state.canLabel) { e.preventDefault(); selectPage(); return; }
     if (mod) return;
     if (key === '?') { e.preventDefault(); openHelp(); return; }
+    if ($('label-panel').contains(e.target)) return;
     if (key === 'Escape') { if (state.selected.size) { e.preventDefault(); clearSelection(); } return; }
     if (key === 'PageDown') { const pages = pageOf(viewList()).pages; if (state.page < pages) { e.preventDefault(); goPage(state.page + 1, true); } return; }
     if (key === 'PageUp') { if (state.page > 1) { e.preventDefault(); goPage(state.page - 1, true); } return; }
     if (!state.canLabel) return;
     if (key === 'z' || key === 'Z') { e.preventDefault(); undo(); return; }
-    if (key === 'l' || key === 'L') {
-      const id = targetId();
-      const tile = id && tileEls.get(id);
-      if (tile) { e.preventDefault(); openLabelMenu(tile.querySelector('.tile-label'), state.byId.get(id), tile.querySelector('.tile-main')); }
-      return;
-    }
+    if (key === '/' || key === 'l' || key === 'L') { e.preventDefault(); focusPanel(); return; }
     if (key === '0' || key === 'Delete' || key === 'Backspace') { e.preventDefault(); applyToTargets(null); return; }
-    const opt = Labels.byKey(key);
-    if (opt) { e.preventDefault(); applyToTargets(opt.value); }
   }
 
   function onTileKey(e) {
@@ -1123,9 +1205,9 @@
       state.focusId = tile.dataset.id;
       state.lastVia = 'focus';
       tileEls.forEach((t, tid) => { t.querySelector('.tile-main').tabIndex = tid === state.focusId ? 0 : -1; });
-      updateLabelbar();
+      updatePanel();
     });
-    grid.addEventListener('focusout', () => setTimeout(updateLabelbar, 0));
+    grid.addEventListener('focusout', () => setTimeout(updatePanel, 0));
     grid.addEventListener('pointerover', (e) => {
       if (e.pointerType === 'touch') return;
       const tile = e.target.closest('.tile');
@@ -1133,9 +1215,9 @@
       if (id === state.hoverId) return;
       state.hoverId = id;
       if (id) state.lastVia = 'hover';
-      updateLabelbar();
+      updatePanel();
     });
-    grid.addEventListener('pointerleave', () => { state.hoverId = null; updateLabelbar(); });
+    grid.addEventListener('pointerleave', () => { state.hoverId = null; updatePanel(); });
 
     document.addEventListener('keydown', onGlobalKey);
 
