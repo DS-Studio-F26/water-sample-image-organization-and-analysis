@@ -32,6 +32,25 @@ pip3 install Pillow
 python3 ProjectCode/catalog_images.py
 ```
 
+The script also cleans up the metadata (`finalize_folder` in `catalog_images.py`):
+
+- **Sites**: spelling variants are merged and sites whose folder names don't say
+  what they are get their type (`SITE_RENAMES`, `SITE_WATER_TYPES`), e.g.
+  `leeseville` -> `leesville pond`, `flint`/`flint ramp` -> `flint pond`. A
+  folder's `water_body_type` is always its site's type: pond, lake or reservoir
+  ("park" and "shore" describe a place, not a body of water). `patch` and
+  `sterling` are still unknown.
+- **Not real sites** (`EXCLUDED_SITES`: `unknown`, `nolable`) are left out.
+- **Dilution** is a plain number: `0.5`, `0.1`, `0.25`; "no dilution" is `1`;
+  empty means it wasn't recorded (the site shows "Not recorded"). Names like
+  ".1 dilution" are 0.1 (they used to be read as 1).
+
+`python3 ProjectCode/catalog_images.py --refresh-metadata` re-applies just these
+to the committed `catalog_output/` files, without the images; then import them
+with `deploy/import_to_supabase.py`.
+
+Dates show as MM/DD/YYYY on the site; folder names keep the city's own dates.
+
 The manifest is gzipped for github (file limit) (`image_manifest.csv.gz`). To unzip it:
 
 ```bash
@@ -76,7 +95,7 @@ flowchart LR
     browser -->|"view and download images"| worker
 ```
 
-- **Dashboard** (`ProjectCode/index.html`, `labeling.html`, `admin.html`,
+- **Dashboard** (`ProjectCode/index.html`, `labeling.html`, `review.html` (demo only), `admin.html`,
   `reset-password.html`, `privacy.html`, `404.html`, their scripts and the shared
   `base.css`, `theme.js`, `ui.js`, `viewer.js`, ... -- see
   [Look and feel](#look-and-feel) and `ProjectCode/build.mjs` for the full list):
@@ -162,6 +181,19 @@ flowchart LR
   lists every shortcut.
 - `images.label` stores the label's name exactly as shown, and the database refuses
   a name that isn't on the list (`images_check_label` trigger).
+
+**Blind review (demo only for now).** In demo mode a labeler's label is *in
+review* until one other labeler picks the same label on the **Review** page
+(`review.html`) without seeing it, or an admin reviews it; then it's
+*official*. A different pick makes it *disputed*, and an admin settles it on the
+Review page's Disputed tab. An admin's own label is official straight away.
+Labels in review are hidden (and locked) for everyone but the person who gave
+them and admins, so the review stays blind; changing a label starts its review
+over, and nobody reviews their own label. Progress counts official labels only,
+and the CSV export gains a `status` column. The demo pill's **Acting as** menu
+switches between sample labelers and an admin to try the whole loop. On the
+real site labels are still official as soon as they're applied, and
+`review.html` says so.
 
 Not set up yet, or want to show it off? Add `?demo` to any page's address
 (`labeling.html?demo`). Demo mode runs the catalog and labeling on sample data and

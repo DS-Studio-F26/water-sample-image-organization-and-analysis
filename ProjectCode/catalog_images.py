@@ -47,8 +47,18 @@ measurements go to their own file,
 image_measurements.csv.gz (one row per image_id): there are ~80 of them for
 ~670K images, too much to add to the committed manifest.
 
+Site and metadata corrections (finalize_folder): typo variants of a site are
+merged (SITE_RENAMES), sites whose names carry no water-body word get one
+(also SITE_RENAMES / SITE_WATER_TYPES), a folder's water_body_type is always
+its site's type (pond/lake/reservoir -- "park" and "shore" describe a place,
+not a body of water), dilution is a plain number ("0.5"; "no dilution" is
+"1"; unrecorded is empty), and folders at EXCLUDED_SITES are left out.
+
 Usage:
     python catalog_images.py [--root PATH] [--vbd-export PATH] [--out-dir PATH] [--source-tag NAME]
+    python catalog_images.py --refresh-metadata   # re-apply the corrections to the
+                                                  # existing catalog_output/ CSVs,
+                                                  # no image files needed
 """
 
 import argparse
@@ -58,6 +68,7 @@ import gzip
 import hashlib
 import re
 import shutil
+import sys
 from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
@@ -80,7 +91,9 @@ EXCLUDED_FOLDER_PATTERN = re.compile(r"IMPORT TEST", re.IGNORECASE)
 SYSTEM_FOLDER_NAMES = {"__MACOSX"}
 
 DATE_RE = re.compile(r"(?:CR)?(\d{1,2}\.\d{1,2}\.\d{2}(?:\d{2})?)")
-DILUTION_RE = re.compile(r"no dilution|(\d+(?:\.\d+)?)\s*[Dd]ilution")
+# The leading dot matters: ".1 dilution", ".1dilution", ". 1dilution" and
+# "(.1dilution)" are all 0.1 -- read without it they came out as "1 dilution".
+DILUTION_RE = re.compile(r"no dilution|(\.\s*)?(\d+(?:\.\d+)?)\s*dilution", re.IGNORECASE)
 # \d* before the trailing boundary catches numbered pp variants (-pp1, -pp2)
 # that a plain \b after "pp" would miss -- "AI1-pp2" has no boundary between
 # "pp" and "2" (both \w), so the folder was silently read as raw. Confirmed
@@ -121,16 +134,24 @@ def capture_mode_for(sample_code: str) -> str:
     return None
 
 
+def dilution_value(match) -> str:
+    """The dilution as a plain number string: "0.5", "0.1", "5". "no dilution"
+    is "1" (undiluted); no dilution in the name at all is None (not recorded)."""
+    if not match:
+        return None
+    if match.group(0).lower().startswith("no"):
+        return "1"
+    number = float(("0." if match.group(1) else "") + match.group(2))
+    return format(number, "g")
+
+
 def parse_folder_name(name: str) -> dict:
     date_match = DATE_RE.search(name)
     dilution_match = DILUTION_RE.search(name)
     sample_match = SAMPLE_CODE_RE.search(name)
     is_pp = bool(PP_RE.search(name))
 
-    if dilution_match:
-        dilution = "no dilution" if dilution_match.group(0).lower().startswith("no") else dilution_match.group(0)
-    else:
-        dilution = None
+    dilution = dilution_value(dilution_match)
 
     # Site = everything before the date token (or before the sample code if no date).
     cut_at = date_match.start() if date_match else (sample_match.start() if sample_match else len(name))
@@ -261,6 +282,56 @@ def build_site_normalization_map(all_site_raw: set) -> dict:
     return mapping
 
 
+# site_normalized corrections, applied after the automatic merging above.
+# Spelling variants of one site, and sites whose folder names never say what
+# kind of water body they are (named here the way the other sites are, so the
+# type is the last word). Confirmed with the team; "sterling" and "patch" are
+# still open (Patch has both a pond and a reservoir).
+SITE_RENAMES = {
+    "chauncey lake": "chauncy lake",          # Lake Chauncy, Westborough
+    "quinsig lake": "quinsigamond lake",      # Lake Quinsigamond
+    "elm parkl pond": "elm pond",             # typo of Elm Park Pond
+    "leeseville": "leesville pond",
+    "washicum": "waushacum lake",
+    "flint": "flint pond",
+    "flint ramp": "flint pond",               # same place as Flint
+    "curtis": "curtis pond",
+    "dark brook": "dark brook reservoir",
+    "faluluh": "falulah reservoir",
+    "singletary": "singletary lake",
+    "stoneville": "stoneville pond",
+    "university": "university park pond",
+}
+
+# Sites that keep their name but whose type isn't in it.
+SITE_WATER_TYPES = {
+    "quinsig kings point": "lake",            # Kings Point, Lake Quinsigamond
+}
+
+# Not real sampling sites: left out of the catalog.
+EXCLUDED_SITES = {"unknown", "nolable"}
+
+CORE_TYPES = ("pond", "lake", "reservoir")
+
+
+def finalize_folder(parsed: dict) -> dict:
+    """Apply SITE_RENAMES and set water_body_type from the site. Mutates and
+    returns parsed. Shared by a full catalog run and --refresh-metadata."""
+    site = parsed["site_normalized"] or ""
+    site = SITE_RENAMES.get(site, site)
+    parsed["site_normalized"] = site or None
+    last_word = site.split()[-1] if site else ""
+    if last_word in CORE_TYPES:
+        water = last_word
+    elif site in SITE_WATER_TYPES:
+        water = SITE_WATER_TYPES[site]
+    else:
+        own = core_water_types_in(parsed["site_raw"] or "")
+        water = next(iter(own)) if len(own) == 1 else None
+    parsed["water_body_type"] = water
+    return parsed
+
+
 def image_id_for(rel_path: str) -> str:
     return hashlib.sha1(rel_path.encode("utf-8")).hexdigest()[:16]
 
@@ -376,6 +447,12 @@ def main():
         help="Folders written by Flowcam_VBD_File_Format/export_all.py (skipped if missing).",
     )
     parser.add_argument(
+        "--refresh-metadata",
+        action="store_true",
+        help="Re-apply dilution parsing and the site corrections to the existing "
+             "folder_summary.csv and image_manifest.csv.gz in --out-dir, without the images.",
+    )
+    parser.add_argument(
         "--vbd-source-tag",
         default="FlowCam_VBD",
         help="source_dataset value for images that come from --vbd-export.",
@@ -385,6 +462,9 @@ def main():
     root: Path = args.root
     out_dir: Path = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
+    if args.refresh_metadata:
+        refresh_metadata(out_dir)
+        return
 
     def list_folders(base: Path) -> dict:
         if not base.is_dir():
@@ -417,17 +497,14 @@ def main():
     for parsed in folder_parsed.values():
         parsed["site_normalized"] = site_map[parsed["site_raw"]]
 
-    # Backfill water_body_type from the resolved site where a folder's own
-    # name has no water-body word at all (e.g. plain "Bell" merges into
-    # "bell pond", so it should report "pond" too, not stay unknown) -- but
-    # only for the unambiguous pond/lake/reservoir types resolved by merging;
-    # "park"/"shore" aren't part of site_normalized so there's nothing to
-    # backfill from for those.
+    # Site corrections and water_body_type from the site (finalize_folder).
     for parsed in folder_parsed.values():
-        if parsed["water_body_type"] is None:
-            last_word = parsed["site_normalized"].split()[-1] if parsed["site_normalized"] else ""
-            if last_word in ("pond", "lake", "reservoir"):
-                parsed["water_body_type"] = last_word
+        finalize_folder(parsed)
+    not_sites = sorted(n for n, p in folder_parsed.items() if p["site_normalized"] in EXCLUDED_SITES)
+    for name in not_sites:
+        print(f"Excluding folder that isn't a real site: {name}")
+    included_folders = [f for f in included_folders if f.name not in not_sites]
+    folder_parsed = {n: p for n, p in folder_parsed.items() if n not in not_sites}
 
     # Prefer -pp: when a raw folder and its -pp sibling both exist (same
     # site + date + sample_code), only the -pp folder is cataloged.
@@ -603,6 +680,73 @@ def main():
     print(f"Wrote: {summary_path}")
     if measurement_rows:
         print(f"Wrote: {measurements_path} ({len(measurement_rows)} images, {len(measurement_fields)} measurements)")
+
+
+REFRESHED_COLUMNS = ("site_normalized", "water_body_type", "dilution")
+
+
+def refresh_metadata(out_dir: Path) -> None:
+    """Re-derive site_normalized, water_body_type and dilution for the folders
+    already in folder_summary.csv (and their manifest rows), and drop folders
+    at EXCLUDED_SITES. Everything else, image ids included, is unchanged."""
+    summary_path = out_dir / "folder_summary.csv"
+    manifest_gz_path = out_dir / "image_manifest.csv.gz"
+    with summary_path.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        summary_fields = reader.fieldnames
+        folders = list(reader)
+
+    fixed = {}
+    for row in folders:
+        parsed = parse_folder_name(row["folder_name"])
+        parsed["site_normalized"] = row["site_normalized"]
+        finalize_folder(parsed)
+        fixed[row["folder_name"]] = {c: parsed[c] or "" for c in REFRESHED_COLUMNS}
+    dropped = {n for n, v in fixed.items() if v["site_normalized"] in EXCLUDED_SITES}
+    changed = sum(1 for row in folders if any(row[c] != fixed[row["folder_name"]][c] for c in REFRESHED_COLUMNS))
+
+    # Each image's folder: the one (same site_raw and date) its image_id hashes to.
+    by_key = collections.defaultdict(list)
+    for row in folders:
+        by_key[(row["site_raw"], row["date"])].append(row["folder_name"])
+
+    with gzip.open(manifest_gz_path, "rt", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        manifest_fields = reader.fieldnames
+        manifest = []
+        for row in reader:
+            folder = next((n for n in by_key[(row["site_raw"], row["date"])]
+                           if image_id_for(f"{n}/{row['filename']}") == row["image_id"]), None)
+            if folder is None:
+                sys.exit(f"ERROR: no folder in folder_summary.csv matches image {row['image_id']} ({row['filename']})")
+            if folder in dropped:
+                continue
+            row.update(fixed[folder])
+            manifest.append(row)
+
+    with summary_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=summary_fields)
+        writer.writeheader()
+        for row in folders:
+            if row["folder_name"] in dropped:
+                continue
+            row.update(fixed[row["folder_name"]])
+            writer.writerow(row)
+
+    manifest_path = out_dir / "image_manifest.csv"
+    with manifest_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=manifest_fields)
+        writer.writeheader()
+        writer.writerows(manifest)
+    with manifest_path.open("rb") as src, gzip.open(manifest_gz_path, "wb") as dst:
+        shutil.copyfileobj(src, dst)
+
+    for name in sorted(dropped):
+        print(f"Excluded folder that isn't a real site: {name}")
+    print(f"Folders updated: {changed}, excluded: {len(dropped)}, kept: {len(folders) - len(dropped)}")
+    print(f"Images kept: {len(manifest)}")
+    print(f"Wrote: {summary_path}")
+    print(f"Wrote: {manifest_gz_path} (commit this one)")
 
 
 if __name__ == "__main__":

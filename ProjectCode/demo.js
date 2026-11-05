@@ -16,6 +16,14 @@
  * Supabase as usual, so entering or leaving the demo never signs you in or out.
  *
  * The 45 folders below are a real sample of the catalog's folder names.
+ *
+ * Blind review (demo only for now): a labeler's label starts "in review" and
+ * becomes "official" once one other labeler picks the same label on the
+ * Review page without seeing it, or an admin reviews it. A different pick
+ * makes it "disputed" for an admin to settle. An admin's own label is official
+ * straight away. Labels in review are hidden from everyone but the person who
+ * gave them (and admins), so the review stays blind. The pill's "Acting as"
+ * menu switches between sample people, to play several labelers.
  */
 (function () {
   'use strict';
@@ -48,51 +56,51 @@
 
   // [folder_name, site, water_body, date, iso_date, magnification, code, capture, dilution, is_pp, images, minW, maxW, minH, maxH]
   var FOLDER_DATA = [
-    ["Indian Lake_10.14.2023_10x_TM 0.5 dilution -pp","indian lake","lake","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,380,18,731,26,816],
+    ["Indian Lake_10.14.2023_10x_TM 0.5 dilution -pp","indian lake","lake","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,380,18,731,26,816],
     ["Indian_CR10.15.22_10x_AI1-pp-1","indian lake","lake","10.15.22","2022-10-15","10x","AI1","autoimage","",true,150,16,374,19,1089],
     ["Indian_WCMC_CR10.16.21_TR1-PP","indian lake","lake","10.16.21","2021-10-16","10x","TR1","trigger","",true,93,25,268,27,368],
-    ["Coes Reservoir_10.14.2023_10x_TM 0.5 dilution -pp","coes reservoir","reservoir","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,65,24,358,26,571],
-    ["CoesPond_WCMC_CR10.16.21_TR1-pp","coes reservoir","pond","10.16.21","2021-10-16","10x","TR1","trigger","",true,21,22,197,30,452],
-    ["Coes Reservoir_10.2.2023_10x_TM 0.5 dilution -pp","coes reservoir","reservoir","10.2.2023","2023-10-02","10x","TM","trigger","0.5 dilution",true,71,23,462,29,640],
-    ["Little Indian Lake_10.14.2023_10x_TM 0.1 dilution -pp","little indian lake","lake","10.14.2023","2023-10-14","10x","TM","trigger","0.1 dilution",true,38,26,211,25,270],
-    ["LittleIndian_CR10.15.22_10x_AI1 .1dilution-pp","little indian lake","lake","10.15.22","2022-10-15","10x","AI1","autoimage","1dilution",true,430,19,427,21,1038],
+    ["Coes Reservoir_10.14.2023_10x_TM 0.5 dilution -pp","coes reservoir","reservoir","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,65,24,358,26,571],
+    ["CoesPond_WCMC_CR10.16.21_TR1-pp","coes reservoir","reservoir","10.16.21","2021-10-16","10x","TR1","trigger","",true,21,22,197,30,452],
+    ["Coes Reservoir_10.2.2023_10x_TM 0.5 dilution -pp","coes reservoir","reservoir","10.2.2023","2023-10-02","10x","TM","trigger","0.5",true,71,23,462,29,640],
+    ["Little Indian Lake_10.14.2023_10x_TM 0.1 dilution -pp","little indian lake","lake","10.14.2023","2023-10-14","10x","TM","trigger","0.1",true,38,26,211,25,270],
+    ["LittleIndian_CR10.15.22_10x_AI1 .1dilution-pp","little indian lake","lake","10.15.22","2022-10-15","10x","AI1","autoimage","0.1",true,430,19,427,21,1038],
     ["LittleIndian_WCMC_CR10.16.21_TR1-PP","little indian lake","lake","10.16.21","2021-10-16","10x","TR1","trigger","",true,150,18,430,27,814],
     ["Cooks_CR10.15.22_10x_AI1-pp","cooks pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","",true,150,17,385,18,373],
     ["Cooks_WCMC_CR10.16.21_TR1-PP","cooks pond","pond","10.16.21","2021-10-16","10x","TR1","trigger","",true,40,27,321,28,712],
     ["Cooks_CR10.3.22_10x_AI1-pp","cooks pond","pond","10.3.22","2022-10-03","10x","AI1","autoimage","",true,150,20,343,19,347],
-    ["Newton Pond_10.14.2023_10x_TM 0.5 dilution -pp","newton pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,16,31,113,30,111],
+    ["Newton Pond_10.14.2023_10x_TM 0.5 dilution -pp","newton pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,16,31,113,30,111],
     ["Newton_CR10.15.22_10x_AI1-pp","newton pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","",true,150,17,315,16,284],
     ["Newton_WCMC_CR10.16.21_TR1-PP","newton pond","pond","10.16.21","2021-10-16","10x","TR1","trigger","",true,45,23,229,28,342],
-    ["Manchaug Pond_10.14.2023_10x_TM 0.5 dilution -pp","manchaug pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,16,27,133,32,123],
+    ["Manchaug Pond_10.14.2023_10x_TM 0.5 dilution -pp","manchaug pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,16,27,133,32,123],
     ["Manchaug_CR10.15.22_10x_AI1-pp","manchaug pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","",true,44,18,169,25,184],
     ["Manchaug_WCMC_CR10.16.21_TR1-PP","manchaug pond","pond","10.16.21","2021-10-16","10x","TR1","trigger","",true,16,27,113,30,131],
-    ["Burncoat Pond_10.14.2023_10x_TM 0.1 dilution -pp","burncoat pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.1 dilution",true,43,26,513,29,585],
-    ["Burncoat_CR10.15.22_10x_AI1 .1 dilution-pp","burncoat pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","1 dilution",true,260,22,134,18,341],
+    ["Burncoat Pond_10.14.2023_10x_TM 0.1 dilution -pp","burncoat pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.1",true,43,26,513,29,585],
+    ["Burncoat_CR10.15.22_10x_AI1 .1 dilution-pp","burncoat pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","0.1",true,260,22,134,18,341],
     ["Burncoat_WCMC_CR10.16.21_TR1-PP","burncoat pond","pond","10.16.21","2021-10-16","10x","TR1","trigger","",true,150,18,660,24,1062],
-    ["Green Hill Pond_10.14.2023_10x_TM 0.5 dilution -pp","green hill pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,110,22,797,24,1050],
-    ["GreenHill_CR10.15.22_10x_AI1 .1 dilution-pp","green hill pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","1 dilution",true,150,22,263,23,419],
-    ["Green Hill Pond_10.2.2023_10x_TM 0.1 dilution -pp","green hill pond","pond","10.2.2023","2023-10-02","10x","TM","trigger","0.1 dilution",true,16,30,608,26,464],
-    ["Patch Reservoir_10.14.2023_10x_TM 0.5 dilution -pp","patch reservoir","reservoir","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,78,26,258,25,239],
-    ["Patch Res_10.2.2023_10x_TM 0.5 dilution -pp","patch reservoir","reservoir","10.2.2023","2023-10-02","10x","TM","trigger","0.5 dilution",true,51,27,398,29,488],
-    ["Patch Res_10.30.2023_10x_TM 0.5 dilution-pp","patch reservoir","reservoir","10.30.2023","2023-10-30","10x","TM","trigger","0.5 dilution",true,30,29,171,28,258],
-    ["Kiver Pond_10.14.2023_10x_TM 0.1 dilution -pp","kiver pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.1 dilution",true,16,33,178,41,85],
-    ["Kiver_CR10.15.22_10x_AI1 .1dilution-pp","kiver pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","1dilution",true,138,21,163,24,304],
+    ["Green Hill Pond_10.14.2023_10x_TM 0.5 dilution -pp","green hill pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,110,22,797,24,1050],
+    ["GreenHill_CR10.15.22_10x_AI1 .1 dilution-pp","green hill pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","0.1",true,150,22,263,23,419],
+    ["Green Hill Pond_10.2.2023_10x_TM 0.1 dilution -pp","green hill pond","pond","10.2.2023","2023-10-02","10x","TM","trigger","0.1",true,16,30,608,26,464],
+    ["Patch Reservoir_10.14.2023_10x_TM 0.5 dilution -pp","patch reservoir","reservoir","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,78,26,258,25,239],
+    ["Patch Res_10.2.2023_10x_TM 0.5 dilution -pp","patch reservoir","reservoir","10.2.2023","2023-10-02","10x","TM","trigger","0.5",true,51,27,398,29,488],
+    ["Patch Res_10.30.2023_10x_TM 0.5 dilution-pp","patch reservoir","reservoir","10.30.2023","2023-10-30","10x","TM","trigger","0.5",true,30,29,171,28,258],
+    ["Kiver Pond_10.14.2023_10x_TM 0.1 dilution -pp","kiver pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.1",true,16,33,178,41,85],
+    ["Kiver_CR10.15.22_10x_AI1 .1dilution-pp","kiver pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","0.1",true,138,21,163,24,304],
     ["Kiver_WCMC_CR10.16.21_TR2-PP","kiver pond","pond","10.16.21","2021-10-16","10x","TR2","trigger","",true,150,19,485,20,586],
-    ["Patch Pond_10.14.2023_10x_TM 0.5 dilution -pp","patch pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,26,23,223,27,251],
+    ["Patch Pond_10.14.2023_10x_TM 0.5 dilution -pp","patch pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,26,23,223,27,251],
     ["PatchPond_CR10.15.22_10x_AI1-pp","patch pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","",true,150,18,262,22,425],
-    ["Patch Pond_10.2.2023_10x_TM 0.5 dilution -pp","patch pond","pond","10.2.2023","2023-10-02","10x","TM","trigger","0.5 dilution",true,19,34,215,32,142],
-    ["Salisbury Pond_10.14.2023_10x_TM 0.5 dilution -pp","salisbury pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,150,24,499,22,960],
+    ["Patch Pond_10.2.2023_10x_TM 0.5 dilution -pp","patch pond","pond","10.2.2023","2023-10-02","10x","TM","trigger","0.5",true,19,34,215,32,142],
+    ["Salisbury Pond_10.14.2023_10x_TM 0.5 dilution -pp","salisbury pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,150,24,499,22,960],
     ["Salisbury_WCMC_CR10.16.21_TR1-PP","salisbury pond","pond","10.16.21","2021-10-16","10x","TR1","trigger","",true,63,22,235,24,416],
-    ["Salisbury Pond_10.2.2023_10x_TM 0.1 dilution -pp","salisbury pond","pond","10.2.2023","2023-10-02","10x","TM","trigger","0.1 dilution",true,20,21,161,33,202],
-    ["Ecotarium Pond_10.14.2023_10x_TM 0.5 dilution -pp","ecotarium pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,17,29,132,29,152],
-    ["Ecotarium_CR10.3.22_10x AI1 0.1 dilution-pp","ecotarium pond","pond","10.3.22","2022-10-03","10x","AI1","autoimage","0.1 dilution",true,73,20,92,25,159],
-    ["Ecotarium_5.15.2023_10X_TR1 0.1 dilution-pp","ecotarium pond","pond","5.15.2023","2023-05-15","10x","TR1","trigger","0.1 dilution",true,16,28,259,33,226],
-    ["Stevens Pond_10.14.2023_10x_TM 0.5 dilution -pp","stevens pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5 dilution",true,16,38,139,34,109],
+    ["Salisbury Pond_10.2.2023_10x_TM 0.1 dilution -pp","salisbury pond","pond","10.2.2023","2023-10-02","10x","TM","trigger","0.1",true,20,21,161,33,202],
+    ["Ecotarium Pond_10.14.2023_10x_TM 0.5 dilution -pp","ecotarium pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,17,29,132,29,152],
+    ["Ecotarium_CR10.3.22_10x AI1 0.1 dilution-pp","ecotarium pond","pond","10.3.22","2022-10-03","10x","AI1","autoimage","0.1",true,73,20,92,25,159],
+    ["Ecotarium_5.15.2023_10X_TR1 0.1 dilution-pp","ecotarium pond","pond","5.15.2023","2023-05-15","10x","TR1","trigger","0.1",true,16,28,259,33,226],
+    ["Stevens Pond_10.14.2023_10x_TM 0.5 dilution -pp","stevens pond","pond","10.14.2023","2023-10-14","10x","TM","trigger","0.5",true,16,38,139,34,109],
     ["Stevens_CR10.15.22_10x_AI1-pp","stevens pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","",true,36,21,97,27,100],
     ["Stevens_CR10.3.22_10x AI1-pp","stevens pond","pond","10.3.22","2022-10-03","10x","AI1","autoimage","",true,135,22,237,22,185],
     ["Farm_CR10.15.22_10x_AI1-pp","farm pond","pond","10.15.22","2022-10-15","10x","AI1","autoimage","",true,150,20,166,24,258],
-    ["Farm Pond_10.30.2023_10x_TM 0.5 dilution -pp","farm pond","pond","10.30.2023","2023-10-30","10x","TM","trigger","0.5 dilution",true,16,43,105,45,93],
-    ["Farm Pond_4.29.23_10x_TR1 no dilution-pp","farm pond","pond","4.29.23","2023-04-29","10x","TR1","trigger","no dilution",true,16,42,96,33,132]
+    ["Farm Pond_10.30.2023_10x_TM 0.5 dilution -pp","farm pond","pond","10.30.2023","2023-10-30","10x","TM","trigger","0.5",true,16,43,105,45,93],
+    ["Farm Pond_4.29.23_10x_TR1 no dilution-pp","farm pond","pond","4.29.23","2023-04-29","10x","TR1","trigger","1",true,16,42,96,33,132]
   ];
 
   function hashStr(s) {
@@ -238,6 +246,8 @@
     return { name: l[0], category: l[1], is_builtin: true, created_by: null, created_at: '2026-09-01T12:00:00Z' };
   });
   var LABEL_CATEGORIES = ['cyanobacteria', 'other_significant', 'non_organism'];
+  stored.review = stored.review || {};   // image_id -> { status, reviews: [{ by, label, at }] }
+  stored.actAs = stored.actAs || null;   // a sample person's id, or null for you
   function labelOption(name) { return stored.labelOptions.filter(function (o) { return o.name === name; })[0] || null; }
   // user id -> latest role request; Riley starts with one waiting for review.
   stored.requests = stored.requests || {
@@ -260,14 +270,27 @@
         width: spec.w, height: spec.h, file_size_bytes: Math.round(spec.w * spec.h * 1.1 + 900), format: 'PNG', mode: 'RGB',
         is_readable: true, source_dataset: 'demo', label: null, labeled_by: null, labeled_date: null,
       };
+      row.review_status = null;
+      row.reviews = [];
       if (r() < fraction) {
         var wrong = r() < 0.1;
         row.label = wrong ? ['Fragilaria', 'Microcystis Debris', 'Staurastrum', 'Unsure'][Math.floor(r() * 4)] : spec.truth;
         row.labeled_by = r() < 0.6 ? 'demo-labeler-2' : 'demo-labeler-3';
         row.labeled_date = new Date(Date.now() - Math.floor(r() * 12 * 86400000) - 3600000).toISOString();
+        // Most sample labels are already official; some wait for review, a few are disputed.
+        var roll = r(), other = row.labeled_by === 'demo-labeler-2' ? 'demo-labeler-3' : 'demo-labeler-2';
+        row.review_status = roll < 0.55 ? 'official' : roll < 0.92 ? 'in_review' : 'disputed';
+        if (row.review_status === 'official') row.reviews = [{ by: other, label: row.label, at: row.labeled_date }];
+        if (row.review_status === 'disputed') {
+          var alt = ['Microcystis', 'Unsure', 'Fragilaria', 'Dolichospermum'].filter(function (x) { return x !== row.label; });
+          row.reviews = [{ by: other, label: alt[Math.floor(r() * alt.length)], at: row.labeled_date }];
+        }
       }
       var s = stored.labels[row.image_id];
       if (s) { row.label = s[0]; row.labeled_by = s[1]; row.labeled_date = s[2]; }
+      var rv = stored.review[row.image_id];
+      if (rv) { row.review_status = rv.status; row.reviews = rv.reviews; }
+      if (!row.label) { row.review_status = null; row.reviews = []; }
       images.push(row);
     }
   });
@@ -362,18 +385,22 @@
       return Object.keys(m).map(function (k) { return { water_body_type: k, folder_count: m[k], image_count: 0 }; })
         .sort(function (a, b) { return b.folder_count - a.folder_count || a.water_body_type.localeCompare(b.water_body_type); });
     },
+    // With blind review, only official labels count as labeled.
     labeling_stats: function () {
       var labeled = images.filter(function (x) { return x.label; });
+      var official = labeled.filter(function (x) { return x.review_status === 'official'; });
       var who = new Set(labeled.map(function (x) { return x.labeled_by; }));
       var dates = labeled.map(function (x) { return x.labeled_date; }).sort();
       return [{
-        total_images: images.length, labeled_images: labeled.length, unlabeled_images: images.length - labeled.length,
-        pct_labeled: images.length ? Math.round(1000 * labeled.length / images.length) / 10 : 0,
+        total_images: images.length, labeled_images: official.length, unlabeled_images: images.length - official.length,
+        pct_labeled: images.length ? Math.round(1000 * official.length / images.length) / 10 : 0,
         labeler_count: who.size, last_labeled_at: dates.length ? dates[dates.length - 1] : null,
+        in_review_images: labeled.filter(function (x) { return x.review_status === 'in_review'; }).length,
+        disputed_images: labeled.filter(function (x) { return x.review_status === 'disputed'; }).length,
       }];
     },
     label_counts: function () {
-      var m = groupSum(images.filter(function (x) { return x.label; }), function (x) { return x.label; }, function () { return 1; });
+      var m = groupSum(images.filter(function (x) { return x.label && x.review_status === 'official'; }), function (x) { return x.label; }, function () { return 1; });
       return Object.keys(m).map(function (k) { return { label: k, image_count: m[k] }; })
         .sort(function (a, b) { return b.image_count - a.image_count || a.label.localeCompare(b.label); });
     },
@@ -387,7 +414,16 @@
         };
       }).sort(function (a, b) { return a.folder_name.localeCompare(b.folder_name); });
     },
-    images: function () { return images; },
+    // Blind review: a label still in review (or disputed) is hidden from
+    // everyone but whoever gave it, and admins.
+    images: function () {
+      var me = actor().id;
+      if (isAdminRole(actorRole())) return images;
+      return images.map(function (x) {
+        if (!x.label || x.labeled_by === me || !x.review_status || x.review_status === 'official') return x;
+        return Object.assign({}, x, { label: null, label_hidden: true });
+      });
+    },
     // Like the real policy: admins read every request, anyone else only their own.
     role_requests: function () {
       var me = actor(), admin = isAdminRole(realRole());
@@ -410,7 +446,21 @@
     var a = window.Auth && window.Auth.current();
     return a && a.user ? a : null;
   }
-  function actor() { var a = signedIn(); return a ? a.user : GUEST; }
+  // Who is acting: a sample person picked in the pill's "Acting as" menu, else
+  // your real account, else a guest.
+  function actingAs() { return stored.actAs ? USERS.filter(function (u) { return u.id === stored.actAs; })[0] || null : null; }
+  function actor() { var p = actingAs(); if (p) return p; var a = signedIn(); return a ? a.user : GUEST; }
+  // Your real admin role counts here; anyone else in the demo labels as a labeler.
+  function actorRole() { var p = actingAs(); if (p) return p.role; var rr = realRole(); return isAdminRole(rr) ? rr : 'labeler'; }
+  function actorRoleFor(id) {
+    if (id) { var u = USERS.filter(function (x) { return x.id === id; })[0]; return u ? u.role : 'labeler'; }
+    var rr = realRole(); return isAdminRole(rr) ? rr : 'labeler';
+  }
+  function personName(id) {
+    if (id === GUEST.id) return 'Guest';
+    var u = people().filter(function (x) { return x.id === id; })[0];
+    return u ? (u.full_name || u.email || 'Someone') : 'Someone';
+  }
   function realRole() { var a = signedIn(); return a ? ((a.profile && a.profile.role) || 'viewer') : null; }
   function isAdminRole(role) { return role === 'admin' || role === 'owner'; }
   var RANK = { viewer: 1, labeler: 2, admin: 3, owner: 4 };
@@ -508,12 +558,22 @@
     if (q.patch.label != null && !labelOption(q.patch.label)) {
       return { data: null, error: { message: 'Unknown label "' + q.patch.label + '"', code: '23503', hint: 'Add it with "Enter new label" first, or refresh the page.' }, count: null };
     }
-    images.filter(function (r) { return q.filters.every(function (f) { return f(r); }); }).forEach(function (r) {
+    var admin = isAdminRole(actorRole());
+    var rows = images.filter(function (r) { return q.filters.every(function (f) { return f(r); }); });
+    // Someone else's label in review is the reviewers' to judge, not yours to change.
+    if (!admin && rows.some(function (r) { return r.label && r.labeled_by !== me.id && (r.review_status === 'in_review' || r.review_status === 'disputed'); })) {
+      return err('That image is waiting for review, so only an admin can change its label', '42501');
+    }
+    rows.forEach(function (r) {
       var value = q.patch.label == null ? null : q.patch.label;
       if (value === r.label) return;
       r.label = value;
       r.labeled_by = value ? me.id : null;
       r.labeled_date = value ? now : null;
+      // An admin's label is official at once; anyone else's (or a change) starts a fresh review.
+      r.review_status = value ? (admin ? 'official' : 'in_review') : null;
+      r.reviews = [];
+      stored.review[r.image_id] = { status: r.review_status, reviews: [] };
       if (value) stored.labels[r.image_id] = [value, me.id, now];
       else stored.labels[r.image_id] = [null, null, null];
     });
@@ -566,6 +626,75 @@
     return { data: null, error: null };
   }
 
+  // --- Blind review ----------------------------------------------------------------
+
+  function canReview(x, me) {
+    return x.review_status === 'in_review' && x.labeled_by !== me
+      && !x.reviews.some(function (rv) { return rv.by === me; });
+  }
+  function blindRow(x) {
+    return { image_id: x.image_id, folder_name: x.folder_name, filename: x.filename, relative_path: x.relative_path,
+      width: x.width, height: x.height, file_size_bytes: x.file_size_bytes, format: x.format };
+  }
+  function saveReview(x) { stored.review[x.image_id] = { status: x.review_status, reviews: x.reviews }; persist(); }
+
+  var reviewRpc = {
+    // What this person can review: someone else's label, still in review, not yet reviewed by them.
+    review_queue: function (a, me) {
+      return images.filter(function (x) { return canReview(x, me.id); })
+        .sort(function (x, y) { return String(x.labeled_date).localeCompare(String(y.labeled_date)); })
+        .map(blindRow);
+    },
+    review_counts: function (a, me) {
+      var labeled = images.filter(function (x) { return x.label; });
+      return {
+        to_review: labeled.filter(function (x) { return canReview(x, me.id); }).length,
+        in_review: labeled.filter(function (x) { return x.review_status === 'in_review'; }).length,
+        disputed: labeled.filter(function (x) { return x.review_status === 'disputed'; }).length,
+        official: labeled.filter(function (x) { return x.review_status === 'official'; }).length,
+        mine_waiting: labeled.filter(function (x) { return x.labeled_by === me.id && x.review_status === 'in_review'; }).length,
+      };
+    },
+    // A match makes it official; a different pick makes it disputed. An admin's pick is final.
+    submit_review: function (a, me) {
+      var x = images.filter(function (i) { return i.image_id === a.target; })[0];
+      if (!x || x.review_status !== 'in_review') return { error: ['This image isn’t waiting for review any more', 'P0002'] };
+      if (x.labeled_by === me.id) return { error: ['You can’t review your own label', '42501'] };
+      if (x.reviews.some(function (rv) { return rv.by === me.id; })) return { error: ['You’ve already reviewed this image', '22023'] };
+      if (!labelOption(a.chosen)) return { error: ['Unknown label "' + a.chosen + '"', '23503'] };
+      var first = x.label, admin = isAdminRole(actorRole()), outcome;
+      x.reviews.push({ by: me.id, label: a.chosen, at: new Date().toISOString() });
+      if (admin) { outcome = a.chosen === first ? 'official' : 'corrected'; x.label = a.chosen; x.review_status = 'official'; }
+      else if (a.chosen === first) { outcome = 'official'; x.review_status = 'official'; }
+      else { outcome = 'disputed'; x.review_status = 'disputed'; }
+      stored.labels[x.image_id] = [x.label, x.labeled_by, x.labeled_date];
+      saveReview(x);
+      // The first label, but not who gave it: reviewers never learn whose label they judged.
+      return { data: { outcome: outcome, first_label: first } };
+    },
+    // Admins only: both labels and who gave them.
+    disputed_list: function (a, me) {
+      if (!isAdminRole(actorRole())) return { error: ['Only admins can settle disputes', '42501'] };
+      return images.filter(function (x) { return x.label && x.review_status === 'disputed'; }).map(function (x) {
+        var rv = x.reviews[x.reviews.length - 1] || {};
+        return Object.assign(blindRow(x), { first_label: x.label, first_by: personName(x.labeled_by), first_at: x.labeled_date,
+          review_label: rv.label || null, review_by: rv.by ? personName(rv.by) : null, review_at: rv.at || null });
+      });
+    },
+    resolve_dispute: function (a, me) {
+      if (!isAdminRole(actorRole())) return { error: ['Only admins can settle disputes', '42501'] };
+      var x = images.filter(function (i) { return i.image_id === a.target; })[0];
+      if (!x || x.review_status !== 'disputed') return { error: ['This image isn’t disputed any more', 'P0002'] };
+      if (!labelOption(a.chosen)) return { error: ['Unknown label "' + a.chosen + '"', '23503'] };
+      x.label = a.chosen;
+      x.review_status = 'official';
+      x.reviews.push({ by: me.id, label: a.chosen, at: new Date().toISOString() });
+      stored.labels[x.image_id] = [x.label, x.labeled_by, x.labeled_date];
+      saveReview(x);
+      return { data: null };
+    },
+  };
+
   // How much each person (and the guest) has labeled, as admin_labeling_by_user() returns it.
   function labelingByPerson() {
     var guest = { id: GUEST.id, email: null, full_name: 'Guest (not signed in)', role: 'viewer' };
@@ -614,6 +743,12 @@
       rows = labelingByPerson().filter(function (r) { return r.labeled_count > 0; }).map(function (r) {
         return { full_name: r.full_name, role: r.role, is_me: r.id === me.id, labeled_count: r.labeled_count, last_labeled_at: r.last_labeled_at };
       });
+    } else if (reviewRpc[name]) {
+      var out = reviewRpc[name](a || {}, me);
+      if (Array.isArray(out)) { rows = out; }
+      else if (out && out.error) return err(out.error[0], out.error[1]);
+      else if (out && 'data' in out) return { data: out.data, error: null };
+      else return { data: out, error: null };
     } else if (name === 'admin_update_label') {
       return updateLabel(a);
     } else if (name === 'admin_delete_label') {
@@ -707,6 +842,9 @@
     imageUrl: imageUrl,
     filterData: filterData,
     guest: GUEST,  // who labels when no one is signed in
+    // Who is acting now (a sample person, you, or the guest), with their demo role.
+    actor: function () { var u = actor(); return { id: u.id, email: u.email || null, full_name: u.full_name || (u === GUEST ? 'Guest' : null), role: actorRole() }; },
+    reviewMode: true,
     truth: function (relPath) { return specimen(relPath).truth; },
     reset: function () { session(DATA, null); location.reload(); },
     exit: function () { session(FLAG, null); session(DATA, null); },
@@ -722,7 +860,26 @@
     pill.setAttribute('role', 'region');
     pill.setAttribute('aria-label', 'Demo mode');
     pill.innerHTML = '<span>Demo mode · sample data, nothing is saved</span>'
+      + '<label class="demo-actor"><span>Acting as</span><select id="demo-actor"></select></label>'
       + '<a href="#" id="demo-reset">Reset</a><a href="?demo=0" id="demo-exit">Exit</a>';
+    var sel = pill.querySelector('#demo-actor');
+    var a = signedIn();
+    var meText = (a ? (a.profile && a.profile.full_name) || a.user.email || 'You' : 'You (guest)') + ' · ' + actorRoleFor(null);
+    [[null, meText]].concat(USERS.filter(function (u) { return u.role !== 'viewer'; }).map(function (u) { return [u.id, u.full_name + ' · ' + u.role]; }))
+      .forEach(function (o) {
+        var opt = document.createElement('option');
+        opt.value = o[0] || '';
+        opt.textContent = o[1];
+        if ((o[0] || null) === stored.actAs) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    sel.addEventListener('change', function () { stored.actAs = sel.value || null; persist(); location.reload(); });
+    // Your name arrives once the sign-in check finishes.
+    if (window.Auth && window.Auth.ready) window.Auth.ready.then(function (auth) {
+      if (!auth || !auth.user) return;
+      sel.options[0].textContent = ((auth.profile && auth.profile.full_name) || auth.user.email || 'You') + ' · ' + actorRoleFor(null);
+    });
+
     if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) document.body.insertBefore(pill, document.body.firstChild);
     else document.body.appendChild(pill);
     pill.querySelector('#demo-reset').addEventListener('click', function (e) { e.preventDefault(); window.Demo.reset(); });

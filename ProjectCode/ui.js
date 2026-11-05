@@ -70,6 +70,22 @@
     return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // Sample dates as MM/DD/YYYY. iso is sample_date ('YYYY-MM-DD', no time
+  // zone involved); raw is the folder's own M.D.YY or M.D.YYYY, used if iso is missing.
+  function formatDate(iso, raw) {
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var m = iso && /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    if (m) return m[2] + '/' + m[3] + '/' + m[1];
+    m = raw && /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/.exec(String(raw).trim());
+    if (m) return pad(+m[1]) + '/' + pad(+m[2]) + '/' + (m[3].length === 2 ? '20' + m[3] : m[3]);
+    return raw || '';
+  }
+
+  // Dilution is a plain number ("0.5"); empty means it wasn't recorded.
+  function formatDilution(value) {
+    return value ? String(value) : 'Not recorded';
+  }
+
   function formatBytes(bytes) {
     if (bytes == null) return '-';
     if (bytes < 1024) return bytes + ' B';
@@ -348,6 +364,7 @@
 
   window.UI = {
     h: h, icon: icon, escapeHTML: escapeHTML, formatBytes: formatBytes, debounce: debounce,
+    formatDate: formatDate, formatDilution: formatDilution,
     relativeTime: relativeTime, store: store, imageUrl: imageUrl, csv: csv, download: download,
     announce: announce, toast: toast, dialog: dialog, countUp: countUp, reveal: reveal,
     trapFocus: trapFocus, reducedMotion: function () { return reduceMotion.matches; },
