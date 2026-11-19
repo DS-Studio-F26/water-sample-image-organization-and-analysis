@@ -59,11 +59,14 @@ gunzip -k ProjectCode/catalog_output/image_manifest.csv.gz
 
 ## Hosting (Plan A)
 
-The catalog is online at **https://water-sample-dashboard.pages.dev**. Anyone can
-browse, filter, view and download the images without an account. Signing in
-(Google, or email and password) is needed to label images (labeler role), to
-manage accounts (admin role), or to request a role on the admin page. Everything runs on free tiers: Cloudflare Pages,
-Workers and R2, plus Supabase.
+The catalog is online at **https://water-sample-dashboard.pages.dev**. It is
+**members only**: the catalog, labeling, review and stacks pages are for accounts
+with the labeler or admin role (or the Owner). Everyone else sees a "Members only"
+card that points to the admin page, which anyone can open to sign in (Google, or
+email and password) and request a role; admins can also invite an email address
+as a labeler or admin (see [Members only and invites](#members-only-and-invites)).
+`?demo` still works for anyone, because it runs on made-up data. Everything runs
+on free tiers: Cloudflare Pages, Workers and R2, plus Supabase.
 
 ### Architecture
 
@@ -116,12 +119,17 @@ flowchart LR
   [Labeling](#labeling)); `003_measurements.sql` adds the FlowCam measurements
   (see [Particle measurements](#particle-measurements-flowcam)); `004_roles.sql` adds the
   Owner role and role requests; `005_label_options.sql` adds the shared label list
-  and `006_blind_review.sql` blind review (see [Labeling](#labeling)). Security lives in the database (Row-Level Security and
-  SQL functions), not in the page:
-  - anyone can read folders, images and the QA log, and nobody can change them
-    through the website, except that admins can set the `label` column of an
-    image (and nothing else), and labelers can submit labels for review
-    (`submit_labels()`, 006);
+  and `006_blind_review.sql` blind review (see [Labeling](#labeling));
+  `007_members_only.sql` makes the catalog members only, adds `labeler_names()`
+  and invites (see [Members only and invites](#members-only-and-invites)).
+  Security lives in the database (Row-Level Security and SQL functions), not in
+  the page:
+  - only labelers, admins and the Owner can read folders, images, the QA log,
+    the measurements, the label list and every view built on them (007); visitors
+    who aren't signed in can't read them at all, and viewers get empty results.
+    Nobody can change them through the website, except that admins can set the
+    `label` column of an image (and nothing else), and labelers can submit labels
+    for review (`submit_labels()`, 006);
   - every account starts as `viewer`; `watersampleimageorganization@gmail.com`
     becomes `owner` on its first confirmed sign-in. The Owner can do everything an
     admin can; nobody can be made Owner, and the Owner's role can't be changed;
@@ -141,8 +149,8 @@ flowchart LR
 
 ### Labeling
 
-`labeling.html` is the labeling workspace. Anyone can browse it; accounts with the
-`labeler` or `admin` role can label.
+`labeling.html` is the labeling workspace, for accounts with the `labeler` or
+`admin` role (and the Owner).
 
 - Pick a folder from the searchable list on the left (it shows each folder's
   progress and sorts the least-labeled first), then click image tiles to select them
@@ -171,6 +179,13 @@ flowchart LR
   are put back and a message says so. **Undo** (Z) works across everything.
 - `labeled_by` and `labeled_date` are stamped by a database trigger from the signed-in
   user and the current time; the browser can write nothing but `label`.
+- **Who labeled an image**: hover a tile's label (or read it with a screen reader)
+  for "Labeled by Avery Lin, 3 days ago"; the viewer says the same, and the
+  catalog's folder panel has a **Labeled by** column (table view) and the name on
+  each thumbnail's tooltip. Both CSV exports have a `labeled_by` column with the
+  name. Names come from `labeler_names()` (007): names only for labelers, and for
+  admins the email address of an account with no name. Labels still in review
+  aren't named (blind review).
 - Progress shows as an overall ring, a per-label mix, per-folder bars (also on the
   dashboard) and a per-labeler table on the admin page, for admins and labelers
   (labelers see names, not email addresses). **Export labels (CSV)**, also on the
@@ -208,7 +223,8 @@ Review page's Disputed tab. An admin's own label is official straight away.
 
 Demo mode runs the same functions on sample data (`demo.js`), and the demo
 pill's **Acting as** menu switches between sample labelers and an admin to try
-the whole loop.
+the whole loop. It also answers `labeler_names()` and, for a signed-in admin,
+the invite functions (a sample person's address gets the role at once).
 
 Not set up yet, or want to show it off? Add `?demo` to any page's address
 (`labeling.html?demo`). Demo mode runs the catalog and labeling on sample data and
@@ -350,6 +366,39 @@ Copy-Item .env.example .env   # then fill in the real values
 Whenever a file in `supabase/migrations/` is new or changes (the first time that
 includes `002_labeling.sql` and `003_measurements.sql`), apply them all with
 `python deploy/apply_migrations.py`. It is safe to re-run and checks the result.
+It runs every file in one transaction, so if one fails nothing is applied (and
+the "anyone can read" policies 001-006 put back on each run are never left in
+place without 007).
+
+### Members only and invites
+
+- **Who can see what**: `gate.js` (loaded in the `<head>` of `index.html`,
+  `labeling.html`, `review.html` and `stacks-demo.html`) hides the page until
+  the account is checked, then shows it to labelers, admins and the Owner, and a
+  "Members only" card to everyone else, with Sign in, the admin page and the
+  demo. The page scripts load no data until `Gate.ready` says yes. The real
+  lock is in the database (007): even with the page's code changed, the API
+  returns nothing to anyone else. `admin.html`, `privacy.html`,
+  `reset-password.html` and `404.html` stay open.
+- **Invites**: on the admin page, **Invite people** takes an email address and
+  a role (labeler or admin). If that address already has a confirmed account,
+  the role is given straight away; otherwise it's given the moment that address
+  first signs in with a confirmed email (Google, or email and password after
+  clicking the confirmation link). An invite never lowers a role and can't
+  touch the Owner. The site sends no email itself (Supabase's built-in sender
+  allows only a few an hour, and inviting by email needs the service key): the
+  page writes the invitation, with **Copy invitation** and **Open in my email
+  app**. Open invites can be cancelled; the table shows who invited whom and
+  when each joined. The database side is `invites`, `admin_invite()`,
+  `admin_cancel_invite()`, and the sign-in trigger `handle_auth_user_change()`.
+- **Not covered**: the image Worker doesn't check sign-ins, so an image (or a
+  measurement filter file under `_filters/`) can still be opened by anyone who
+  already has its exact address. Folder and file names are no longer listed
+  anywhere public, but `_filters/<version>/index.json` does list folder names.
+
+`stacks-demo.html` is a standalone design mockup of grouped images shown as
+stacked cards in the labeling workspace (sample images, nothing is saved; see
+the comment at the top of `stacks-demo.js`).
 
 ### Deploys
 

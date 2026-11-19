@@ -5,9 +5,13 @@
  *   viewer         buttons to request the labeler or admin role
  *   labeler        the labeled tile, labeling progress (names, no emails),
  *                  the labels export, the label list, and a button to request admin
- *   admin, owner   every account, role changes and requests, progress, and
- *                  changes to the label list (category any time; rename or
+ *   admin, owner   every account, role changes and requests, invites, progress,
+ *                  and changes to the label list (category any time; rename or
  *                  delete only while no image uses the label, 005_label_options.sql)
+ *
+ * This is the one page anyone can open: the catalog, labeling and review pages
+ * are for labelers and admins only (gate.js, 007_members_only.sql), so this is
+ * where everyone else signs in and asks for a role.
  *
  * Everything here is convenience only. The database checks every rule itself
  * (supabase/migrations/001_init.sql and 004_roles.sql): only admins list
@@ -20,10 +24,10 @@ const USERS_PAGE_SIZE = 1000;  // PostgREST returns at most 1,000 rows per reque
 const USER_COLUMNS = 6;
 
 const LEDES = {
-  'signed-out': 'Ask to become a labeler or an admin.',
-  viewer: 'Ask to become a labeler or an admin.',
+  'signed-out': 'The catalog is for approved labelers and admins. Sign in to ask for a role.',
+  viewer: 'The catalog is for approved labelers and admins. Ask to become one.',
   labeler: 'See how the labeling is going, export the labels, or ask to become an admin.',
-  admin: 'Decide who can label images, and keep an eye on how the labeling is going.',
+  admin: 'Decide who can label images, invite people, and keep an eye on how the labeling is going.',
 };
 
 const adminState = {
@@ -34,6 +38,8 @@ const adminState = {
   roleFilter: '',       // '', a role, or 'requests' for open requests
   pending: null,  // { id, role } while a role change waits for confirmation
   saving: false,
+  invites: [],          // latest invite per address (invites, 007_members_only.sql)
+  inviting: false,
 };
 
 const h = UI.h;
@@ -85,6 +91,7 @@ async function renderForUser(auth) {
   if (isAdminRole(role)) {
     showView('admin');
     await Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats(), loadLabelList()]);
+    await loadInvites();  // after the accounts, to name who sent each invite
   } else if (role === 'labeler') {
     showView('labeler');
     await Promise.all([loadMyRequest(), loadLabelingProgress(), loadLabelStats(), loadLabelList()]);
@@ -387,16 +394,17 @@ async function exportLabels() {
   try {
     const rows = [];
     for (let from = 0; ; from += USERS_PAGE_SIZE) {
-      const { data, error } = await sb.from('images').select('image_id, folder_name, filename, label, labeled_date')
+      const { data, error } = await sb.from('images').select('image_id, folder_name, filename, label, labeled_by, labeled_date')
         .not('label', 'is', null).order('folder_name').order('filename').range(from, from + USERS_PAGE_SIZE - 1);
       if (error) throw error;
       rows.push(...data);
       if (data.length < USERS_PAGE_SIZE) break;
     }
     if (!rows.length) { UI.toast({ message: 'Nothing has been labeled yet, so there’s nothing to export.', kind: 'info' }); return; }
-    rows.forEach(r => { r.category = Labels.category(r.label).key || ''; });
+    await Labels.loadLabelers(true);
+    rows.forEach(r => { r.category = Labels.category(r.label).key || ''; r.labeled_by = Labels.labelerName(r.labeled_by) || ''; });
     UI.download(`water-sample-labels-${new Date().toISOString().slice(0, 10)}.csv`,
-      UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'category', 'labeled_date']));
+      UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'category', 'labeled_by', 'labeled_date']));
     UI.toast({ message: `Exported ${rows.length.toLocaleString()} labels.`, kind: 'success' });
   } catch (err) {
     UI.toast({ message: `Export failed: ${describeError(err)}`, kind: 'error' });
@@ -537,6 +545,150 @@ function deleteLabel(opt) {
   dlg = UI.dialog({ title: 'Delete label', content });
 }
 
+// 4c. Invites (admins): admin_invite() and admin_cancel_invite(), 007_members_only.sql.
+// The database gives the role when the address signs in; it sends no email,
+// so the page writes the invitation for the admin to send.
+
+const INVITE_COLUMNS = 6;
+
+async function loadInvites() {
+  setTableMessage('invites-body', INVITE_COLUMNS, 'Loading invites…');
+  try {
+    const { data, error } = await sb.from('invites')
+      .select('email, role, invited_by, invited_at, accepted_at, accepted_by')
+      .order('invited_at', { ascending: false });
+    if (error) throw error;
+    adminState.invites = data || [];
+    renderInvites();
+  } catch (err) {
+    adminState.invites = [];
+    document.getElementById('invites-count').textContent = '';
+    if (isMissingSchema(err)) {
+      setTableMessage('invites-body', INVITE_COLUMNS, 'Invites aren’t switched on yet: apply supabase/migrations/007_members_only.sql (python deploy/apply_migrations.py).');
+      document.getElementById('invite-submit').disabled = true;
+    } else {
+      setTableMessage('invites-body', INVITE_COLUMNS, 'Couldn’t load the invites.');
+      showMessage(`Couldn't load the invites: ${describeError(err)}`);
+    }
+  }
+}
+
+function personName(id) {
+  const u = id && adminState.users.find(x => x.id === id);
+  return u ? (u.full_name || u.email || 'Someone') : id ? 'A former account' : '-';
+}
+
+function renderInvites() {
+  const tbody = document.getElementById('invites-body');
+  const open = adminState.invites.filter(i => !i.accepted_at).length;
+  document.getElementById('invites-count').textContent = adminState.invites.length
+    ? `${open} waiting · ${adminState.invites.length - open} joined` : '';
+  tbody.innerHTML = '';
+  if (!adminState.invites.length) {
+    setTableMessage('invites-body', INVITE_COLUMNS, 'No invites yet.');
+    return;
+  }
+  adminState.invites.forEach(inv => {
+    const waiting = !inv.accepted_at;
+    const copy = h('button', { type: 'button', class: 'btn btn-sm btn-ghost', title: 'Copy the invitation to send', onclick: () => copyInvitation(inv) }, UI.icon('copy'), 'Copy invitation');
+    const cancel = h('button', { type: 'button', class: 'btn btn-sm btn-ghost', 'aria-label': `Cancel the invite for ${inv.email}`, onclick: () => cancelInvite(inv) }, UI.icon('x'), 'Cancel');
+    copy.disabled = cancel.disabled = adminState.inviting;
+    tbody.appendChild(h('tr', {},
+      h('td', {}, h('strong', { text: inv.email })),
+      h('td', {}, h('span', { class: `badge role-badge role-${inv.role}`, text: roleName(inv.role) })),
+      h('td', { class: 'dim', text: personName(inv.invited_by) }),
+      h('td', { class: 'dim', title: new Date(inv.invited_at).toLocaleString(), text: UI.relativeTime(inv.invited_at) }),
+      h('td', {}, waiting
+        ? h('span', { class: 'badge', text: 'Waiting for sign-in' })
+        : h('span', { class: 'dim', title: new Date(inv.accepted_at).toLocaleString() }, `Joined ${UI.relativeTime(inv.accepted_at)}`)),
+      h('td', { class: 'row-actions' }, waiting
+        ? h('div', { style: { display: 'flex', gap: '0.3rem', flexWrap: 'wrap' } }, copy, cancel) : null)));
+  });
+}
+
+function invitationText(inv) {
+  const url = new URL('admin.html', window.location.href).href;
+  const article = inv.role === 'admin' ? 'an' : 'a';
+  return 'Hi,\n\n'
+    + `You're invited to the Water Sample Image Catalog as ${article} ${inv.role}.\n\n`
+    + `1. Open ${url}\n`
+    + `2. Sign in with Google, or create an account with this email address (${inv.email}) and confirm it.\n\n`
+    + `Your ${inv.role} role is turned on as soon as you sign in with this address.\n`;
+}
+
+function mailtoHref(inv) {
+  return `mailto:${encodeURIComponent(inv.email)}?subject=${encodeURIComponent('Invitation: Water Sample Image Catalog')}`
+    + `&body=${encodeURIComponent(invitationText(inv))}`;
+}
+
+async function copyInvitation(inv) {
+  try {
+    await navigator.clipboard.writeText(invitationText(inv));
+    UI.toast({ message: `Invitation for ${inv.email} copied. Paste it into an email to them.`, kind: 'success' });
+  } catch (err) {
+    showInviteResult(inv, 'invited');  // shows the text to copy by hand
+  }
+}
+
+function showInviteResult(inv, outcome) {
+  const box = document.getElementById('invite-result');
+  box.innerHTML = '';
+  box.hidden = false;
+  if (outcome === 'applied') {
+    box.appendChild(notice('success', 'check-circle', `${inv.email} is now ${withArticle(inv.role)}.`,
+      'They already had an account, so the role is on straight away.'));
+    return;
+  }
+  box.appendChild(h('div', { class: 'alert alert-info', role: 'status' }, UI.icon('mail'),
+    h('div', { class: 'alert-body' },
+      h('div', {}, h('strong', { text: `Invited ${inv.email} as ${withArticle(inv.role)}.` }),
+        ' They get the role when they sign in with that address. Send them this:'),
+      h('pre', { class: 'invite-letter', text: invitationText(inv) }),
+      h('div', { class: 'invite-result-actions' },
+        h('button', { type: 'button', class: 'btn btn-sm btn-primary', onclick: () => copyInvitation(inv) }, UI.icon('copy'), 'Copy invitation'),
+        h('a', { class: 'btn btn-sm', href: mailtoHref(inv) }, UI.icon('mail'), 'Open in my email app')))));
+}
+
+async function sendInvite(e) {
+  e.preventDefault();
+  if (adminState.inviting) return;
+  const form = e.target;
+  const email = form.email.value.trim().toLowerCase();
+  const role = form.role.value;
+  if (!email || !form.email.checkValidity()) {
+    UI.toast({ message: 'Enter a valid email address.', kind: 'error' });
+    form.email.focus();
+    return;
+  }
+  adminState.inviting = true;
+  const submit = document.getElementById('invite-submit');
+  submit.disabled = true;
+  try {
+    const { data, error } = await sb.rpc('admin_invite', { invite_email: email, invite_role: role });
+    if (error) throw error;
+    form.reset();
+    showInviteResult({ email, role }, data);
+    if (data === 'applied') await loadUsers();
+  } catch (err) {
+    UI.toast({ message: `Couldn't invite ${email}: ${describeError(err)}`, kind: 'error', duration: 8000 });
+  } finally {
+    adminState.inviting = false;
+    submit.disabled = false;
+    await loadInvites();
+  }
+}
+
+async function cancelInvite(inv) {
+  if (adminState.inviting) return;
+  adminState.inviting = true;
+  renderInvites();
+  const { error } = await sb.rpc('admin_cancel_invite', { invite_email: inv.email });
+  adminState.inviting = false;
+  if (error) UI.toast({ message: `Couldn't cancel the invite: ${describeError(error)}`, kind: 'error', duration: 8000 });
+  else UI.toast({ message: `Cancelled the invite for ${inv.email}.`, kind: 'success' });
+  await loadInvites();
+}
+
 // 5. Requesting a role (viewers and labelers): request_role() and
 // cancel_role_request(), 004_roles.sql
 
@@ -649,9 +801,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('admin-signin-btn').addEventListener('click', () => Auth.openSignIn('signin'));
   document.getElementById('refresh-users-btn').addEventListener('click', () => {
     hideMessage();
-    Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats(), loadLabelList()]);
+    Promise.all([loadUsers(), loadLabelingProgress(), loadLabelStats(), loadLabelList()]).then(loadInvites);
   });
   document.getElementById('export-btn').addEventListener('click', exportLabels);
+  document.getElementById('invite-form').addEventListener('submit', sendInvite);
 
   document.getElementById('user-search').addEventListener('input', UI.debounce((e) => {
     adminState.search = e.target.value;

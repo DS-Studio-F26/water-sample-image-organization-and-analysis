@@ -17,6 +17,9 @@
  *   Labels.paint(el, value)       set data-label / data-cat, for the colours
  *   Labels.chip(value)            a coloured pill: [shape] Name
  *   Labels.picker(opts)           the type-ahead box (see picker() below)
+ *   Labels.loadLabelers()         load who-labeled names (labeler_names(), 007)
+ *   Labels.labelerName(id)        a labeler's name once loaded, else null
+ *   Labels.labeledBy(item, myId)  "you", the labeler's name, or "another labeler"
  *
  * Colours live in base.css as [data-cat="<category>"] rules.
  */
@@ -77,19 +80,52 @@
     return /PGRST205|42P01|schema cache|does not exist/i.test(text);
   }
 
+  function isNotAllowed(err) {
+    var text = ((err && err.code) || '') + ' ' + ((err && err.message) || '');
+    return /42501|permission denied|not authorized/i.test(text);
+  }
+
+  // Who labeled an image. images.labeled_by is an account id; labeler_names()
+  // (supabase/migrations/007_members_only.sql) turns them into names for
+  // labelers and admins. Loaded once per page, and again when asked.
+  var labelerNames = new Map();
+  var labelersLoad = null;
+  function loadLabelers(force) {
+    if (!window.sb) return Promise.resolve(labelerNames);
+    if (labelersLoad && !force) return labelersLoad;
+    labelersLoad = Promise.resolve(window.sb.rpc('labeler_names')).then(function (res) {
+      if (res.error) {
+        if (!isMissingSchema(res.error) && !isNotAllowed(res.error)) console.warn('Could not load labeler names:', res.error.message);
+        return labelerNames;
+      }
+      labelerNames.clear();
+      (res.data || []).forEach(function (r) { labelerNames.set(r.id, r.name); });
+      return labelerNames;
+    }, function () { return labelerNames; });
+    return labelersLoad;
+  }
+  function labelerName(id) { return id ? labelerNames.get(id) || null : null; }
+  function labeledBy(item, myId) {
+    if (!item || !item.labeled_by) return '';
+    if (myId && item.labeled_by === myId) return 'you';
+    return labelerName(item.labeled_by) || 'another labeler';
+  }
+
   function load() {
     if (!window.sb) return Promise.resolve(options);
     return window.sb.from('label_options').select('name, category, is_builtin, created_at').order('name')
       .then(function (res) {
         if (res.error) {
           // Before 005 is applied: keep the starting list so the pages still work.
+          // Since 007 only members can read it; for anyone else that's expected.
           window.Labels.missing = isMissingSchema(res.error);
-          if (!window.Labels.missing) console.error('Could not load the label list:', res.error);
+          if (!window.Labels.missing && !isNotAllowed(res.error)) console.error('Could not load the label list:', res.error);
           loaded = true;
           repaintPending();
           return options;
         }
         window.Labels.missing = false;
+        if (!res.data.length) { loaded = true; return options; }  // not a member (007): keep the starting list
         // Keep the starting labels' agreed order: the database returns A-Z.
         var rank = new Map(STARTING.map(function (s, i) { return [s[0], i]; }));
         var rows = res.data.slice().sort(function (a, b) {
@@ -432,6 +468,9 @@
     glyph: glyph,
     chip: chip,
     picker: picker,
+    loadLabelers: loadLabelers,
+    labelerName: labelerName,
+    labeledBy: labeledBy,
   };
   // auth.js (loaded before this file) has already created window.sb.
   window.Labels.ready = load();

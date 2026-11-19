@@ -1,7 +1,7 @@
 /**
  * Labeling workspace (labeling.html).
  *
- * Anyone can browse; admins and labelers can also label (in demo mode, anyone
+ * Labelers and admins only (gate.js); admins and labelers can label (in demo mode, anyone
  * can label the sample images). Data comes from
  * Supabase (window.sb, created in auth.js) and images from the Cloudflare
  * Worker. Only the `label` column is writable from the browser; labeled_by and
@@ -181,6 +181,8 @@
     renderRoleBanner();
     if (!state.booted) await boot();
     else { await refreshOverview(true); applyRoleToUi(); }
+    // Names for "labeled by" on the tiles and in the viewer.
+    Labels.loadLabelers(true).then(() => renderGrid());
   }
 
   function renderRoleBanner() {
@@ -328,13 +330,14 @@
     btn.disabled = true;
     const toast = UI.toast({ message: 'Preparing your CSV…', kind: 'info', sticky: true, id: 'export' });
     try {
-      const rows = await fetchAll(() => sb.from('images').select('image_id, folder_name, filename, label, labeled_date')
+      const rows = await fetchAll(() => sb.from('images').select('image_id, folder_name, filename, label, labeled_by, labeled_date')
         .not('label', 'is', null).order('folder_name').order('filename'));
       toast.dismiss(true);
       if (!rows.length) { UI.toast({ message: 'Nothing has been labeled yet, so there’s nothing to export.', kind: 'info' }); return; }
       // images.label holds official labels only, so that's what this exports.
-      rows.forEach(r => { r.category = Labels.category(r.label).key || ''; });
-      const text = UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'category', 'labeled_date']);
+      await Labels.loadLabelers(true);
+      rows.forEach(r => { r.category = Labels.category(r.label).key || ''; r.labeled_by = Labels.labelerName(r.labeled_by) || ''; });
+      const text = UI.csv(rows, ['image_id', 'folder_name', 'filename', 'label', 'category', 'labeled_by', 'labeled_date']);
       UI.download(`water-sample-labels-${new Date().toISOString().slice(0, 10)}.csv`, text);
       UI.toast({ message: `Exported ${fmt(rows.length)} labels.`, kind: 'success' });
     } catch (err) {
@@ -657,7 +660,11 @@
     tile.classList.toggle('locked', isLocked(img));
     labelBtn.innerHTML = '';
     labelBtn.append(...labelButtonContent(img).filter(Boolean));  // append() would write a null as "null"
-    if (state.canLabel) labelBtn.setAttribute('aria-label', isLocked(img) ? `${statusText(img)}: waiting for review` : `Label: ${Labels.text(img.label)}. Change label`);
+    // Who gave an official label (labeled_by is only set for official ones).
+    const by = !isLocked(img) && img.label && img.labeled_by ? Labels.labeledBy(img, state.user && state.user.id) : '';
+    const byText = by ? `by ${by}${img.labeled_date ? `, ${UI.relativeTime(img.labeled_date)}` : ''}` : '';
+    if (byText) labelBtn.title = `Labeled ${byText}`; else labelBtn.removeAttribute('title');
+    if (state.canLabel) labelBtn.setAttribute('aria-label', isLocked(img) ? `${statusText(img)}: waiting for review` : `Label: ${Labels.text(img.label)}${byText ? ` (labeled ${byText})` : ''}. Change label`);
     const selected = state.selected.has(img.image_id);
     tile.classList.toggle('selected', selected);
     main.setAttribute('aria-pressed', String(selected));
@@ -1412,6 +1419,11 @@
   document.addEventListener('DOMContentLoaded', () => {
     bindEvents();
     syncControls();
-    Auth.ready.then((auth) => { applyAuth(auth); Auth.onChange(applyAuth); });
+    // Members only (gate.js): nothing is loaded for anyone else.
+    const gate = window.Gate ? Gate.ready : Promise.resolve(true);
+    gate.then((ok) => {
+      if (!ok) return;
+      Auth.ready.then((auth) => { applyAuth(auth); Auth.onChange(applyAuth); });
+    });
   });
 })();

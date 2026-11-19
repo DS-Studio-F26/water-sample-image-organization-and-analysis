@@ -257,6 +257,11 @@
   stored.requests = stored.requests || {
     'demo-viewer-2': { requested_role: 'labeler', status: 'pending', requested_at: '2026-09-30T13:20:00Z', decided_at: null },
   };
+  // Invites (007): address -> { email, role, invited_by, invited_at, accepted_at, accepted_by }.
+  stored.invites = stored.invites || {
+    'casey.morgan@example.com': { email: 'casey.morgan@example.com', role: 'labeler', invited_by: 'demo-admin-2',
+      invited_at: '2026-10-01T15:00:00Z', accepted_at: null, accepted_by: null },
+  };
   function persist() { session(DATA, JSON.stringify(stored)); }
   USERS.forEach(function (u) { if (stored.roles[u.id]) u.role = stored.roles[u.id]; });
 
@@ -426,6 +431,11 @@
       return Object.keys(stored.requests)
         .filter(function (id) { return admin || id === me.id; })
         .map(function (id) { return Object.assign({ user_id: id }, stored.requests[id]); });
+    },
+    // Like the real policy: admins only.
+    invites: function () {
+      if (!isAdminRole(realRole())) return [];
+      return Object.keys(stored.invites).map(function (k) { return stored.invites[k]; });
     },
     measurement_columns: function () { return MEASURES; },
     label_options: function () { return stored.labelOptions; },
@@ -760,6 +770,31 @@
     return { data: null, error: null };
   }
 
+  // admin_invite() with 007_members_only.sql's rules. A sample person with that
+  // address gets the role straight away; any other address waits, as it would
+  // for its first sign-in. Nothing is sent anywhere.
+  function invite(a) {
+    if (!isAdminRole(realRole())) return err('Only admins can invite people', '42501');
+    var addr = String(a.invite_email || '').trim().toLowerCase();
+    if (a.invite_role !== 'admin' && a.invite_role !== 'labeler') return err('Invalid role "' + a.invite_role + '": invite as admin or labeler', '22023');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) return err('Enter a valid email address', '22023');
+    if (addr === 'watersampleimageorganization@gmail.com') return err('That address is the Owner\'s account', '22023');
+    var now = new Date().toISOString();
+    var me = signedIn();
+    var person = people().filter(function (u) { return (u.email || '').toLowerCase() === addr; })[0];
+    if (person) {
+      if (RANK[person.role] >= RANK[a.invite_role]) return { data: null, error: { message: addr + ' already has the ' + person.role + ' role', code: '22023', hint: 'Change it on the accounts table instead.' } };
+      var res = setRole(actor(), person.id, a.invite_role);
+      if (res.error) return res;
+      stored.invites[addr] = { email: addr, role: a.invite_role, invited_by: me ? me.user.id : null, invited_at: now, accepted_at: now, accepted_by: person.id };
+      persist();
+      return { data: 'applied', error: null };
+    }
+    stored.invites[addr] = { email: addr, role: a.invite_role, invited_by: me ? me.user.id : null, invited_at: now, accepted_at: null, accepted_by: null };
+    persist();
+    return { data: 'invited', error: null };
+  }
+
   P.runRpc = function () {
     var name = this.table, a = this.args, me = actor(), admin = isAdminRole(realRole());
     var rows, req;
@@ -779,6 +814,20 @@
       rows = labelingByPerson().filter(function (r) { return r.labeled_count > 0; }).map(function (r) {
         return { full_name: r.full_name, role: r.role, is_me: r.id === me.id, labeled_count: r.labeled_count, last_labeled_at: r.last_labeled_at };
       });
+    } else if (name === 'labeler_names') {
+      // 007: who labeled what, names only (emails stand in for admins, as for real).
+      var labelers = new Set(images.map(function (x) { return x.labeled_by; }).filter(Boolean));
+      rows = people().concat([{ id: GUEST.id, full_name: 'Guest' }]).filter(function (u) { return labelers.has(u.id); })
+        .map(function (u) { return { id: u.id, name: u.full_name || (admin && u.email) || 'Unnamed account' }; });
+    } else if (name === 'admin_invite') {
+      return invite(a);
+    } else if (name === 'admin_cancel_invite') {
+      if (!admin) return err('Only admins can cancel invites', '42501');
+      var addr = String(a.invite_email || '').trim().toLowerCase();
+      if (!stored.invites[addr] || stored.invites[addr].accepted_at) return err('No open invite for ' + addr, 'P0002');
+      delete stored.invites[addr];
+      persist();
+      return { data: null, error: null };
     } else if (reviewRpc[name]) {
       var out = reviewRpc[name](a || {}, me);
       if (Array.isArray(out)) { rows = out; }

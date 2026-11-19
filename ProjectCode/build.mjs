@@ -15,7 +15,8 @@ const WEB_FILES = [
   // pages
   'index.html',
   'labeling.html',
-  'review.html',   // blind review: demo only for now
+  'review.html',
+  'stacks-demo.html',  // design mockup: grouped images as stacks of cards
   'admin.html',
   'privacy.html',
   'reset-password.html',
@@ -25,10 +26,12 @@ const WEB_FILES = [
   'dashboard.css',
   'labeling.css',
   'review.css',
+  'stacks-demo.css',
   'viewer.css',
   // scripts
   'config.js',
   'theme.js',
+  'gate.js',   // members only: catalog, labeling, review and stacks pages
   'demo.js',
   'auth.js',
   'ui.js',
@@ -38,6 +41,7 @@ const WEB_FILES = [
   'dashboard.js',
   'labeling.js',
   'review.js',
+  'stacks-demo.js',
   'admin.js',
   'reset.js',
   // images

@@ -193,8 +193,9 @@
           <button type="button" class="close-btn" data-action="close" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body">
-          <p class="modal-intro">Browsing and downloading images never needs an account. Sign in to label
-            images: new accounts start as viewers and can request the labeler role on the Admin page.</p>
+          <p class="modal-intro">The catalog is for approved labelers and admins. New accounts start as
+            viewers and can request a role on the Admin page; if an admin invited your email address, its role
+            is turned on as soon as you sign in.</p>
           <button type="button" class="btn-google" data-action="google">${GOOGLE_LOGO}<span>Continue with Google</span></button>
           <div class="auth-divider"><span>or use email</span></div>
           <form class="auth-form" novalidate>

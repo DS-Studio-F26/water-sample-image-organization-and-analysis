@@ -11,7 +11,8 @@
  *     index,           which item to show first
  *     folderName,      shown as a subtitle
  *     canLabel,        true for labelers/admins
- *     userId,          current account id (to say "you" in "labeled by you")
+ *     userId,          current account id (to say "you" in "labeled by you"; anyone
+ *                      else is named, from Labels.labelerName())
  *     onLabel(items, value)   apply a label (null clears); the caller updates the
  *                             items synchronously and saves in the background
  *     lockedText(item) optional; text for an image this person can't label
@@ -154,8 +155,9 @@
     function labelledBy(item) {
       if (!item.label) return '';
       var when = item.labeled_date ? UI.relativeTime(item.labeled_date) : '';
-      var who = item.labeled_by && opts.userId && item.labeled_by === opts.userId ? 'by you' : (item.labeled_by ? 'by another labeler' : '');
-      return ['Labeled', when, who].filter(Boolean).join(' ');
+      var name = window.Labels && Labels.labeledBy ? Labels.labeledBy(item, opts.userId)
+        : item.labeled_by ? (opts.userId && item.labeled_by === opts.userId ? 'you' : 'another labeler') : '';
+      return ['Labeled', when, name ? 'by ' + name : ''].filter(Boolean).join(' ');
     }
 
     function render() {
@@ -458,6 +460,8 @@
     current = api;
 
     show(index, false);
+    // Names of who labeled what (labels.js); shown as soon as they arrive.
+    if (window.Labels && Labels.loadLabelers) Labels.loadLabelers().then(function () { if (current === api) render(); });
     // grow out of the clicked thumbnail
     if (opts.originEl && opts.originEl.getBoundingClientRect && !UI.reducedMotion()) {
       var from = opts.originEl.getBoundingClientRect();

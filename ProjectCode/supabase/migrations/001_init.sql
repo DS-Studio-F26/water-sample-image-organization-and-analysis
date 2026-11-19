@@ -8,6 +8,8 @@
 --   * folders / images / qa_log are public, read-only data. The browser reads
 --     them with the anon key; nobody can write them through the API. The import
 --     script writes them over the direct DB connection as the table owner.
+--     (007_members_only.sql replaces the read policies: since then only
+--     labelers, admins and the Owner can read them.)
 --   * profiles holds each account's role. A user can read only their own row.
 --     Admins see everyone through admin_list_users(). Roles change only through
 --     set_user_role(), which is admin-only and refuses to remove the last admin.

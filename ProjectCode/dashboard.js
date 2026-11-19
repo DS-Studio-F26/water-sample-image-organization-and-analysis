@@ -11,8 +11,8 @@ const DB_PAGE_SIZE = 1000;
 const FOLDER_COLUMNS = 'folder_name, site_normalized, water_body_type, date, sample_date, '
   + 'magnification, sample_code, capture_mode, dilution, is_pp, image_count, '
   + 'min_width, max_width, min_height, max_height';
-// No labeled_by/labeled_date here: those columns only exist once migration 002 is applied.
-const IMAGE_COLUMNS = 'image_id, filename, relative_path, width, height, file_size_bytes, format, label';
+// labeled_by is an account id; Labels.labeledBy() (labels.js) names it.
+const IMAGE_COLUMNS = 'image_id, filename, relative_path, width, height, file_size_bytes, format, label, labeled_by, labeled_date';
 const FILTER_KEYS = ['site_normalized', 'water_body_type', 'date', 'sample_code', 'capture_mode', 'dilution', 'is_pp'];
 const FILTER_NAMES = {
   site_normalized: 'Site', water_body_type: 'Water body', date: 'Date', sample_code: 'Code',
@@ -1416,6 +1416,8 @@ async function openDetailPanel(row, opener) {
     const images = await fetchFolderImages(row.folder_name);
     const container = document.getElementById('detail-images-container');
     if (requestId !== detailRequestId || !container) return;
+    await Labels.loadLabelers();  // to say who labeled each image
+    if (requestId !== detailRequestId) return;
     renderImageListing(container, images, row, labelHref);
   } catch (e) {
     const container = document.getElementById('detail-images-container');
@@ -1424,6 +1426,13 @@ async function openDetailPanel(row, opener) {
     container.appendChild(h('div', { class: 'alert alert-error' }, UI.icon('alert'),
       h('div', { class: 'alert-body' }, `Failed to load image data: ${e.message || String(e)}`)));
   }
+}
+
+// "you", the labeler's name, or "another labeler" (labels.js, 007_members_only.sql)
+function labeledByName(img) {
+  const me = window.Auth && Auth.current().user;
+  const name = Labels.labeledBy(img, me ? me.id : null);
+  return name === 'you' ? 'You' : name;
 }
 
 function renderImageListing(container, images, folderRow, labelHref) {
@@ -1464,6 +1473,7 @@ function renderImageListing(container, images, folderRow, labelHref) {
       folderName: folderRow.folder_name,
       canLabel: false,
       labelHref,
+      userId: window.Auth && Auth.current().user ? Auth.current().user.id : null,
       originEl,
     });
   }
@@ -1506,6 +1516,7 @@ function renderImageListing(container, images, folderRow, labelHref) {
           img.width ? h('span', { class: 'thumb-dim', text: `${img.width}×${img.height}` }) : null);
         Labels.paint(thumb, img.label);
         if (img.label) thumb.appendChild(h('span', { class: 'thumb-tag' }, Labels.chip(img.label)));
+        if (img.label && img.labeled_by) thumb.title = `${Labels.text(img.label)}, labeled by ${labeledByName(img)}`;
         thumb.addEventListener('click', () => openViewer(list, i, thumb));
         grid.appendChild(thumb);
       });
@@ -1522,7 +1533,8 @@ function renderImageListing(container, images, folderRow, labelHref) {
       .map(col => state.measureMap.get(col));
     const cols = [['filename', 'Filename'], ['width', 'W'], ['height', 'H']]
       .concat(measured.map(m => [m.column_name, m.label, m.unit]))
-      .concat([['file_size_bytes', 'Size'], ['format', 'Fmt'], ['label', 'Label']]);
+      .concat([['file_size_bytes', 'Size'], ['format', 'Fmt'], ['label', 'Label'], ['labeled_by_name', 'Labeled by']]);
+    list.forEach(img => { img.labeled_by_name = img.label ? labeledByName(img) : ''; });
     const head = h('tr');
     cols.forEach(([key, text, unit]) => {
       const th = h('th', { scope: 'col', 'aria-sort': S.sortCol === key ? (S.sortDir === 'asc' ? 'ascending' : 'descending') : null },
@@ -1550,6 +1562,8 @@ function renderImageListing(container, images, folderRow, labelHref) {
         h('td', { class: 'num', text: formatBytes(img.file_size_bytes) }),
         h('td', { text: img.format || '-' }),
         h('td', {}, Labels.chip(img.label)),
+        h('td', { class: 'dim', title: img.labeled_date ? new Date(img.labeled_date).toLocaleString() : null,
+          text: img.labeled_by_name || '-' }),
         h('td', {}, h('div', { class: 'img-actions-cell' }, viewBtn,
           h('a', { class: 'icon-btn sm plain', href: UI.imageUrl(img.relative_path, true), title: 'Download', 'aria-label': `Download ${img.filename}` }, UI.icon('download'))))));
     });
@@ -1839,5 +1853,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   TextSize.onChange(() => { if (state.loaded) renderCharts(); });
 
   // Go!
+  // Members only (gate.js): nothing is loaded for anyone else.
+  if (window.Gate && !(await Gate.ready)) return;
   await loadData();
 });

@@ -314,6 +314,11 @@
       e.preventDefault();
       next();
     });
-    Auth.ready.then((auth) => { boot(auth); Auth.onChange(boot); });
+    // Members only (gate.js): nothing is loaded for anyone else.
+    const gate = window.Gate ? Gate.ready : Promise.resolve(true);
+    gate.then((ok) => {
+      if (!ok) return;
+      Auth.ready.then((auth) => { boot(auth); Auth.onChange(boot); });
+    });
   });
 })();

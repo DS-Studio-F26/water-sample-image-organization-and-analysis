@@ -2,8 +2,11 @@
 Apply the Supabase SQL migrations in ProjectCode/supabase/migrations/.
 
 Every migration is written to be idempotent, so this script simply runs all of
-them in filename order, each inside its own transaction -- a file that fails
-part-way is rolled back completely and nothing after it runs.
+them in filename order, all inside ONE transaction: if any file fails, nothing
+from any of them is applied. That matters because each run of 001-006 puts
+back their "anyone can read" policies and 007_members_only.sql takes them away
+again; committing file by file would leave the catalog public for a moment, or
+for good if a file in between failed.
 
 Connects with SUPABASE_DB_URL from ProjectCode/.env. Use Supabase's *Session
 pooler* connection string: the direct connection is IPv6-only and often fails
@@ -28,7 +31,7 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = PROJECT_DIR / "supabase" / "migrations"
 
 TABLES = ["folders", "images", "qa_log", "profiles", "measurement_columns", "role_requests",
-          "label_options", "pending_labels"]
+          "label_options", "pending_labels", "invites"]
 VIEWS = ["folders_visible", "dashboard_stats", "chart_site_counts",
          "chart_date_counts", "chart_water_body_counts",
          "folder_labeling_progress", "labeling_stats", "label_counts"]
@@ -39,7 +42,14 @@ ROLE_FUNCTIONS = ["is_admin()", "admin_list_users()", "set_user_role(uuid, text)
                    "admin_update_label(text, text, text)", "admin_delete_label(text)",
                    "submit_labels(text[], text)", "folder_pending(text)", "review_queue(integer)",
                    "review_counts()", "submit_review(text, text)", "disputed_list()",
-                   "resolve_dispute(text, text)", "make_label_official(text, text, uuid)"]
+                   "resolve_dispute(text, text)", "make_label_official(text, text, uuid)",
+                   "pending_label_counts()", "measurement_folder_counts(jsonb)", "labeler_names()",
+                   "admin_invite(text, text)", "admin_cancel_invite(text)", "apply_invite(uuid, text)"]
+# Members only (007): anon can't read any of these, and signed-in accounts read
+# rows only through a policy that checks can_label().
+MEMBER_TABLES = ["folders", "images", "qa_log", "measurement_columns", "label_options"]
+MEMBER_VIEWS = ["folders_visible", "dashboard_stats", "chart_site_counts", "chart_date_counts",
+                "chart_water_body_counts", "folder_labeling_progress", "labeling_stats", "label_counts"]
 
 
 def get_db_url() -> str:
@@ -97,8 +107,15 @@ def verify(conn: psycopg.Connection) -> bool:
     def priv(sql: str, *args) -> bool:
         return conn.execute(sql, args).fetchone()[0]
 
-    check("anon can read folders",
-          priv("select has_table_privilege('anon', 'public.folders', 'select')"))
+    for t in MEMBER_TABLES + MEMBER_VIEWS:
+        check(f"anon cannot read {t} (members only)",
+              not priv("select has_table_privilege('anon', %s, 'select')", f"public.{t}"))
+    for t in MEMBER_TABLES:
+        quals = [q for (q,) in conn.execute(
+            "select coalesce(qual, '') from pg_policies "
+            "where schemaname = 'public' and tablename = %s and cmd in ('SELECT', 'ALL')", (t,)).fetchall()]
+        check(f"{t}: every read policy checks can_label() (members only)",
+              bool(quals) and all("can_label" in q for q in quals))
     check("anon cannot write images",
           not priv("select has_table_privilege('anon', 'public.images', 'insert, update, delete, truncate')"))
     check("anon cannot read profiles",
@@ -113,20 +130,14 @@ def verify(conn: psycopg.Connection) -> bool:
           not priv("select has_column_privilege('authenticated', 'public.images', 'width', 'update')"))
     check("authenticated cannot update images.diameter_esd",
           not priv("select has_column_privilege('authenticated', 'public.images', 'diameter_esd', 'update')"))
-    check("anon can read measurement_columns",
-          priv("select has_table_privilege('anon', 'public.measurement_columns', 'select')"))
     check("anon cannot write measurement_columns",
           not priv("select has_table_privilege('anon', 'public.measurement_columns', 'insert, update, delete, truncate')"))
-    check("anon can execute measurement_folder_counts(jsonb)",
-          priv("select has_function_privilege('anon', 'public.measurement_folder_counts(jsonb)', 'execute')"))
     filterable = conn.execute("select count(*) from public.measurement_columns").fetchone()[0]
     check(f"measurement_columns lists 64 filters (found {filterable})", filterable == 64)
     check("anon cannot read role_requests",
           not priv("select has_table_privilege('anon', 'public.role_requests', 'select')"))
     check("authenticated cannot write role_requests",
           not priv("select has_table_privilege('authenticated', 'public.role_requests', 'insert, update, delete, truncate')"))
-    check("anon can read label_options",
-          priv("select has_table_privilege('anon', 'public.label_options', 'select')"))
     check("anon cannot write label_options",
           not priv("select has_table_privilege('anon', 'public.label_options', 'insert, update, delete, truncate')"))
     check("authenticated can add a label (name, category)",
@@ -149,6 +160,10 @@ def verify(conn: psycopg.Connection) -> bool:
     check("only admins update images.label directly (006)",
           conn.execute("select 1 from pg_policies where schemaname = 'public' and tablename = 'images' "
                        "and policyname = 'Labelers can set the label'").fetchone() is None)
+    check("authenticated cannot write invites",
+          not priv("select has_table_privilege('authenticated', 'public.invites', 'insert, update, delete, truncate')"))
+    check("authenticated cannot execute apply_invite",
+          not priv("select has_function_privilege('authenticated', 'public.apply_invite(uuid, text)', 'execute')"))
     for fn in ROLE_FUNCTIONS:
         check(f"anon cannot execute {fn}",
               not priv("select has_function_privilege('anon', %s, 'execute')", f"public.{fn}"))
@@ -179,14 +194,18 @@ def main():
         if not files:
             sys.exit(f"ERROR: no .sql files in {MIGRATIONS_DIR}")
 
-        for path in files:
-            print(f"Applying {path.name} ...")
-            try:
-                with conn.transaction():
+        current = None
+        try:
+            with conn.transaction():
+                for path in files:
+                    current = path.name
+                    print(f"Applying {path.name} ...")
                     conn.execute(path.read_text(encoding="utf-8"))
-            except psycopg.Error as exc:
-                sys.exit(f"ERROR in {path.name} (rolled back, nothing from this file was applied):\n{exc}")
-            print(f"  {path.name} applied.")
+                    print(f"  {path.name} ran.")
+        except psycopg.Error as exc:
+            sys.exit(f"ERROR in {current} (everything was rolled back: nothing from any file "
+                     f"was applied):\n{exc}")
+        print(f"All {len(files)} migrations committed together.")
 
         print("Verifying ...")
         if not verify(conn):

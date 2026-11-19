@@ -121,6 +121,49 @@
           </div>
         </section>
 
+        <!-- invites (007_members_only.sql): admins only -->
+        <section class="card table-card" aria-labelledby="invites-title" data-admin-only>
+          <div class="card-head card-pad" style="margin-bottom:0">
+            <h2 id="invites-title"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-mail"/></svg>Invite people</h2>
+            <span class="text-muted" id="invites-count" aria-live="polite"></span>
+          </div>
+          <div class="card-pad stack" style="padding-top:0;--gap:.75rem">
+            <p class="text-muted">Invite an email address as a labeler or an admin. The role is given as soon as that address signs in
+              (with Google, or with an email and password once the address is confirmed). An address that already has an account gets the role now.
+              The site doesn’t send the email itself: copy the invitation and send it from your own email.</p>
+            <form class="invite-form" id="invite-form" novalidate>
+              <div class="form-field">
+                <label for="invite-email">Email address</label>
+                <input id="invite-email" name="email" type="email" autocomplete="off" placeholder="name@example.com" required>
+              </div>
+              <div class="form-field">
+                <label for="invite-role">Role</label>
+                <select id="invite-role" name="role">
+                  <option value="labeler">Labeler</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary" id="invite-submit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-mail"/></svg>Invite</button>
+            </form>
+            <div id="invite-result" hidden></div>
+          </div>
+          <div class="table-scroll" id="invites-table-container">
+            <table class="data invites-table">
+              <thead>
+                <tr>
+                  <th scope="col">Email</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Invited by</th>
+                  <th scope="col">Invited</th>
+                  <th scope="col">Status</th>
+                  <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="invites-body"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="card table-card" aria-labelledby="progress-title">
           <div class="card-head card-pad" style="margin-bottom:0">
             <h2 id="progress-title"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-bar-chart"/></svg>Labeling progress</h2>
