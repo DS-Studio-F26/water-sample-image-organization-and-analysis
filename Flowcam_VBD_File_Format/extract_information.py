@@ -21,8 +21,7 @@ def folder_name_for(run_name):
 # byte for byte. Using the same names lets the catalog treat both exports alike.
 PARTICLES = """
     SELECT run.ID AS run_id, run.name AS run_name, particle.ID AS particle_id,
-           particle.capture_id, particle.deleted,
-           ROW_NUMBER() OVER (PARTITION BY run.ID ORDER BY particle.ID) - 1 AS position
+           particle.capture_id, particle.deleted
     FROM run JOIN image_frame ON image_frame.run == run.ID
     JOIN particle ON particle.imageFrame == image_frame.ID
 """
@@ -49,13 +48,13 @@ if __name__ == "__main__":
         for tablename, in res.fetchall():
             pd.read_sql_query(f"SELECT * FROM {tablename}", db).to_csv(f"./out/{out_name}/raw/{tablename}.csv")
 
-    # One images_details.csv per run: the particle's ID, position and capture
+    # One images_details.csv per run: the particle's ID and capture
     # ID, then every particle_property column. Deleted particles are left out.
     details = pd.read_sql_query(f"""
-        SELECT p.run_name, p.particle_id AS particle, p.position, p.capture_id, particle_property.*
+        SELECT p.run_name, p.particle_id AS particle, p.capture_id, particle_property.*
         FROM ({PARTICLES}) AS p JOIN particle_property ON particle_property.particle == p.particle_id
         WHERE NOT p.deleted
-        ORDER BY p.run_id, p.position
+        ORDER BY p.run_id
     """, db)
     details = details.loc[:, ~details.columns.duplicated()]
     for run_name, run_details in details.groupby("run_name", sort=False):
@@ -64,17 +63,17 @@ if __name__ == "__main__":
         run_details.drop(columns="run_name").to_csv(f"{out_folder}/images_details.csv", index=False)
 
     images = cur.execute(f"""
-        SELECT p.run_name, p.position, particle_image.image
+        SELECT p.run_name, p.particle_id, particle_image.image
         FROM ({PARTICLES}) AS p JOIN particle_image ON particle_image.ID == p.particle_id
         WHERE NOT p.deleted
     """)
 
     count = 0
-    for run_name, position, image_data in images:
+    for run_name, particle_id, image_data in images:
         folder = folder_name_for(run_name)
         out_folder = f"{runs_dir}/{folder}"
         mkdir_if_not_exist(out_folder)
-        with open(f"{out_folder}/{folder}_{position:05d}.png", "wb") as pngfile:
+        with open(f"{out_folder}/{folder}_{particle_id:05d}.png", "wb") as pngfile:
             pngfile.write(image_data)
         count += 1
 

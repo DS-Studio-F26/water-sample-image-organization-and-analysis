@@ -72,6 +72,9 @@ import sys
 from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
+from sklearn.cluster import KMeans, AgglomerativeClustering, HDBSCAN
+from sklearn.preprocessing import normalize
+import pandas as pd
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
@@ -353,7 +356,7 @@ def read_details(path: Path) -> dict:
     if not path.exists():
         return {}
     with path.open(newline="", encoding="utf-8") as f:
-        return {int(row["position"]): row for row in csv.DictReader(f)}
+        return {int(row["particle"]): row for row in csv.DictReader(f)}
 
 
 def image_position(filename: str):
@@ -395,6 +398,31 @@ def read_image_info(path: Path) -> dict:
             "error": str(exc),
         }
 
+def cluster_attributes(details):
+    df = pd.DataFrame(data=details.values())
+    clusterer = HDBSCAN(copy=False, cluster_selection_epsilon=0.001)
+    EXCLUDE_COLUMNS = [
+        "image_id",
+        "particle_id",
+        "display_id",
+        "elapsed_time",
+        "image_y",
+        "image_x",
+        "image_w",
+        "score",
+        "image_h",
+        "intensity_cal_image",
+        "calibration_image"
+        "src_x",
+        "src_y",
+        "src_image",
+    ]
+    data = df[df.columns.difference(EXCLUDE_COLUMNS)]
+    clusterer.fit(X=normalize(data))
+    clustering_map = dict()
+    for i, particle_detail_dict in enumerate(details.values()):
+        clustering_map[particle_detail_dict["particle"]] = clusterer.labels_[i]
+    return clustering_map
 
 def select_folders_preferring_pp(folder_parsed: dict) -> tuple:
     """Group folders by (site_raw, date, sample_code). If a group has any
@@ -538,6 +566,9 @@ def main():
         details = read_details(export_folder / "images_details.csv") if export_folder else {}
         export_positions = None  # sha1 -> position of the export's images, built if needed
 
+        # Clustering: only do if we have the details to cluster on.
+        clustering_map = cluster_attributes(details) if details else dict()
+
         image_files = sorted(
             (p for p in folder.iterdir()
              if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS and not p.name.startswith("._")),
@@ -607,6 +638,7 @@ def main():
                 "labeled_by": "",
                 "labeled_date": "",
                 "source_dataset": args.vbd_source_tag if from_export else args.source_tag,
+                "cluster_number": clustering_map.get(detail["particle"], -1)
             })
 
         folder_stats[folder_name] = {
